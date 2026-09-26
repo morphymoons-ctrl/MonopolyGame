@@ -48,7 +48,7 @@ namespace Monopoly.Tests
             Assert.Equal(TurnPhase.AwaitingRoll, game.State.Phase);
             Assert.Same(game.P(0), game.State.CurrentPlayer);
             Assert.All(game.State.Board, cell => Assert.Null(cell.OwnerId));
-            Assert.Equal(16, game.State.ChanceDeck.Count);
+            Assert.Equal(Enum.GetValues<ChanceCard>().Length, game.State.ChanceDeck.Count);
         }
 
         [Fact]

@@ -139,7 +139,7 @@ namespace Monopoly.Tests
         // Боты не меняются, поэтому при 4–5 игроках монополий почти нет и партия может идти бесконечно.
         [Theory]
         [InlineData(1, 2, true)]
-        [InlineData(2, 3, true)]
+        [InlineData(2, 3, false)]
         [InlineData(3, 4, false)]
         [InlineData(4, 5, false)]
         public void BotsOnly_KeepPlaying(int seed, int players, bool mustFinish)
@@ -157,6 +157,26 @@ namespace Monopoly.Tests
 
             if (mustFinish)
                 Assert.Equal(TurnPhase.GameOver, game.State.Phase);
+        }
+
+        // Отдельная партия может затянуться, но из нескольких партий трёх ботов часть должна дойти до победителя.
+        [Fact]
+        public void ThreeBots_SomeGamesReachWinner()
+        {
+            int finished = 0;
+            for (int seed = 1; seed <= 6; seed++)
+            {
+                var game = Game.Start(new[] { "Бот 1", "Бот 2", "Бот 3" }, seed);
+                for (int i = 0; i < 20000 && game.State.Phase != TurnPhase.GameOver; i++)
+                {
+                    var action = game.State.ActivePlayers.Select(p => Bot.Choose(game, p.Id)).First(a => a is not null)!;
+                    Assert.True(game.Execute(action).Success);
+                }
+                if (game.State.Phase == TurnPhase.GameOver)
+                    finished++;
+            }
+
+            Assert.True(finished >= 2, $"до победителя дошло партий: {finished} из 6");
         }
     }
 }

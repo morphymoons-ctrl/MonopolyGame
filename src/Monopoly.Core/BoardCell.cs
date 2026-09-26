@@ -2,7 +2,7 @@ namespace Monopoly.Core
 {
     public enum CellType
     {
-        Start, Jail, Rest, Casino, Supermarket, GasStation, Factory, Chance, TV, Food, OnlineShop, Logistics, Bank, NetworkShop
+        Start, Jail, Rest, Casino, Supermarket, GasStation, Factory, Chance, TV, Food, Nightlife, Logistics, Bank, NetworkShop
     }
 
     public class BoardCell
@@ -28,7 +28,7 @@ namespace Monopoly.Core
             or CellType.Factory
             or CellType.TV
             or CellType.Food
-            or CellType.OnlineShop
+            or CellType.Nightlife
             or CellType.Logistics
             or CellType.Bank
             or CellType.NetworkShop;

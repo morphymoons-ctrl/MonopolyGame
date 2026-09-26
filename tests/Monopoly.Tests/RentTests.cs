@@ -92,7 +92,7 @@ namespace Monopoly.Tests
         public void Logistics_DiceTimesFourOrTen(int[] owned, int rent)
         {
             var game = Create(1, 3);
-            game.P(0).Position = Rozetka;
+            game.P(0).Position = Massage;
             game.Give(1, owned);
 
             Assert.Equal(rent, RentPaidBy(game, game.Do(new RollDice(0))));

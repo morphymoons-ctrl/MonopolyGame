@@ -5,12 +5,13 @@ namespace Monopoly.Core
     {
         TaxRefund,      // Возврат НДС: +150
         ProjectBonus,   // Премия за проект: +100
-        SoldLaptop,     // Продали старый ноутбук на ОЛХ: +60
+        DancerRefund,   // Танцовщица вернула деньги за приватный танец: +60
         Cashback,       // Кэшбэк Монобанка: +50
         Birthday,       // День рождения: каждый платит вам 20
         ParkingFine,    // Штраф за парковку: −50
         Utilities,      // Оплата коммуналки: −80
         Streaming,      // Подписка на все стриминги: −100
+        MassageFinish,  // Мастерица в «Масажке»: −50
         Charity,        // Благотворительный марафон: вы платите каждому 25
         TaxAudit,       // Налоговая проверка: 25 за филиал, 100 за головной офис
         GoToStart,      // Отправляйтесь на Старт
@@ -35,11 +36,12 @@ namespace Monopoly.Core
         {
             ChanceCard.TaxRefund => 150,
             ChanceCard.ProjectBonus => 100,
-            ChanceCard.SoldLaptop => 60,
+            ChanceCard.DancerRefund => 60,
             ChanceCard.Cashback => 50,
             ChanceCard.ParkingFine => -50,
             ChanceCard.Utilities => -80,
             ChanceCard.Streaming => -100,
+            ChanceCard.MassageFinish => -50,
             _ => 0,
         };
     }

@@ -35,7 +35,7 @@ namespace Monopoly.App
         private static readonly Brush Factory = PlayerPalette.Make("#6B7C93");
         private static readonly Brush Tv = PlayerPalette.Make("#E0569B");
         private static readonly Brush Food = PlayerPalette.Make("#F07A2E");
-        private static readonly Brush Online = PlayerPalette.Make("#19B5C9");
+        private static readonly Brush Nightlife = PlayerPalette.Make("#19B5C9");
         private static readonly Brush Bank = PlayerPalette.Make("#F2C12E");
         private static readonly Brush Network = PlayerPalette.Make("#2E9E5B");
         private static readonly Brush Gas = PlayerPalette.Make("#263447");
@@ -48,7 +48,7 @@ namespace Monopoly.App
             CellType.Factory => Factory,
             CellType.TV => Tv,
             CellType.Food => Food,
-            CellType.OnlineShop => Online,
+            CellType.Nightlife => Nightlife,
             CellType.Bank => Bank,
             CellType.NetworkShop => Network,
             CellType.GasStation => Gas,

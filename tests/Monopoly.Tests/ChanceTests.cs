@@ -3,31 +3,32 @@ using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
 {
-    // Колода «Шанса» (RULES.md, §9). Аня (0) идёт с «ОЛХ» (20) на «Шанс» (24) броском 1 + 3.
+    // Колода «Шанса» (RULES.md, §9). Аня (0) идёт со «Стрипклуба» (20) на «Шанс» (24) броском 1 + 3.
     public class ChanceTests
     {
         private static Game Drawing(ChanceCard card, int players = 3)
         {
             var game = CreateFor(players, 1, 3);
-            game.P(0).Position = Olx;
+            game.P(0).Position = StripClub;
             game.PutOnTop(card);
             return game;
         }
 
         [Fact]
-        public void Deck_HasSixteenDifferentCards()
+        public void Deck_HasSeventeenDifferentCards()
         {
-            Assert.Equal(16, Enum.GetValues<ChanceCard>().Length);
+            Assert.Equal(17, Enum.GetValues<ChanceCard>().Length);
         }
 
         [Theory]
         [InlineData(ChanceCard.TaxRefund, 150)]
         [InlineData(ChanceCard.ProjectBonus, 100)]
-        [InlineData(ChanceCard.SoldLaptop, 60)]
+        [InlineData(ChanceCard.DancerRefund, 60)]
         [InlineData(ChanceCard.Cashback, 50)]
         [InlineData(ChanceCard.ParkingFine, -50)]
         [InlineData(ChanceCard.Utilities, -80)]
         [InlineData(ChanceCard.Streaming, -100)]
+        [InlineData(ChanceCard.MassageFinish, -50)]
         public void MoneyCards(ChanceCard card, int change)
         {
             var game = Drawing(card);
@@ -126,7 +127,7 @@ namespace Monopoly.Tests
         public void GoToJail_EvenAfterDouble_NoExtraRoll()
         {
             var game = CreateFor(3, 2, 2);
-            game.P(0).Position = Olx;
+            game.P(0).Position = StripClub;
             game.PutOnTop(ChanceCard.GoToJail);
 
             var result = game.Do(new RollDice(0));
@@ -155,12 +156,12 @@ namespace Monopoly.Tests
         {
             var game = Drawing(ChanceCard.Cashback);
             game.State.ChanceDeck.Clear();
-            game.State.ChanceDiscard.Add(ChanceCard.SoldLaptop);
+            game.State.ChanceDiscard.Add(ChanceCard.DancerRefund);
 
             var result = game.Do(new RollDice(0));
 
-            Assert.Contains(new ChanceCardDrawn(0, ChanceCard.SoldLaptop), result.Events);
-            Assert.Equal(new[] { ChanceCard.SoldLaptop }, game.State.ChanceDiscard);
+            Assert.Contains(new ChanceCardDrawn(0, ChanceCard.DancerRefund), result.Events);
+            Assert.Equal(new[] { ChanceCard.DancerRefund }, game.State.ChanceDiscard);
         }
     }
 
@@ -237,7 +238,7 @@ namespace Monopoly.Tests
                 + state.ChanceDeck.Count(c => c == ChanceCard.GetOutOfJail)
                 + state.ChanceDiscard.Count(c => c == ChanceCard.GetOutOfJail);
             Assert.Equal(1, jailCards);
-            Assert.Equal(16, state.ChanceDeck.Count + state.ChanceDiscard.Count + state.Players.Sum(p => p.JailCards));
+            Assert.Equal(Enum.GetValues<ChanceCard>().Length, state.ChanceDeck.Count + state.ChanceDiscard.Count + state.Players.Sum(p => p.JailCards));
 
             if (state.Phase != TurnPhase.GameOver)
             {

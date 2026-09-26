@@ -74,12 +74,12 @@ namespace Monopoly.Tests
         [Fact]
         public void BankruptToBank_CompaniesReturnFree()
         {
-            // Аня: 20 → 24 «Шанс», «Подписка на стриминги» (−100). Наличных нет, собрать можно только 50 (залог «Розетки»).
+            // Аня: 20 → 24 «Шанс», «Подписка на стриминги» (−100). Наличных нет, собрать можно только 50 (залог «Масажки»).
             var game = CreateFor(3, 1, 3);
-            game.P(0).Position = Olx;
+            game.P(0).Position = StripClub;
             game.P(0).Balance = 0;
             game.P(0).JailCards = 1;
-            game.Give(0, Atb, Rozetka);
+            game.Give(0, Atb, Massage);
             game.State.Board[Atb].IsMortgaged = true;
             game.PutOnTop(ChanceCard.Streaming);
 
@@ -87,7 +87,7 @@ namespace Monopoly.Tests
 
             Assert.True(game.P(0).IsBankrupt);
             Assert.Contains(new PlayerBankrupt(0, null), result.Events);
-            Assert.All(new[] { Atb, Rozetka }, cell =>
+            Assert.All(new[] { Atb, Massage }, cell =>
             {
                 Assert.Null(game.State.Board[cell].OwnerId);
                 Assert.False(game.State.Board[cell].IsMortgaged);
@@ -140,7 +140,7 @@ namespace Monopoly.Tests
         {
             // Аня: 20 → 24 «Шанс», «День рождения». У Богдана нет наличных, но есть АТБ; Вика платит сразу.
             var game = CreateFor(3, 1, 3);
-            game.P(0).Position = Olx;
+            game.P(0).Position = StripClub;
             game.PutOnTop(ChanceCard.Birthday);
             game.P(1).Balance = 0;
             game.Give(1, Atb);
