@@ -4,11 +4,12 @@ using System.Text.Json;
 
 namespace Monopoly.App
 {
-    // Что запомнить между запусками: имя и последний адрес хоста. Файл в %AppData%\Monopoly.
+    // Что запомнить между запусками: имя, последний адрес хоста и звук. Файл в %AppData%\Monopoly.
     public sealed class UserSettings
     {
         public string Name { get; set; } = "";
         public string LastAddress { get; set; } = "";
+        public bool SoundOn { get; set; } = true;
 
         private static string FilePath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Monopoly", "settings.json");

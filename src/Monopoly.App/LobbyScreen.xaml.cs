@@ -57,11 +57,12 @@ namespace Monopoly.App
                     Width = 20,
                     Height = 20,
                     Fill = PlayerPalette.Get(seat.ColorIndex),
-                    Stroke = Brushes.Black,
+                    Stroke = Brushes.White,
+                    StrokeThickness = 2,
                     Margin = new Thickness(0, 0, 10, 0)
                 });
                 row.Children.Add(new TextBlock { Text = $"{seat.Name}{me}", FontWeight = FontWeights.SemiBold });
-                row.Children.Add(new TextBlock { Text = $" — {role}", Foreground = Brushes.Gray });
+                row.Children.Add(new TextBlock { Text = $" — {role}", Foreground = (Brush)FindResource("MutedTextBrush") });
                 SeatsPanel.Children.Add(row);
             }
 
@@ -73,12 +74,12 @@ namespace Monopoly.App
                 // Цвет — внутри кнопки: фон выключенной кнопки WPF не показывает.
                 var button = new Button
                 {
-                    Width = 48,
-                    Height = 48,
+                    Width = 52,
+                    Height = 52,
                     Margin = new Thickness(0, 0, 8, 0),
                     Padding = new Thickness(0),
-                    Content = new Rectangle { Width = 36, Height = 36, Fill = PlayerPalette.Get(color), Opacity = taken ? 0.25 : 1 },
-                    BorderBrush = mine?.ColorIndex == color ? Brushes.Black : Brushes.LightGray,
+                    Content = new Ellipse { Width = 32, Height = 32, Fill = PlayerPalette.Get(color), Opacity = taken ? 0.25 : 1 },
+                    BorderBrush = mine?.ColorIndex == color ? (Brush)FindResource("AccentBrush") : (Brush)FindResource("SurfaceBorderBrush"),
                     BorderThickness = new Thickness(mine?.ColorIndex == color ? 3 : 1),
                     IsEnabled = !taken,
                     ToolTip = PlayerPalette.Names[color] + (taken ? " — занят" : ""),
@@ -106,7 +107,7 @@ namespace Monopoly.App
             foreach (var address in addresses)
             {
                 var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
-                var copy = new Button { Content = "Скопировать", Padding = new Thickness(8, 2, 8, 2), FontSize = 14 };
+                var copy = new Button { Content = "Скопировать", Padding = new Thickness(10, 2, 10, 2), MinHeight = 30, FontSize = 14 };
                 copy.Click += (_, _) => CopyAddress(address.Address);
                 DockPanel.SetDock(copy, Dock.Right);
                 row.Children.Add(copy);
@@ -147,7 +148,7 @@ namespace Monopoly.App
                     break;
                 case FirewallStatus.Blocked:
                     FirewallPanel.Visibility = Visibility.Visible;
-                    FirewallText.Foreground = Brushes.Firebrick;
+                    FirewallText.Foreground = PlayerPalette.Make("#FF8A8D");
                     FirewallText.Text = "Брандмауэр Windows блокирует игру — друзья не смогут подключиться. " +
                         "Так бывает, если в окне брандмауэра нажали «Отмена». " +
                         "Нажмите кнопку и подтвердите запрос Windows (нужны права администратора).";
@@ -177,7 +178,7 @@ namespace Monopoly.App
             if (firewall?.Status == FirewallStatus.Allowed)
             {
                 FirewallPanel.Visibility = Visibility.Visible;
-                FirewallText.Foreground = Brushes.Green;
+                FirewallText.Foreground = (Brush)FindResource("SuccessBrush");
                 FirewallText.Text = "Готово: брандмауэр пропускает игру.";
                 FirewallButton.Visibility = Visibility.Collapsed;
             }

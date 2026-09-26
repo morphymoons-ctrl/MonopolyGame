@@ -117,7 +117,7 @@ namespace Monopoly.App
         private void OnGameStarted(GameStartInfo info)
         {
             lobbyScreen = null;
-            gameScreen = new GameScreen(client!, info, LeaveAsync);
+            gameScreen = new GameScreen(client!, info, settings, LeaveAsync);
             Screen.Content = gameScreen;
         }
 

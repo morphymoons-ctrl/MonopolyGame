@@ -16,7 +16,7 @@ namespace Monopoly.App
         private readonly ComboBox targetBox = new() { FontSize = 18, Margin = new Thickness(0, 4, 0, 12) };
         private readonly Side mine;
         private readonly Side theirs;
-        private readonly TextBlock errorText = new() { Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+        private readonly TextBlock errorText = new() { Foreground = PlayerPalette.Make("#FF8A8D"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
 
         public ProposeTrade? Proposal { get; private set; }
 
@@ -26,10 +26,13 @@ namespace Monopoly.App
             this.myId = myId;
             Title = "Предложить обмен";
             Width = 820;
-            Height = 640;
+            Height = 660;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ResizeMode = ResizeMode.NoResize;
             FontSize = 16;
+            FontFamily = (FontFamily)FindResource("UiFont");
+            Background = (Brush)FindResource("SurfaceBrush");
+            Foreground = (Brush)FindResource("TextBrush");
 
             mine = new Side("Вы отдаёте");
             theirs = new Side("Вы просите");
@@ -49,8 +52,8 @@ namespace Monopoly.App
             root.Children.Add(top);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
-            var ok = new Button { Content = "Предложить", Width = 140, Height = 36, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
-            var cancel = new Button { Content = "Отмена", Width = 100, Height = 36, IsCancel = true };
+            var ok = new Button { Content = "Предложить", MinWidth = 150, Margin = new Thickness(0, 0, 10, 0), IsDefault = true, Style = (Style)FindResource("PrimaryButton") };
+            var cancel = new Button { Content = "Отмена", MinWidth = 110, IsCancel = true };
             ok.Click += (_, _) => Submit();
             buttons.Children.Add(ok);
             buttons.Children.Add(cancel);
@@ -120,7 +123,13 @@ namespace Monopoly.App
             public Side(string title)
             {
                 Panel.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 6) });
-                Panel.Children.Add(new ScrollViewer { Content = cells, Height = 280, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+                Panel.Children.Add(new Border
+                {
+                    Background = PlayerPalette.Make("#0F1C30"),
+                    CornerRadius = new CornerRadius(10),
+                    Padding = new Thickness(10),
+                    Child = new ScrollViewer { Content = cells, Height = 270, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
+                });
                 Panel.Children.Add(new TextBlock { Text = "Деньги, грн", Margin = new Thickness(0, 8, 0, 0) });
                 Panel.Children.Add(money);
                 Panel.Children.Add(jailLabel);
@@ -142,7 +151,7 @@ namespace Monopoly.App
                 }
                 if (cells.Children.Count == 0)
                 {
-                    cells.Children.Add(new TextBlock { Text = "Компаний нет", Foreground = Brushes.Gray });
+                    cells.Children.Add(new TextBlock { Text = "Компаний нет", Foreground = (Brush)Application.Current.Resources["MutedTextBrush"] });
                 }
 
                 var player = snapshot.FindPlayer(playerId)!;

@@ -5,7 +5,8 @@
         Width="1920" Height="1080"
         MinWidth="1280" MinHeight="720"
         ResizeMode="CanResizeWithGrip"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource TableBrush}">
     <!-- Текущий экран: старт, лобби или партия. -->
     <ContentControl Name="Screen"/>
 </Window>
