@@ -24,6 +24,9 @@ namespace Monopoly.Tests
 
         public static Player P(this Game game, int id) => game.State.FindPlayer(id)!;
 
+        // Сумма, как её пишет игра: «140 000 грн».
+        public static string M(int amount) => GameRules.Money(amount);
+
         public static void Give(this Game game, int playerId, params int[] cells)
         {
             foreach (int cell in cells)

@@ -23,8 +23,8 @@ namespace Monopoly.Tests
             var result = game.Do(new BuildBranch(0, Silpo));
 
             Assert.Equal(1, Level(game, Silpo));
-            Assert.Equal(GameRules.StartingBalance - 70, game.P(0).Balance);
-            Assert.Contains(new BranchBuilt(0, Silpo, 1, 70), result.Events);
+            Assert.Equal(GameRules.StartingBalance - 70_000, game.P(0).Balance);
+            Assert.Contains(new BranchBuilt(0, Silpo, 1, 70_000), result.Events);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace Monopoly.Tests
 
             var result = game.Do(new BuildBranch(0, Silpo));
 
-            Assert.Contains(new BranchBuilt(0, Silpo, 5, 70), result.Events);
+            Assert.Contains(new BranchBuilt(0, Silpo, 5, 70_000), result.Events);
             game.Do(new BuildBranch(0, Atb));
             game.Do(new BuildBranch(0, Varus));
             Assert.Equal("Тут уже головний офіс.", game.Error(new BuildBranch(0, Silpo)));
@@ -86,9 +86,9 @@ namespace Monopoly.Tests
         public void Build_NeedsMoney()
         {
             var game = WithSupermarkets();
-            game.P(0).Balance = 60;
+            game.P(0).Balance = 60_000;
 
-            Assert.Equal("Не вистачає грошей: філія коштує 70 грн.", game.Error(new BuildBranch(0, Silpo)));
+            Assert.Equal($"Не вистачає грошей: філія коштує {M(70_000)}.", game.Error(new BuildBranch(0, Silpo)));
         }
 
         [Fact]
@@ -112,8 +112,8 @@ namespace Monopoly.Tests
             var result = game.Do(new SellBranch(0, Silpo));
 
             Assert.Equal(1, Level(game, Silpo));
-            Assert.Equal(GameRules.StartingBalance + 35, game.P(0).Balance);
-            Assert.Contains(new BranchSold(0, Silpo, 1, 35), result.Events);
+            Assert.Equal(GameRules.StartingBalance + 35_000, game.P(0).Balance);
+            Assert.Contains(new BranchSold(0, Silpo, 1, 35_000), result.Events);
         }
 
         [Fact]
@@ -131,12 +131,12 @@ namespace Monopoly.Tests
 
             game.Do(new MortgageCompany(0, Atb));
             Assert.True(game.State.Board[Atb].IsMortgaged);
-            Assert.Equal(GameRules.StartingBalance + 50, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 50_000, game.P(0).Balance);
             Assert.Equal("Компанію вже закладено.", game.Error(new MortgageCompany(0, Atb)));
 
             game.Do(new RedeemCompany(0, Atb));
             Assert.False(game.State.Board[Atb].IsMortgaged);
-            Assert.Equal(GameRules.StartingBalance - 5, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance - 5_000, game.P(0).Balance);
         }
 
         [Fact]
@@ -153,9 +153,9 @@ namespace Monopoly.Tests
         {
             var game = WithSupermarkets();
             game.State.Board[Silpo].IsMortgaged = true;
-            game.P(0).Balance = 70;
+            game.P(0).Balance = 70_000;
 
-            Assert.Equal("Не вистачає грошей: викуп коштує 77 грн.", game.Error(new RedeemCompany(0, Silpo)));
+            Assert.Equal($"Не вистачає грошей: викуп коштує {M(77_000)}.", game.Error(new RedeemCompany(0, Silpo)));
         }
 
         [Fact]

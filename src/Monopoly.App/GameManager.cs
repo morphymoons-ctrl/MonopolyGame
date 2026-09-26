@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
@@ -19,7 +20,6 @@ namespace Monopoly.App
     // Правил здесь нет — они в Monopoly.Core.
     public class GameManager
     {
-        private static readonly CultureInfo Money = CultureInfo.GetCultureInfo("uk-UA");
 
         private readonly IReadOnlyList<BoardCell> board = EventText.Cells;
         private readonly GameStartInfo startInfo;
@@ -58,7 +58,15 @@ namespace Monopoly.App
 
         public int MyPlayerId => startInfo.MyPlayerId;
 
-        public static string Format(int amount) => $"{amount.ToString("N0", Money)} грн";
+        public static string Format(int amount) => GameRules.Money(amount);
+
+        // Крупная сумма (цена на клетке, баланс) — нейтральным шрифтом GameFonts.Money.
+        private static void FillMoney(TextBlock block, int amount)
+        {
+            block.Text = GameRules.Money(amount);
+            block.FontFamily = GameFonts.Money;
+            block.FontWeight = FontWeights.Normal;
+        }
 
         public Brush PlayerColor(int playerId) =>
             PlayerPalette.Get(startInfo.ColorByPlayerId.TryGetValue(playerId, out int color) ? color : playerId);
@@ -142,33 +150,52 @@ namespace Monopoly.App
             DrawBoard();
         }
 
-        // Клетки прямоугольные: поле шире, чем выше, — так на широком мониторе оно крупнее.
-        private double CellWidth => boardCanvas.Width / topCount;
-        private double CellHeight => boardCanvas.Height / topCount;
+        // Крайние ряды глубже, чем шаг клетки вдоль края, — как на настоящей доске: клетки крупнее,
+        // центр поля меньше. Верхний и нижний ряды — высотой RowDepth, левый и правый столбцы — шириной ColumnDepth.
+        // Углы — прямоугольники ColumnDepth × RowDepth, между углами — по 7 клеток.
+        public const double RowDepth = 150;
+        public const double ColumnDepth = 190;
 
-        // Левый верхний угол клетки: по часовой стрелке от «Старта» в левом верхнем углу.
-        private Point CellOrigin(int i)
+        private double AlongX => (boardCanvas.Width - 2 * ColumnDepth) / (topCount - 2);
+        private double AlongY => (boardCanvas.Height - 2 * RowDepth) / (topCount - 2);
+        // Единица для размеров шрифтов и значков: самый узкий шаг клетки.
+        private double Unit => Math.Min(AlongX, AlongY);
+
+        // Прямоугольник клетки: по часовой стрелке от «Старта» в левом верхнем углу.
+        private Rect CellRect(int i)
         {
-            double w = CellWidth, h = CellHeight;
-            if (i < topCount)
+            double right = boardCanvas.Width - ColumnDepth, bottom = boardCanvas.Height - RowDepth;
+            int side = topCount - 1;
+            if (i < side)
             {
-                return new Point(i * w, 0);
+                return i == 0
+                    ? new Rect(0, 0, ColumnDepth, RowDepth)
+                    : new Rect(ColumnDepth + (i - 1) * AlongX, 0, AlongX, RowDepth);
             }
-            if (i < topCount + rightCount)
+            if (i < 2 * side)
             {
-                return new Point((topCount - 1) * w, (i - topCount + 1) * h);
+                int k = i - side;
+                return k == 0
+                    ? new Rect(right, 0, ColumnDepth, RowDepth)
+                    : new Rect(right, RowDepth + (k - 1) * AlongY, ColumnDepth, AlongY);
             }
-            if (i < topCount + rightCount + bottomCount)
+            if (i < 3 * side)
             {
-                return new Point((topCount - 1 - (i - topCount - rightCount + 1)) * w, (topCount - 1) * h);
+                int k = i - 2 * side;
+                return k == 0
+                    ? new Rect(right, bottom, ColumnDepth, RowDepth)
+                    : new Rect(right - k * AlongX, bottom, AlongX, RowDepth);
             }
-            return new Point(0, (topCount - 1 - (i - topCount - rightCount - bottomCount + 1)) * h);
+            int m = i - 3 * side;
+            return m == 0
+                ? new Rect(0, bottom, ColumnDepth, RowDepth)
+                : new Rect(0, bottom - m * AlongY, ColumnDepth, AlongY);
         }
 
         public void DrawBoard()
         {
             boardCanvas.Children.Clear();
-            double w = CellWidth, h = CellHeight;
+            double u = Unit;
             var line = (Brush)Application.Current.Resources["BoardLineBrush"];
             var paper = (Brush)Application.Current.Resources["BoardBrush"];
             var text = (Brush)Application.Current.Resources["BoardTextBrush"];
@@ -176,103 +203,156 @@ namespace Monopoly.App
 
             for (int i = 0; i < board.Count; i++)
             {
-                var origin = CellOrigin(i);
+                var r = CellRect(i);
                 var cell = board[i];
                 var state = Snapshot?.Cells[i];
 
                 Place(new Rectangle
                 {
-                    Width = w,
-                    Height = h,
+                    Width = r.Width,
+                    Height = r.Height,
                     Stroke = line,
                     StrokeThickness = 1,
                     Fill = state?.IsMortgaged == true ? PlayerPalette.Make("#DAD7CF") : cell.IsPurchasable ? paper : SpecialBackground(cell.Type)
-                }, origin.X, origin.Y);
+                }, r.X, r.Y);
 
                 if (cell.IsPurchasable)
                 {
-                    DrawCompany(cell, state, origin, w, h, text, muted);
+                    DrawCompany(cell, state, i, r, u, text, muted);
                 }
                 else
                 {
-                    AddText(GroupPalette.Icon(cell.Type) ?? "", origin.X, origin.Y + h * 0.05, w, h * 0.28, FontWeights.Bold, text, "Segoe UI Symbol");
-                    AddText(cell.Name, origin.X, origin.Y + h * 0.44, w, h * 0.13, FontWeights.Bold, text);
+                    AddText(GroupPalette.Icon(cell.Type) ?? "", r.X, r.Y + r.Height * 0.12, r.Width, u * 0.34, FontWeights.Bold, text, GameFonts.Icons);
+                    AddText(cell.Name, r.X, r.Y + r.Height * 0.52, r.Width, u * 0.17, FontWeights.Bold, text);
                 }
 
                 if (SelectedCell == i)
                 {
                     Place(new Rectangle
                     {
-                        Width = w - 2,
-                        Height = h - 2,
+                        Width = r.Width - 2,
+                        Height = r.Height - 2,
                         Stroke = (Brush)Application.Current.Resources["AccentPressedBrush"],
                         StrokeThickness = 5,
                         IsHitTestVisible = false
-                    }, origin.X + 1, origin.Y + 1);
+                    }, r.X + 1, r.Y + 1);
                 }
 
                 // Щелчок по клетке — прозрачная кнопка поверх неё (стиль CellButton в GameScreen.xaml).
                 int index = i;
-                var hit = new Button { Width = w, Height = h, Style = (Style)boardCanvas.FindResource("CellButton") };
+                var hit = new Button { Width = r.Width, Height = r.Height, Style = (Style)boardCanvas.FindResource("CellButton") };
                 AutomationProperties.SetName(hit, cell.Name);
+                // На клетке может быть логотип — название видно при наведении.
+                hit.ToolTip = cell.Name;
                 AutomationProperties.SetAutomationId(hit, $"Cell{i}");
                 hit.Click += (_, _) => CellClicked?.Invoke(index);
-                Place(hit, origin.X, origin.Y);
+                Place(hit, r.X, r.Y);
             }
             DrawPlayersPanel();
         }
 
-        // Компания: полоса группы сверху, название, цена или филиалы, полоса владельца снизу.
-        private void DrawCompany(BoardCell cell, CellSnapshot? state, Point origin, double w, double h, Brush text, Brush muted)
+        // Полоса группы у боковых клеток — вертикальная, у внешнего края поля:
+        // у левого столбца — слева, у правого — справа; у верхнего и нижнего рядов — сверху.
+        // Content — остальная часть клетки: название, цена, фишки.
+        private (Rect Bar, Rect Content) CompanyLayout(int i, Rect r)
         {
-            double bar = h * 0.2;
-            Place(new Rectangle { Width = w - 2, Height = bar, Fill = GroupPalette.Get(cell.Type), IsHitTestVisible = false }, origin.X + 1, origin.Y + 1);
+            double bar = Unit * 0.22;
+            int side = topCount - 1;
+            bool rightColumn = i > side && i < 2 * side;
+            bool leftColumn = i > 3 * side;
+            if (leftColumn)
+            {
+                return (new Rect(r.X + 1, r.Y + 1, bar, r.Height - 2), new Rect(r.X + bar, r.Y, r.Width - bar, r.Height));
+            }
+            if (rightColumn)
+            {
+                return (new Rect(r.Right - bar - 1, r.Y + 1, bar, r.Height - 2), new Rect(r.X, r.Y, r.Width - bar, r.Height));
+            }
+            return (new Rect(r.X + 1, r.Y + 1, r.Width - 2, bar), new Rect(r.X, r.Y + bar, r.Width, r.Height - bar));
+        }
+
+        // Компания: полоса группы, название, цена или филиалы, полоса владельца снизу.
+        private void DrawCompany(BoardCell cell, CellSnapshot? state, int index, Rect r, double u, Brush text, Brush muted)
+        {
+            var (bar, c) = CompanyLayout(index, r);
+            Place(new Rectangle { Width = bar.Width, Height = bar.Height, Fill = GroupPalette.Get(cell.Type), IsHitTestVisible = false }, bar.X, bar.Y);
             if (GroupPalette.Icon(cell.Type) is { } icon)
             {
-                AddText(icon, origin.X, origin.Y + 1, w, bar * 0.72, FontWeights.Bold, Brushes.White, "Segoe UI Symbol");
+                double iconSize = u * 0.16;
+                AddText(icon, bar.X, bar.Y + (bar.Height - iconSize * 1.35) / 2, bar.Width, iconSize, FontWeights.Bold, GroupPalette.IconColor(cell.Type), GameFonts.Icons);
             }
 
-            AddText(cell.Name, origin.X + 2, origin.Y + bar + h * 0.04, w - 4, h * 0.13, FontWeights.Bold, text);
-
+            // Логотип (или название, если логотипа нет) и цена под ним — одной группой по центру клетки.
+            // Центрируем в месте над рядом фишек и полосой владельца: они внизу клетки.
+            double areaTop = c.Y + u * 0.04;
+            double areaBottom = r.Bottom - u * 0.32;
+            double priceHeight = u * 0.19, innerGap = u * 0.05;
+            double detail;
+            if (Logos.For(index) is { } logo)
+            {
+                double logoHeight = Math.Min(u * 0.6, areaBottom - areaTop - priceHeight - innerGap);
+                double top = areaTop + (areaBottom - areaTop - logoHeight - innerGap - priceHeight) / 2;
+                var image = new Image
+                {
+                    Source = logo,
+                    Width = c.Width - u * 0.04,
+                    Height = logoHeight,
+                    Stretch = Stretch.Uniform,
+                    Opacity = state?.IsMortgaged == true ? 0.4 : 1,
+                    IsHitTestVisible = false
+                };
+                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                Place(image, c.X + u * 0.02, top);
+                detail = top + logoHeight + innerGap;
+            }
+            else
+            {
+                double nameHeight = u * 0.2;
+                double top = areaTop + (areaBottom - areaTop - nameHeight - innerGap - priceHeight) / 2;
+                AddText(cell.Name, c.X + 2, top, c.Width - 4, u * 0.16, FontWeights.Bold, text);
+                detail = top + nameHeight + innerGap;
+            }
             if (state?.IsMortgaged == true)
             {
-                AddText("ЗАСТАВА", origin.X, origin.Y + h * 0.5, w, h * 0.12, FontWeights.Black, (Brush)Application.Current.Resources["DangerBrush"]);
+                AddText("ЗАСТАВА", c.X, detail, c.Width, u * 0.14, FontWeights.Black, (Brush)Application.Current.Resources["DangerBrush"]);
             }
             else if (state is { Level: > 0 })
             {
-                DrawBranches(state.Level, origin, w, h);
+                DrawBranches(state.Level, c, detail, u);
             }
             else if (state?.OwnerId is null)
             {
-                AddText(Format(cell.Price), origin.X, origin.Y + h * 0.5, w, h * 0.12, FontWeights.SemiBold, muted);
+                var price = new TextBlock { Width = c.Width, TextAlignment = TextAlignment.Center, FontSize = u * 0.16, Foreground = muted, IsHitTestVisible = false };
+                FillMoney(price, cell.Price);
+                Place(price, c.X, detail);
             }
 
             if (state?.OwnerId is int owner)
             {
-                Place(new Rectangle { Width = w - 2, Height = h * 0.1, Fill = PlayerColor(owner), IsHitTestVisible = false },
-                    origin.X + 1, origin.Y + h * 0.9 - 1);
+                Place(new Rectangle { Width = c.Width - 2, Height = u * 0.1, Fill = PlayerColor(owner), IsHitTestVisible = false },
+                    c.X + 1, r.Bottom - u * 0.1 - 1);
             }
         }
 
         // Филиалы — зелёные домики, головной офис — красное здание.
-        private void DrawBranches(int level, Point origin, double w, double h)
+        private void DrawBranches(int level, Rect r, double top, double u)
         {
             if (level == GameRules.HeadOfficeLevel)
             {
                 var office = new Border
                 {
-                    Width = h * 0.6,
-                    Height = h * 0.18,
+                    Width = u * 0.6,
+                    Height = u * 0.2,
                     CornerRadius = new CornerRadius(3),
                     Background = PlayerPalette.Make("#C62828"),
-                    Child = new TextBlock { Text = "ОФІС", Foreground = Brushes.White, FontSize = h * 0.1, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+                    Child = new TextBlock { Text = "ОФІС", Foreground = Brushes.White, FontSize = u * 0.12, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
                     IsHitTestVisible = false
                 };
-                Place(office, origin.X + (w - h * 0.6) / 2, origin.Y + h * 0.5);
+                Place(office, r.X + (r.Width - u * 0.6) / 2, top);
                 return;
             }
-            double house = h * 0.15, gap = h * 0.05;
-            double start = origin.X + (w - level * house - (level - 1) * gap) / 2;
+            double house = u * 0.16, gap = u * 0.05;
+            double start = r.X + (r.Width - level * house - (level - 1) * gap) / 2;
             for (int k = 0; k < level; k++)
             {
                 Place(new Rectangle
@@ -285,7 +365,7 @@ namespace Monopoly.App
                     Stroke = Brushes.White,
                     StrokeThickness = 1,
                     IsHitTestVisible = false
-                }, start + k * (house + gap), origin.Y + h * 0.52);
+                }, start + k * (house + gap), top + u * 0.02);
             }
         }
 
@@ -299,7 +379,7 @@ namespace Monopoly.App
             _ => Brushes.White,
         };
 
-        private void AddText(string text, double x, double y, double width, double fontSize, FontWeight weight, Brush color, string? font = null)
+        private void AddText(string text, double x, double y, double width, double fontSize, FontWeight weight, Brush color, FontFamily? font = null)
         {
             var tb = new TextBlock
             {
@@ -314,7 +394,7 @@ namespace Monopoly.App
             };
             if (font is not null)
             {
-                tb.FontFamily = new FontFamily(font);
+                tb.FontFamily = font;
             }
             Place(tb, x, y);
         }
@@ -332,7 +412,7 @@ namespace Monopoly.App
         {
             if (!tokens.TryGetValue(playerId, out var token))
             {
-                double d = CellHeight * 0.2;
+                double d = Unit * 0.22;
                 token = new Ellipse
                 {
                     Width = d,
@@ -344,7 +424,7 @@ namespace Monopoly.App
                 };
                 tokens[playerId] = token;
                 tokenCanvas.Children.Add(token);
-                var start = CellOrigin(0);
+                var start = CellRect(0);
                 Canvas.SetLeft(token, start.X);
                 Canvas.SetTop(token, start.Y);
             }
@@ -354,10 +434,10 @@ namespace Monopoly.App
         // slot — место фишки на клетке, чтобы несколько фишек стояли рядом.
         private void PlaceToken(int playerId, int cell, int slot, int animationMs)
         {
-            double w = CellWidth, h = CellHeight;
-            var origin = CellOrigin(cell);
-            double x = origin.X + w * 0.05 + slot * w * 0.18;
-            double y = origin.Y + h * 0.68;
+            double u = Unit;
+            var r = board[cell].IsPurchasable ? CompanyLayout(cell, CellRect(cell)).Content : CellRect(cell);
+            double x = r.X + u * 0.06 + slot * u * 0.24;
+            double y = r.Bottom - u * 0.3;
             var token = Token(playerId);
             if (animationMs <= 0)
             {
@@ -505,12 +585,11 @@ namespace Monopoly.App
 
                 var balance = new TextBlock
                 {
-                    Text = Format(player.Balance),
-                    FontSize = 24,
-                    FontWeight = FontWeights.Bold,
+                    FontSize = 25,
                     VerticalAlignment = VerticalAlignment.Center,
                     Foreground = isCurrent ? (Brush)Application.Current.Resources["AccentBrush"] : (Brush)Application.Current.Resources["TextBrush"]
                 };
+                FillMoney(balance, player.Balance);
                 Grid.SetColumn(balance, 2);
                 grid.Children.Add(balance);
 
@@ -528,12 +607,63 @@ namespace Monopoly.App
             }
         }
 
+        // Строка журнала; имена игроков — жирным, цветом их фишки.
         public void AddLog(string text)
         {
+            var block = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            foreach (var (part, playerId) in SplitNames(text))
+            {
+                block.Inlines.Add(playerId is int id
+                    ? new Run(part) { Foreground = PlayerLogColor(id), FontWeight = FontWeights.Bold }
+                    : new Run(part));
+            }
             // Отдельный элемент, чтобы прокрутка шла к нему, а не к первой такой же строке.
-            var item = new ListBoxItem { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap } };
+            var item = new ListBoxItem { Content = block };
             actionLog.Items.Add(item);
             actionLog.ScrollIntoView(item);
         }
+
+        // Куски строки: имя с Id игрока или обычный текст.
+        // В событиях движка имена помечены (EventText.TagName); в сообщениях хоста и ошибках — ищем по списку игроков.
+        private IEnumerable<(string Part, int? PlayerId)> SplitNames(string text)
+        {
+            var tagged = new Regex($"{EventText.NameStart}(\\d+){EventText.NameSplit}(.*?){EventText.NameEnd}");
+            int position = 0;
+            foreach (Match match in tagged.Matches(text))
+            {
+                foreach (var piece in FindNames(text[position..match.Index]))
+                    yield return piece;
+                yield return (match.Groups[2].Value, int.Parse(match.Groups[1].Value));
+                position = match.Index + match.Length;
+            }
+            foreach (var piece in FindNames(text[position..]))
+                yield return piece;
+        }
+
+        private IEnumerable<(string Part, int? PlayerId)> FindNames(string text)
+        {
+            var players = Snapshot?.Players.OrderByDescending(p => p.Name.Length).ToList();
+            if (players is null || players.Count == 0 || text.Length == 0)
+            {
+                yield return (text, null);
+                yield break;
+            }
+            // Имя — отдельным словом: «Бот 1» не совпадёт с «Бот 10», «банк» — с «банку».
+            var names = new Regex($"(?<!\\w)({string.Join("|", players.Select(p => Regex.Escape(p.Name)))})(?!\\w)");
+            int position = 0;
+            foreach (Match match in names.Matches(text))
+            {
+                if (match.Index > position)
+                    yield return (text[position..match.Index], null);
+                yield return (match.Value, players.First(p => p.Name == match.Value).Id);
+                position = match.Index + match.Length;
+            }
+            if (position < text.Length)
+                yield return (text[position..], null);
+        }
+
+        // Цвет фишки, чуть светлее: журнал тёмный, синий и фиолетовый на нём иначе плохо видно.
+        private Brush PlayerLogColor(int playerId) =>
+            PlayerPalette.GetLight(startInfo.ColorByPlayerId.TryGetValue(playerId, out int color) ? color : playerId);
     }
 }

@@ -40,7 +40,7 @@ namespace Monopoly.Tests
             var result = game.Do(new PayBail(0));
 
             Assert.False(game.P(0).IsInJail);
-            Assert.Equal(GameRules.StartingBalance - 50, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance - 50_000, game.P(0).Balance);
             Assert.Contains(new LeftJail(0, JailExit.Bail), result.Events);
             game.Do(new RollDice(0));
             Assert.Equal(Jail + 3, game.P(0).Position);
@@ -117,9 +117,9 @@ namespace Monopoly.Tests
 
             Assert.False(game.P(0).IsInJail);
             Assert.Equal(Jail + 3, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance - 50, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance - 50_000, game.P(0).Balance);
             Assert.Contains(new LeftJail(0, JailExit.ForcedBail), result.Events);
-            Assert.Contains(new PaidToBank(0, 50), result.Events);
+            Assert.Contains(new PaidToBank(0, 50_000), result.Events);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace Monopoly.Tests
 
             game.Do(new RollDice(0));
 
-            Assert.Equal(GameRules.StartingBalance + 14, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 14_000, game.P(1).Balance);
         }
     }
 
@@ -161,19 +161,19 @@ namespace Monopoly.Tests
         {
             var game = OnCasino(roll);
 
-            var result = game.Do(new PlayCasino(0, 100));
+            var result = game.Do(new PlayCasino(0, 100_000));
 
-            Assert.Contains(new CasinoPlayed(0, 100, multiplier), result.Events);
-            Assert.Equal(GameRules.StartingBalance + 100 * multiplier - 100, game.P(0).Balance);
+            Assert.Contains(new CasinoPlayed(0, 100_000, multiplier), result.Events);
+            Assert.Equal(GameRules.StartingBalance + 100_000 * multiplier - 100_000, game.P(0).Balance);
         }
 
         [Fact]
         public void OnlyOncePerLanding()
         {
             var game = OnCasino(0);
-            game.Do(new PlayCasino(0, 50));
+            game.Do(new PlayCasino(0, 50_000));
 
-            Assert.Equal("Грати в казино можна лише одразу після потрапляння на клітинку.", game.Error(new PlayCasino(0, 50)));
+            Assert.Equal("Грати в казино можна лише одразу після потрапляння на клітинку.", game.Error(new PlayCasino(0, 50_000)));
         }
 
         [Fact]
@@ -182,7 +182,7 @@ namespace Monopoly.Tests
             var game = Create(3, 5);
             game.Do(new RollDice(0));
 
-            Assert.False(game.CanExecute(new PlayCasino(0, 50)));
+            Assert.False(game.CanExecute(new PlayCasino(0, 50_000)));
         }
 
         [Fact]
@@ -190,9 +190,9 @@ namespace Monopoly.Tests
         {
             var game = OnCasino(0);
 
-            Assert.Equal("Ставка може бути 50, 100, 200, 300 грн.", game.Error(new PlayCasino(0, 75)));
-            game.P(0).Balance = 150;
-            Assert.Equal("Не вистачає грошей на ставку: у вас 150 грн.", game.Error(new PlayCasino(0, 200)));
+            Assert.Equal($"Ставка може бути {M(50_000)}, {M(100_000)}, {M(200_000)}, {M(300_000)}.", game.Error(new PlayCasino(0, 75_000)));
+            game.P(0).Balance = 150_000;
+            Assert.Equal($"Не вистачає грошей на ставку: у вас {M(150_000)}.", game.Error(new PlayCasino(0, 200_000)));
         }
 
         [Fact]

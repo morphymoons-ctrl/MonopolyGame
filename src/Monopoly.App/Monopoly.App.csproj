@@ -14,4 +14,9 @@
     <ProjectReference Include="..\Monopoly.Net\Monopoly.Net.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Логотипы компаний на клетках (Logos.cs); вшиваются в Monopoly.exe. -->
+    <Resource Include="Assets\Logos\*.png" />
+  </ItemGroup>
+
 </Project>

@@ -5,7 +5,7 @@ namespace Monopoly.Core
     public static class Bot
     {
         // Сколько денег бот оставляет себе после покупки, стройки или ставки.
-        public const int Reserve = 300;
+        public const int Reserve = 300_000;
 
         // Следующее действие бота; null — сейчас от него ничего не ждут.
         public static GameAction? Choose(Game game, int playerId)

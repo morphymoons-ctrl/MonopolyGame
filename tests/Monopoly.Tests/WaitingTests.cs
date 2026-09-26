@@ -20,7 +20,7 @@ namespace Monopoly.Tests
 
             game.Do(new DeclinePurchase(0));
             Assert.Equal(new[] { 0, 1, 2 }, game.AwaitedPlayers());
-            game.Do(new PlaceBid(1, 10));
+            game.Do(new PlaceBid(1, 10_000));
             Assert.Equal(new[] { 0, 2 }, game.AwaitedPlayers());
             Assert.Equal(new PassAuction(2), game.TimeoutAction(2));
             Assert.Null(game.TimeoutAction(1));
@@ -44,12 +44,12 @@ namespace Monopoly.Tests
         [Fact]
         public void Timeout_InDebt_SellsBranchesFirst_ThenMortgagesCheapest()
         {
-            // Аня встаёт на «Сільпо» Богдана с головным офисом (980). Наличных 600,
+            // Аня встаёт на «Сілько» Богдана с головным офисом (980 000). Наличных 600 000,
             // остальное соберёт, продав филиалы ТВ и заложив компании.
             var game = CreateFor(3, 1, 2);
             game.Give(1, Atb, Varus, Silpo);
             game.State.Board[Silpo].Level = 5;
-            game.P(0).Balance = 600;
+            game.P(0).Balance = 600_000;
             game.Give(0, Tet, 10, 11, Arcelor);
             game.State.Board[Tet].Level = 2;
             game.State.Board[10].Level = 2;
@@ -65,7 +65,7 @@ namespace Monopoly.Tests
 
             Assert.False(game.P(0).IsBankrupt);
             Assert.NotEqual(TurnPhase.Debt, game.State.Phase);
-            Assert.Equal(GameRules.StartingBalance + 980, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 980_000, game.P(1).Balance);
             Assert.All(game.State.Board, c => Assert.True(c.Level >= 0));
         }
 
@@ -110,7 +110,7 @@ namespace Monopoly.Tests
             Assert.Equal(new BuyProperty(0), Bot.Choose(game, 0));
 
             var poor = Create(1, 2);
-            poor.P(0).Balance = 400;
+            poor.P(0).Balance = 400_000;
             poor.Do(new RollDice(0));
             Assert.Equal(new DeclinePurchase(0), Bot.Choose(poor, 0));
         }

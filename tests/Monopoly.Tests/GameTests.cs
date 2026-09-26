@@ -117,8 +117,8 @@ namespace Monopoly.Tests
             var result = game.Do(new RollDice(0));
 
             Assert.Equal(Silpo, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance + 200, game.P(0).Balance);
-            Assert.Contains(new PassedStart(0, 200), result.Events);
+            Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
+            Assert.Contains(new PassedStart(0, 200_000), result.Events);
         }
 
         [Fact]
@@ -130,7 +130,7 @@ namespace Monopoly.Tests
             game.Do(new RollDice(0));
 
             Assert.Equal(0, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance + 200, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
         }
 
         [Fact]
@@ -221,7 +221,7 @@ namespace Monopoly.Tests
             Assert.Equal(new DiceRoll(1, 2), snapshot.LastRoll);
             Assert.Equal(new CellSnapshot(0, 0, false), snapshot.Cells[Silpo]);
             Assert.Equal(Board.CellCount, snapshot.Cells.Count);
-            Assert.Equal(new PlayerSnapshot(0, "Аня", GameRules.StartingBalance - 140, Silpo, false, false, 0, false),
+            Assert.Equal(new PlayerSnapshot(0, "Аня", GameRules.StartingBalance - 140_000, Silpo, false, false, 0, false),
                 snapshot.FindPlayer(0));
         }
 
@@ -236,7 +236,7 @@ namespace Monopoly.Tests
 
             Assert.Equal(TurnPhase.BuyDecision, game.State.Phase);
             Assert.Equal(Silpo, game.State.PendingPurchase);
-            Assert.Contains(new PurchaseOffered(0, Silpo, 140), result.Events);
+            Assert.Contains(new PurchaseOffered(0, Silpo, 140_000), result.Events);
         }
 
         [Fact]
@@ -245,7 +245,7 @@ namespace Monopoly.Tests
             var game = Create(1, 2);
             game.Do(new RollDice(0));
 
-            Assert.Equal("Спершу вирішіть, чи купувати «Сільпо».", game.Error(new EndTurn(0)));
+            Assert.Equal("Спершу вирішіть, чи купувати «Сілько».", game.Error(new EndTurn(0)));
             Assert.Same(game.P(0), game.State.CurrentPlayer);
         }
 
@@ -258,19 +258,19 @@ namespace Monopoly.Tests
             var result = game.Do(new BuyProperty(0));
 
             Assert.Equal(0, game.State.Board[Silpo].OwnerId);
-            Assert.Equal(GameRules.StartingBalance - 140, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance - 140_000, game.P(0).Balance);
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
-            Assert.Contains(new PropertyBought(0, Silpo, 140), result.Events);
+            Assert.Contains(new PropertyBought(0, Silpo, 140_000), result.Events);
         }
 
         [Fact]
         public void Buy_WithoutEnoughMoney_IsRejected_ButDeclineWorks()
         {
             var game = Create(1, 2);
-            game.P(0).Balance = 100;
+            game.P(0).Balance = 100_000;
             game.Do(new RollDice(0));
 
-            Assert.Equal("Не вистачає грошей: «Сільпо» коштує 140 грн, у вас 100 грн.", game.Error(new BuyProperty(0)));
+            Assert.Equal($"Не вистачає грошей: «Сілько» коштує {M(140_000)}, у вас {M(100_000)}.", game.Error(new BuyProperty(0)));
             game.Do(new DeclinePurchase(0));
             Assert.Equal(TurnPhase.Auction, game.State.Phase);
         }

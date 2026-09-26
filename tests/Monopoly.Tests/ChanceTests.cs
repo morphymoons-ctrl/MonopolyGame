@@ -21,14 +21,14 @@ namespace Monopoly.Tests
         }
 
         [Theory]
-        [InlineData(ChanceCard.TaxRefund, 150)]
-        [InlineData(ChanceCard.ProjectBonus, 100)]
-        [InlineData(ChanceCard.DancerRefund, 60)]
-        [InlineData(ChanceCard.Cashback, 50)]
-        [InlineData(ChanceCard.ParkingFine, -50)]
-        [InlineData(ChanceCard.Utilities, -80)]
-        [InlineData(ChanceCard.Streaming, -100)]
-        [InlineData(ChanceCard.MassageFinish, -50)]
+        [InlineData(ChanceCard.TaxRefund, 150_000)]
+        [InlineData(ChanceCard.ProjectBonus, 100_000)]
+        [InlineData(ChanceCard.DancerRefund, 60_000)]
+        [InlineData(ChanceCard.Cashback, 50_000)]
+        [InlineData(ChanceCard.ParkingFine, -50_000)]
+        [InlineData(ChanceCard.Utilities, -80_000)]
+        [InlineData(ChanceCard.Streaming, -100_000)]
+        [InlineData(ChanceCard.MassageFinish, -50_000)]
         public void MoneyCards(ChanceCard card, int change)
         {
             var game = Drawing(card);
@@ -46,9 +46,9 @@ namespace Monopoly.Tests
 
             game.Do(new RollDice(0));
 
-            Assert.Equal(GameRules.StartingBalance + 40, game.P(0).Balance);
-            Assert.Equal(GameRules.StartingBalance - 20, game.P(1).Balance);
-            Assert.Equal(GameRules.StartingBalance - 20, game.P(2).Balance);
+            Assert.Equal(GameRules.StartingBalance + 40_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance - 20_000, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance - 20_000, game.P(2).Balance);
         }
 
         [Fact]
@@ -58,8 +58,8 @@ namespace Monopoly.Tests
 
             game.Do(new RollDice(0));
 
-            Assert.Equal(GameRules.StartingBalance - 50, game.P(0).Balance);
-            Assert.Equal(GameRules.StartingBalance + 25, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance - 50_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 25_000, game.P(1).Balance);
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace Monopoly.Tests
 
             game.Do(new RollDice(0));
 
-            Assert.Equal(GameRules.StartingBalance - (4 * 25 + 100), game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance - (4 * 25_000 + 100_000), game.P(0).Balance);
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace Monopoly.Tests
             game.Do(new RollDice(0));
 
             Assert.Equal(0, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance + 200, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace Monopoly.Tests
             game.Do(new RollDice(0));
 
             Assert.Equal(NovaPoshta, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance + 200, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
             Assert.Equal(TurnPhase.BuyDecision, game.State.Phase);
         }
 
@@ -108,7 +108,7 @@ namespace Monopoly.Tests
             var result = game.Do(new RollDice(0));
 
             Assert.Equal(Ukrnafta, game.P(0).Position);
-            Assert.Contains(new RentPaid(0, 1, Ukrnafta, 50), result.Events);
+            Assert.Contains(new RentPaid(0, 1, Ukrnafta, 50_000), result.Events);
         }
 
         [Fact]
@@ -170,15 +170,15 @@ namespace Monopoly.Tests
     public class FuzzTests
     {
         [Theory]
-        [InlineData(1, 2, 1500)]
-        [InlineData(2, 3, 1500)]
-        [InlineData(3, 4, 1500)]
-        [InlineData(4, 5, 1500)]
-        [InlineData(5, 2, 150)]
-        [InlineData(6, 3, 150)]
-        [InlineData(7, 4, 150)]
-        [InlineData(8, 5, 150)]
-        [InlineData(9, 5, 150)]
+        [InlineData(1, 2, 1_500_000)]
+        [InlineData(2, 3, 1_500_000)]
+        [InlineData(3, 4, 1_500_000)]
+        [InlineData(4, 5, 1_500_000)]
+        [InlineData(5, 2, 150_000)]
+        [InlineData(6, 3, 150_000)]
+        [InlineData(7, 4, 150_000)]
+        [InlineData(8, 5, 150_000)]
+        [InlineData(9, 5, 150_000)]
         public void RandomGames_KeepInvariants(int seed, int players, int startingBalance)
         {
             var names = Enumerable.Range(1, players).Select(i => $"Бот {i}").ToArray();
@@ -198,7 +198,7 @@ namespace Monopoly.Tests
             {
                 var game = Game.Start(new[] { "А", "Б", "В" }, seed);
                 foreach (var player in game.State.Players)
-                    player.Balance = 150;
+                    player.Balance = 150_000;
                 Bots.Play(game, new Random(seed), maxActions: 4000);
                 if (game.State.Phase == TurnPhase.GameOver)
                     finished++;

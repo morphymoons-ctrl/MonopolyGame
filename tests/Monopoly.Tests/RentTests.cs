@@ -17,9 +17,9 @@ namespace Monopoly.Tests
 
             var result = game.Do(new RollDice(0));
 
-            Assert.Equal(14, RentPaidBy(game, result));
-            Assert.Equal(GameRules.StartingBalance - 14, game.P(0).Balance);
-            Assert.Equal(GameRules.StartingBalance + 14, game.P(1).Balance);
+            Assert.Equal(14_000, RentPaidBy(game, result));
+            Assert.Equal(GameRules.StartingBalance - 14_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 14_000, game.P(1).Balance);
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
         }
 
@@ -42,15 +42,15 @@ namespace Monopoly.Tests
             game.Give(1, Atb, Varus, Silpo);
             game.State.Board[Atb].IsMortgaged = true;
 
-            Assert.Equal(28, RentPaidBy(game, game.Do(new RollDice(0))));
+            Assert.Equal(28_000, RentPaidBy(game, game.Do(new RollDice(0))));
         }
 
         [Theory]
-        [InlineData(1, 70)]
-        [InlineData(2, 210)]
-        [InlineData(3, 560)]
-        [InlineData(4, 770)]
-        [InlineData(5, 980)]
+        [InlineData(1, 70_000)]
+        [InlineData(2, 210_000)]
+        [InlineData(3, 560_000)]
+        [InlineData(4, 770_000)]
+        [InlineData(5, 980_000)]
         public void Branches_MultiplyBaseRent(int level, int rent)
         {
             var game = Create(1, 2);
@@ -74,10 +74,10 @@ namespace Monopoly.Tests
         }
 
         [Theory]
-        [InlineData(new[] { Wog }, 25)]
-        [InlineData(new[] { Wog, Okko }, 50)]
-        [InlineData(new[] { Wog, Okko, Upg }, 100)]
-        [InlineData(new[] { Wog, Okko, Upg, Ukrnafta }, 200)]
+        [InlineData(new[] { Wog }, 25_000)]
+        [InlineData(new[] { Wog, Okko }, 50_000)]
+        [InlineData(new[] { Wog, Okko, Upg }, 100_000)]
+        [InlineData(new[] { Wog, Okko, Upg, Ukrnafta }, 200_000)]
         public void GasStations_DependOnCount(int[] owned, int rent)
         {
             var game = Create(1, 3);
@@ -87,8 +87,8 @@ namespace Monopoly.Tests
         }
 
         [Theory]
-        [InlineData(new[] { NovaPoshta }, 16)]
-        [InlineData(new[] { NovaPoshta, Ukrposhta }, 40)]
+        [InlineData(new[] { NovaPoshta }, 16_000)]
+        [InlineData(new[] { NovaPoshta, Ukrposhta }, 40_000)]
         public void Logistics_DiceTimesFourOrTen(int[] owned, int rent)
         {
             var game = Create(1, 3);

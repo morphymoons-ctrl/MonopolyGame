@@ -22,8 +22,8 @@ namespace Monopoly.Core
             if (auction.LeaderId == player.Id)
                 return "Ваша ставка й так найвища.";
             if (amount < auction.MinBid)
-                return $"Ставка має бути не менше {auction.MinBid} грн.";
-            return amount > player.Balance ? $"Не вистачає грошей: у вас {player.Balance} грн." : null;
+                return $"Ставка має бути не менше {GameRules.Money(auction.MinBid)}.";
+            return amount > player.Balance ? $"Не вистачає грошей: у вас {GameRules.Money(player.Balance)}." : null;
         }
 
         private string? ValidatePass(Player player)

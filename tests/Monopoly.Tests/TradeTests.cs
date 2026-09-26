@@ -21,15 +21,15 @@ namespace Monopoly.Tests
         public void Accept_ExchangesEverything()
         {
             var game = WithProperty();
-            game.Do(new ProposeTrade(0, 1, Terms(100, 0, Atb), Terms(0, 1, Arcelor)));
+            game.Do(new ProposeTrade(0, 1, Terms(100_000, 0, Atb), Terms(0, 1, Arcelor)));
             Assert.Equal(TurnPhase.TradeOffer, game.State.Phase);
 
             var result = game.Do(new AcceptTrade(1));
 
             Assert.Equal(1, game.State.Board[Atb].OwnerId);
             Assert.Equal(0, game.State.Board[Arcelor].OwnerId);
-            Assert.Equal(GameRules.StartingBalance - 100, game.P(0).Balance);
-            Assert.Equal(GameRules.StartingBalance + 100, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance - 100_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 100_000, game.P(1).Balance);
             Assert.Equal(1, game.P(0).JailCards);
             Assert.Equal(0, game.P(1).JailCards);
             Assert.Contains(result.Events, e => e is TradeAccepted);
@@ -52,7 +52,7 @@ namespace Monopoly.Tests
         public void WhilePending_GameWaits_OnlyTargetAnswers_ProposerCancels()
         {
             var game = WithProperty();
-            game.Do(new ProposeTrade(0, 1, Terms(cells: Atb), Terms(money: 50)));
+            game.Do(new ProposeTrade(0, 1, Terms(cells: Atb), Terms(money: 50_000)));
 
             Assert.Equal("Чекаємо відповіді від гравця Богдан на пропозицію обміну.", game.Error(new RollDice(0)));
             Assert.Equal("Відповісти на обмін може лише той, кому його запропонували.", game.Error(new AcceptTrade(0)));
@@ -67,7 +67,7 @@ namespace Monopoly.Tests
         {
             var game = WithProperty();
             game.State.Board[Atb].IsMortgaged = true;
-            game.Do(new ProposeTrade(0, 1, Terms(cells: Atb), Terms(money: 10)));
+            game.Do(new ProposeTrade(0, 1, Terms(cells: Atb), Terms(money: 10_000)));
 
             game.Do(new AcceptTrade(1));
 
@@ -84,13 +84,13 @@ namespace Monopoly.Tests
 
             Assert.Equal("Обмін порожній: додайте компанії, гроші або картки.",
                 game.Error(new ProposeTrade(0, 1, TradeTerms.Empty, TradeTerms.Empty)));
-            Assert.Equal("Оберіть, з ким мінятися.", game.Error(new ProposeTrade(0, 0, Terms(money: 10), TradeTerms.Empty)));
-            Assert.Equal("«АТБ» не можна обміняти: у групі є філії.",
+            Assert.Equal("Оберіть, з ким мінятися.", game.Error(new ProposeTrade(0, 0, Terms(money: 10_000), TradeTerms.Empty)));
+            Assert.Equal("«АКБ» не можна обміняти: у групі є філії.",
                 game.Error(new ProposeTrade(0, 1, Terms(cells: Atb), TradeTerms.Empty)));
-            Assert.Equal("«Азовсталь» у гравця Богдан немає.",
+            Assert.Equal("«Азовстіль» у гравця Богдан немає.",
                 game.Error(new ProposeTrade(0, 1, TradeTerms.Empty, Terms(cells: Azovstal))));
-            Assert.Equal("Стільки грошей у вас немає: 1500 грн.",
-                game.Error(new ProposeTrade(0, 1, Terms(money: 5000), TradeTerms.Empty)));
+            Assert.Equal($"Стільки грошей у вас немає: {M(1_500_000)}.",
+                game.Error(new ProposeTrade(0, 1, Terms(money: 5_000_000), TradeTerms.Empty)));
             Assert.Equal("Стільки карток «Вийти з пєтушатні» у вас немає.",
                 game.Error(new ProposeTrade(0, 1, Terms(jailCards: 1), TradeTerms.Empty)));
         }

@@ -3,7 +3,7 @@ using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
 {
-    // Долги и банкротство (RULES.md, §12). Аня (0) встаёт на «Сільпо» Богдана (1): аренда 14.
+    // Долги и банкротство (RULES.md, §12). Аня (0) встаёт на «Сілько» Богдана (1): аренда 14 000.
     public class DebtTests
     {
         private static Game RentDue(int players = 2)
@@ -17,21 +17,21 @@ namespace Monopoly.Tests
         public void NotEnoughCash_ButCanMortgage_BecomesDebt_PaidAutomatically()
         {
             var game = RentDue();
-            game.P(0).Balance = 10;
+            game.P(0).Balance = 10_000;
             game.Give(0, Atb);
 
             var roll = game.Do(new RollDice(0));
 
             Assert.Equal(TurnPhase.Debt, game.State.Phase);
-            Assert.Contains(new DebtIncurred(0, 1, 14), roll.Events);
+            Assert.Contains(new DebtIncurred(0, 1, 14_000), roll.Events);
             Assert.Equal("Спершу закрийте борг: продайте філії або закладіть компанії.", game.Error(new EndTurn(0)));
             Assert.Contains(new MortgageCompany(0, Atb), game.GetAvailableActions(0));
 
             var mortgage = game.Do(new MortgageCompany(0, Atb));
 
-            Assert.Contains(new DebtPaid(0, 1, 14), mortgage.Events);
-            Assert.Equal(10 + 50 - 14, game.P(0).Balance);
-            Assert.Equal(GameRules.StartingBalance + 14, game.P(1).Balance);
+            Assert.Contains(new DebtPaid(0, 1, 14_000), mortgage.Events);
+            Assert.Equal(10_000 + 50_000 - 14_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 14_000, game.P(1).Balance);
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
         }
 
@@ -39,13 +39,13 @@ namespace Monopoly.Tests
         public void CannotCover_BankruptToCreditor_AndGameOver()
         {
             var game = RentDue();
-            game.P(0).Balance = 5;
+            game.P(0).Balance = 5_000;
 
             var result = game.Do(new RollDice(0));
 
             Assert.True(game.P(0).IsBankrupt);
             Assert.Equal(0, game.P(0).Balance);
-            Assert.Equal(GameRules.StartingBalance + 5, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 5_000, game.P(1).Balance);
             Assert.Contains(new PlayerBankrupt(0, 1), result.Events);
             Assert.Contains(new GameOver(1), result.Events);
             Assert.Equal(TurnPhase.GameOver, game.State.Phase);
@@ -56,7 +56,7 @@ namespace Monopoly.Tests
         public void BankruptToPlayer_PropertyGoesToCreditor_TurnPasses()
         {
             var game = RentDue(players: 3);
-            game.P(0).Balance = 5;
+            game.P(0).Balance = 5_000;
             game.P(0).JailCards = 1;
             game.Give(0, Atb, Varus);
             game.State.Board[Atb].IsMortgaged = true;
@@ -74,7 +74,7 @@ namespace Monopoly.Tests
         [Fact]
         public void BankruptToBank_CompaniesReturnFree()
         {
-            // Аня: 20 → 24 «Шанс», «Подписка на стриминги» (−100). Наличных нет, собрать можно только 50 (залог «Масажки»).
+            // Аня: 20 → 24 «Шанс», «Подписка на стриминги» (−100 000). Наличных нет, собрать можно только 50 000 (залог «Масажки»).
             var game = CreateFor(3, 1, 3);
             game.P(0).Position = StripClub;
             game.P(0).Balance = 0;
@@ -98,10 +98,10 @@ namespace Monopoly.Tests
         [Fact]
         public void Bankruptcy_SellsBranchesForCreditor()
         {
-            // Долг Богдану больше, чем можно собрать; филиал Ани продаётся за 25, деньги уходят Богдану.
+            // Долг Богдану больше, чем можно собрать; филиал Ани продаётся за 25 000, деньги уходят Богдану.
             var game = RentDue(players: 3);
-            game.State.Board[Silpo].Level = 5; // аренда 980
-            game.P(0).Balance = 100;
+            game.State.Board[Silpo].Level = 5; // аренда 980 000
+            game.P(0).Balance = 100_000;
             game.Give(0, Tet, 10, 11);
             game.State.Board[Tet].Level = 1;
 
@@ -109,14 +109,14 @@ namespace Monopoly.Tests
 
             Assert.True(game.P(0).IsBankrupt);
             Assert.Equal(0, game.State.Board[Tet].Level);
-            Assert.Equal(GameRules.StartingBalance + 100 + 25, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 100_000 + 25_000, game.P(1).Balance);
         }
 
         [Fact]
         public void DeclareBankruptcy_Voluntarily()
         {
             var game = RentDue(players: 3);
-            game.P(0).Balance = 10;
+            game.P(0).Balance = 10_000;
             game.Give(0, Atb);
             game.Do(new RollDice(0));
 
@@ -138,7 +138,7 @@ namespace Monopoly.Tests
         [Fact]
         public void DebtOnSomeoneElsesTurn_Birthday()
         {
-            // Аня: 20 → 24 «Шанс», «День рождения». У Богдана нет наличных, но есть АТБ; Вика платит сразу.
+            // Аня: 20 → 24 «Шанс», «День рождения». У Богдана нет наличных, но есть АКБ; Вика платит сразу.
             var game = CreateFor(3, 1, 3);
             game.P(0).Position = StripClub;
             game.PutOnTop(ChanceCard.Birthday);
@@ -148,13 +148,13 @@ namespace Monopoly.Tests
             game.Do(new RollDice(0));
 
             Assert.Equal(TurnPhase.Debt, game.State.Phase);
-            Assert.Equal(GameRules.StartingBalance - 20, game.P(2).Balance);
+            Assert.Equal(GameRules.StartingBalance - 20_000, game.P(2).Balance);
             Assert.Equal("Чекаємо, поки Богдан закриє борг.", game.Error(new EndTurn(0)));
 
             game.Do(new MortgageCompany(1, Atb));
 
-            Assert.Equal(30, game.P(1).Balance);
-            Assert.Equal(GameRules.StartingBalance + 40, game.P(0).Balance);
+            Assert.Equal(30_000, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 40_000, game.P(0).Balance);
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
         }
 

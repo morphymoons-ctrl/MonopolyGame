@@ -216,7 +216,7 @@ namespace Monopoly.Core
                 DeclinePurchase => NothingToBuy(player) ?? RequireTurn(player, TurnPhase.BuyDecision),
                 EndTurn => RequireTurn(player, TurnPhase.Manage),
                 PayBail => ValidateJailExit(player)
-                    ?? (player.Balance < GameRules.BailAmount ? $"Не вистачає грошей на заставу: потрібно {GameRules.BailAmount} грн." : null),
+                    ?? (player.Balance < GameRules.BailAmount ? $"Не вистачає грошей на заставу: потрібно {GameRules.Money(GameRules.BailAmount)}." : null),
                 UseJailCard => ValidateJailExit(player)
                     ?? (player.JailCards == 0 ? "У вас немає картки «Вийти з пєтушатні»." : null),
                 PlayCasino casino => ValidateCasino(player, casino.Bet),
@@ -290,7 +290,7 @@ namespace Monopoly.Core
                 return error;
             var cell = State.CurrentCell;
             return player.Balance < cell.Price
-                ? $"Не вистачає грошей: «{cell.Name}» коштує {cell.Price} грн, у вас {player.Balance} грн."
+                ? $"Не вистачає грошей: «{cell.Name}» коштує {GameRules.Money(cell.Price)}, у вас {GameRules.Money(player.Balance)}."
                 : null;
         }
 
@@ -305,8 +305,8 @@ namespace Monopoly.Core
             if (!State.CasinoAvailable)
                 return "Грати в казино можна лише одразу після потрапляння на клітинку.";
             if (!GameRules.CasinoBets.Contains(bet))
-                return $"Ставка може бути {string.Join(", ", GameRules.CasinoBets)} грн.";
-            return bet > player.Balance ? $"Не вистачає грошей на ставку: у вас {player.Balance} грн." : null;
+                return $"Ставка може бути {string.Join(", ", GameRules.CasinoBets.Select(GameRules.Money))}.";
+            return bet > player.Balance ? $"Не вистачає грошей на ставку: у вас {GameRules.Money(player.Balance)}." : null;
         }
 
         // --- Ход ---

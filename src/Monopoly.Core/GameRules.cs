@@ -1,33 +1,40 @@
+using System.Globalization;
+
 namespace Monopoly.Core
 {
-    // Числа из docs/RULES.md.
+    // Числа из docs/RULES.md. Все суммы — в гривнах, в масштабе ×1000 (стартовый баланс 1 500 000).
     public static class GameRules
     {
         public const int MinPlayers = 2;
         public const int MaxPlayers = 5;
-        public const int StartingBalance = 1500;
+        public const int StartingBalance = 1_500_000;
 
-        public const int StartBonus = 200;
+        public const int StartBonus = 200_000;
         public const int DoublesToJail = 3;
 
         public const int JailCell = 8;
-        public const int BailAmount = 50;
+        public const int BailAmount = 50_000;
         public const int MaxJailAttempts = 3;
 
         public const int HeadOfficeLevel = 5;
 
-        public const int AuctionStep = 10;
+        public const int AuctionStep = 10_000;
 
-        public static readonly IReadOnlyList<int> CasinoBets = new[] { 50, 100, 200, 300 };
+        public static readonly IReadOnlyList<int> CasinoBets = new[] { 50_000, 100_000, 200_000, 300_000 };
 
         // Множитель базовой аренды по уровню: 0 — без филиалов, 1–4 — филиалы, 5 — головной офис.
         public static readonly IReadOnlyList<int> LevelMultipliers = new[] { 1, 5, 15, 40, 55, 70 };
         // Монополия без филиалов — ×2.
         public const int MonopolyMultiplier = 2;
-        // Логистика: кубики ×4 за одну компанию, ×10 за обе.
-        public const int LogisticsSingle = 4, LogisticsBoth = 10;
+        // Логистика: сумма кубиков ×4 000 за одну компанию, ×10 000 за обе.
+        public const int LogisticsSingle = 4_000, LogisticsBoth = 10_000;
         // Аренда АЗС по числу станций у владельца (0–4).
-        public static readonly IReadOnlyList<int> GasStationRent = new[] { 0, 25, 50, 100, 200 };
+        public static readonly IReadOnlyList<int> GasStationRent = new[] { 0, 25_000, 50_000, 100_000, 200_000 };
+
+        private static readonly CultureInfo Ukrainian = CultureInfo.GetCultureInfo("uk-UA");
+
+        // Сумма для текста игроку: «1 500 000 грн». Между тысячами — неразрывный пробел, число не разрывается переносом.
+        public static string Money(int amount) => $"{amount.ToString("N0", Ukrainian)} грн";
 
         // Базовая аренда — 10% цены.
         public static int BaseRent(BoardCell cell) => cell.Price / 10;

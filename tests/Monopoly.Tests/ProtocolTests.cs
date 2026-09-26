@@ -103,7 +103,7 @@ namespace Monopoly.Tests
             var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(1, 2), TestGame.Fixed);
             var result = game.Execute(new RollDice(0));
             game.Execute(new DeclinePurchase(0));
-            game.Execute(new PlaceBid(1, 10));
+            game.Execute(new PlaceBid(1, 10_000));
             var update = new GameUpdate(result.Events, game.State.ToSnapshot(), game.GetAvailableActions(0));
 
             var copy = RoundTrip(update);
@@ -115,7 +115,7 @@ namespace Monopoly.Tests
             Assert.Equal(TurnPhase.Auction, copy.Snapshot.Phase);
             Assert.Equal(new DiceRoll(1, 2), copy.Snapshot.LastRoll);
             Assert.Equal(1, copy.Snapshot.Auction!.LeaderId);
-            Assert.Equal(20, copy.Snapshot.Auction.MinBid);
+            Assert.Equal(20_000, copy.Snapshot.Auction.MinBid);
         }
 
         [Theory]

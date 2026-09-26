@@ -230,7 +230,7 @@ namespace Monopoly.App
                     : ("Дубль! Кидайте ще раз", "", null);
             }
             return s.CasinoAvailable
-                ? ("Казино", "Ставка 50–300 грн: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3. Можна не грати — просто завершіть хід.", PlayerPalette.Make("#E0569B"))
+                ? ("Казино", $"Ставка {EventText.CasinoRange}: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3. Можна не грати — просто завершіть хід.", PlayerPalette.Make("#E0569B"))
                 : ("Ваш хід", "Можна будувати філії, закладати компанії та пропонувати обмін. Потім завершіть хід.", null);
         }
 
@@ -250,7 +250,7 @@ namespace Monopoly.App
             {
                 int balance = s.FindPlayer(MyId)?.Balance ?? 0;
                 int baseBid = auction.LeaderId is null ? 0 : auction.HighBid;
-                var amounts = new[] { minBid.Amount, baseBid + 50, baseBid + 100 }
+                var amounts = new[] { minBid.Amount, baseBid + GameRules.AuctionStep * 5, baseBid + GameRules.AuctionStep * 10 }
                     .Where(a => a >= minBid.Amount && a <= balance)
                     .Distinct();
                 bool first = true;
@@ -432,7 +432,7 @@ namespace Monopoly.App
         {
             CellType.Start => $"Прохід або потрапляння — +{GameManager.Format(GameRules.StartBonus)}.",
             CellType.Jail => $"Тут просто в гостях. До пєтушатні потрапляють за карткою «Шансу» або за три дублі поспіль. Застава — {GameManager.Format(GameRules.BailAmount)}.",
-            CellType.Casino => "Ставка 50–300 грн одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
+            CellType.Casino => $"Ставка {EventText.CasinoRange} одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
             CellType.Rest => "Пропуск наступного ходу.",
             CellType.Chance => "Картка з колоди «Шансу»: гроші, переміщення, пєтушатня або вихід з неї.",
             _ => "",

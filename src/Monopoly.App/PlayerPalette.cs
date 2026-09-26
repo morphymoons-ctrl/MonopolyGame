@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Windows.Media;
 using Monopoly.Core;
 using Monopoly.Net;
@@ -19,6 +21,19 @@ namespace Monopoly.App
         public static readonly string[] Names = { "Червоний", "Синій", "Зелений", "Помаранчевий", "Фіолетовий" };
 
         public static Brush Get(int colorIndex) => Brushes[colorIndex % Lobby.ColorCount];
+
+        // Те же цвета, осветлённые на треть, — для текста на тёмном фоне (имена в журнале).
+        private static readonly Brush[] LightBrushes = Brushes.Select(b => Lighten(((SolidColorBrush)b).Color, 0.35)).ToArray();
+
+        public static Brush GetLight(int colorIndex) => LightBrushes[colorIndex % Lobby.ColorCount];
+
+        private static Brush Lighten(Color color, double amount)
+        {
+            byte Mix(byte channel) => (byte)(channel + (255 - channel) * amount);
+            var brush = new SolidColorBrush(Color.FromRgb(Mix(color.R), Mix(color.G), Mix(color.B)));
+            brush.Freeze();
+            return brush;
+        }
 
         internal static SolidColorBrush Make(string hex)
         {
@@ -56,7 +71,7 @@ namespace Monopoly.App
             _ => Special,
         };
 
-        // Значок особых клеток (шрифт Segoe UI Symbol).
+        // Значок клетки: у особых — в центре, у компаний — в полосе группы.
         public static string? Icon(CellType type) => type switch
         {
             CellType.Start => "➜",
@@ -66,7 +81,32 @@ namespace Monopoly.App
             CellType.Chance => "?",
             CellType.GasStation => "⛽",
             CellType.Logistics => "✉",
+            CellType.Supermarket => "🛒",
+            CellType.Factory => "🏭",
+            CellType.TV => "📺",
+            CellType.Food => "🍴",
+            CellType.Nightlife => "🍸",
+            CellType.Bank => "🏦",
+            CellType.NetworkShop => "📱",
             _ => null,
         };
+
+        // Шрифт значков: Segoe UI Symbol, а чего в нём нет (тележка) — из Segoe UI Emoji. WPF рисует их одним цветом.
+        public const string IconFont = "Segoe UI Symbol, Segoe UI Emoji";
+
+        // Значок в полосе — белый; на светлой жёлтой полосе банков — тёмный, иначе не видно.
+        private static readonly Brush DarkIcon = PlayerPalette.Make("#1A2233");
+
+        public static Brush IconColor(CellType type) => type == CellType.Bank ? DarkIcon : System.Windows.Media.Brushes.White;
+    }
+
+    // Шрифты, которые задаются в коде.
+    public static class GameFonts
+    {
+        // Суммы — цены на клетках и балансы игроков: Arial, обычное начертание. Есть в любой Windows, кириллица есть.
+        public static readonly FontFamily Money = new("Arial");
+
+        // Значки клеток.
+        public static readonly FontFamily Icons = new(GroupPalette.IconFont);
     }
 }
