@@ -32,11 +32,6 @@ namespace MonopolyGame
             Brushes.Purple
         };
 
-        private bool isResting = false;
-        private bool isInJail = false;
-        private int jailTurnsLeft = 0;
-        private int jailPlayerIndex = -1;
-
         public GameManager(ListBox log, Canvas canvas)
         {
             actionLog = log;
@@ -410,7 +405,7 @@ namespace MonopolyGame
     // Простое окно для ввода числа (ставки)
     public class InputBox : Window
     {
-        public string InputText { get; private set; }
+        public string InputText { get; private set; } = "";
         private TextBox inputBox;
         private bool result = false;
 

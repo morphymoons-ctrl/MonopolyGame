@@ -7,6 +7,7 @@
         public int Position { get; set; } = 0;
         public bool IsInJail { get; set; } = false;
         public int JailTurns { get; set; } = 0;
+        public bool IsResting { get; set; } = false;
 
         public Player(string name)
         {
