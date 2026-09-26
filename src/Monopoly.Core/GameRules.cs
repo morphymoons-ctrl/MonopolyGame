@@ -4,7 +4,7 @@ namespace Monopoly.Core
     public static class GameRules
     {
         public const int MinPlayers = 2;
-        public const int MaxPlayers = 4;
+        public const int MaxPlayers = 5;
         public const int StartingBalance = 1500;
 
         // Базовая аренда — 10% цены (§5). Монополии, филиалы, АЗС и логистика — этап 3.

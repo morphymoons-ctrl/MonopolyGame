@@ -6,7 +6,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Хост — ASP.NET Core + SignalR внутри приложения. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Monopoly.Core\Monopoly.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Monopoly.Tests" />
   </ItemGroup>
 
 </Project>

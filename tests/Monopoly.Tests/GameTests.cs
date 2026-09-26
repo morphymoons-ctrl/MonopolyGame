@@ -21,11 +21,23 @@ namespace Monopoly.Tests
 
         [Theory]
         [InlineData(1)]
-        [InlineData(5)]
+        [InlineData(6)]
         public void Constructor_RejectsWrongPlayerCount(int count)
         {
             var names = Enumerable.Range(1, count).Select(i => $"Игрок {i}").ToArray();
             Assert.Throws<ArgumentException>(() => new Game(names, new ScriptedRandom(), shuffleTurnOrder: false));
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        public void Constructor_AcceptsTwoToFivePlayers(int count)
+        {
+            var names = Enumerable.Range(1, count).Select(i => $"Игрок {i}").ToArray();
+
+            var game = new Game(names, new ScriptedRandom(), shuffleTurnOrder: false);
+
+            Assert.Equal(count, game.State.Players.Count);
         }
 
         [Fact]
@@ -173,6 +185,38 @@ namespace Monopoly.Tests
             Assert.False(game.CanExecute(new RollDice(1)));
             Assert.False(game.CanExecute(new EndTurn(0)));
             Assert.False(game.CanExecute(new BuyProperty(0)));
+        }
+
+        [Fact]
+        public void AvailableActions_FollowPhases()
+        {
+            var game = CreateGame(1, 2);
+
+            Assert.Equal(new GameAction[] { new RollDice(0) }, game.GetAvailableActions(0));
+            Assert.Empty(game.GetAvailableActions(1));
+
+            game.Execute(new RollDice(0));
+            Assert.Equal(new GameAction[] { new BuyProperty(0), new DeclinePurchase(0) }, game.GetAvailableActions(0));
+
+            game.Execute(new BuyProperty(0));
+            Assert.Equal(new GameAction[] { new EndTurn(0) }, game.GetAvailableActions(0));
+        }
+
+        [Fact]
+        public void Snapshot_ReflectsState()
+        {
+            var game = CreateGame(1, 2);
+            game.Execute(new RollDice(0));
+            game.Execute(new BuyProperty(0));
+
+            var snapshot = game.State.ToSnapshot();
+
+            Assert.Equal(0, snapshot.CurrentPlayerId);
+            Assert.Equal(TurnPhase.Manage, snapshot.Phase);
+            Assert.Equal(new DiceRoll(1, 2), snapshot.LastRoll);
+            Assert.Equal(0, snapshot.Owners[Silpo]);
+            Assert.Equal(Board.CellCount, snapshot.Owners.Count);
+            Assert.Equal(new PlayerSnapshot(0, "Аня", GameRules.StartingBalance - 140, Silpo, false, false), snapshot.FindPlayer(0));
         }
 
         // --- Покупка ---

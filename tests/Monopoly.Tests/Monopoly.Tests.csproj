@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Monopoly.Core\Monopoly.Core.csproj" />
+    <ProjectReference Include="..\..\src\Monopoly.Net\Monopoly.Net.csproj" />
   </ItemGroup>
 
 </Project>

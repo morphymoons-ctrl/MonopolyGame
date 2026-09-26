@@ -38,6 +38,19 @@ namespace Monopoly.Core
 
         public bool CanExecute(GameAction action) => Validate(action) is null;
 
+        // Что игрок может сделать прямо сейчас. По этому списку интерфейс включает кнопки.
+        public IReadOnlyList<GameAction> GetAvailableActions(int playerId)
+        {
+            var candidates = new GameAction[]
+            {
+                new RollDice(playerId),
+                new BuyProperty(playerId),
+                new DeclinePurchase(playerId),
+                new EndTurn(playerId),
+            };
+            return candidates.Where(CanExecute).ToList();
+        }
+
         public ActionResult Execute(GameAction action)
         {
             ArgumentNullException.ThrowIfNull(action);

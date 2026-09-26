@@ -38,5 +38,12 @@ namespace Monopoly.Core
         }
 
         public Player? FindPlayer(int id) => Players.FirstOrDefault(p => p.Id == id);
+
+        public GameSnapshot ToSnapshot() => new(
+            Players.Select(p => new PlayerSnapshot(p.Id, p.Name, p.Balance, p.Position, p.IsInJail, p.IsResting)).ToList(),
+            Board.Select(c => c.OwnerId).ToList(),
+            CurrentPlayer.Id,
+            Phase,
+            LastRoll);
     }
 }

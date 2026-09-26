@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Monopoly.Core;
 
@@ -6,10 +7,12 @@ namespace Monopoly.App
     // Текст событий движка для журнала.
     public static class EventText
     {
-        public static string Describe(GameEvent e, GameState state)
+        private static readonly IReadOnlyList<BoardCell> Cells = Board.CreateDefault();
+
+        public static string Describe(GameEvent e, GameSnapshot snapshot)
         {
-            string Name(int id) => state.FindPlayer(id)?.Name ?? $"Игрок #{id}";
-            string Cell(int index) => state.Board[index].Name;
+            string Name(int id) => snapshot.FindPlayer(id)?.Name ?? $"Игрок #{id}";
+            string Cell(int index) => Cells[index].Name;
 
             return e switch
             {

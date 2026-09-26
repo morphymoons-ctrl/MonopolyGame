@@ -5,13 +5,15 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows;
 using Monopoly.Core;
+using Monopoly.Net;
 
 namespace Monopoly.App
 {
-    // Показывает состояние движка и передаёт ему действия. Правил здесь нет — они в Monopoly.Core.
+    // Рисует поле, игроков и журнал по снимку состояния от хоста. Правил здесь нет — они в Monopoly.Core.
     public class GameManager
     {
-        private readonly Game game;
+        private readonly IReadOnlyList<BoardCell> board = Board.CreateDefault();
+        private readonly GameStartInfo startInfo;
         private readonly ListBox actionLog;
         private readonly Canvas boardCanvas;
         private readonly StackPanel playersPanel;
@@ -21,39 +23,31 @@ namespace Monopoly.App
         private const int bottomCount = 8;
         private const int leftCount = 6;
 
-        private readonly Brush[] playerColors = new Brush[]
-        {
-            Brushes.Red,
-            Brushes.Blue,
-            Brushes.Green,
-            Brushes.Orange,
-            Brushes.Purple
-        };
+        // Последнее состояние от хоста; null — ещё не пришло.
+        public GameSnapshot? Snapshot { get; private set; }
 
-        public GameManager(ListBox log, Canvas canvas, StackPanel players)
+        public GameManager(ListBox log, Canvas canvas, StackPanel players, GameStartInfo info)
         {
             actionLog = log;
             boardCanvas = canvas;
             playersPanel = players;
-            // Пока все игроки за одним компьютером; лобби и сеть — этап 2.
-            game = Game.Start(new[] { "Игрок 1", "Игрок 2" });
-            foreach (var e in game.History)
-            {
-                AddLog(EventText.Describe(e, State));
-            }
+            startInfo = info;
         }
 
-        private GameState State => game.State;
-        private int CurrentId => State.CurrentPlayer.Id;
+        public int MyPlayerId => startInfo.MyPlayerId;
 
-        public bool CanRollDice => game.CanExecute(new RollDice(CurrentId));
-        public bool CanBuy => game.CanExecute(new BuyProperty(CurrentId));
-        public bool CanDecline => game.CanExecute(new DeclinePurchase(CurrentId));
-        public bool CanEndTurn => game.CanExecute(new EndTurn(CurrentId));
+        public void Apply(GameUpdate update)
+        {
+            Snapshot = update.Snapshot;
+            foreach (var e in update.Events)
+            {
+                AddLog(EventText.Describe(e, update.Snapshot));
+            }
+            DrawBoard();
+        }
 
         public void DrawBoard()
         {
-            var board = State.Board;
             boardCanvas.Children.Clear();
             double canvasWidth = boardCanvas.ActualWidth > 0 ? boardCanvas.ActualWidth : boardCanvas.Width;
             double canvasHeight = boardCanvas.ActualHeight > 0 ? boardCanvas.ActualHeight : boardCanvas.Height;
@@ -87,7 +81,7 @@ namespace Monopoly.App
                 }
 
                 Brush cellFill = Brushes.White;
-                if (board[i].OwnerId is int owner)
+                if (Snapshot?.Owners[i] is int owner)
                 {
                     cellFill = PlayerColor(owner);
                 }
@@ -121,14 +115,18 @@ namespace Monopoly.App
 
         private void DrawPlayers()
         {
+            if (Snapshot is null)
+            {
+                return;
+            }
             double canvasWidth = boardCanvas.ActualWidth > 0 ? boardCanvas.ActualWidth : boardCanvas.Width;
             double canvasHeight = boardCanvas.ActualHeight > 0 ? boardCanvas.ActualHeight : boardCanvas.Height;
             double sizeX = canvasWidth / (topCount);
             double sizeY = canvasHeight / (topCount);
             double size = Math.Min(sizeX, sizeY);
 
-            int total = State.Board.Count;
-            foreach (var player in State.Players)
+            int total = board.Count;
+            foreach (var player in Snapshot.Players)
             {
                 int pos = player.Position % total;
                 double x = 0, y = 0;
@@ -157,7 +155,8 @@ namespace Monopoly.App
                 {
                     Width = size * 0.3,
                     Height = size * 0.3,
-                    Fill = PlayerColor(player.Id)
+                    Fill = PlayerColor(player.Id),
+                    Stroke = Brushes.Black
                 };
                 Canvas.SetLeft(ellipse, x);
                 Canvas.SetTop(ellipse, y);
@@ -165,16 +164,21 @@ namespace Monopoly.App
             }
         }
 
-        // Список игроков с балансом; текущий — жирным.
+        // Список игроков с балансом; тот, чей ход, — жирным.
         private void DrawPlayersPanel()
         {
             playersPanel.Children.Clear();
-            foreach (var player in State.Players)
+            if (Snapshot is null)
             {
-                bool isCurrent = player == State.CurrentPlayer;
+                return;
+            }
+            foreach (var player in Snapshot.Players)
+            {
+                bool isCurrent = player.Id == Snapshot.CurrentPlayerId;
+                string me = player.Id == MyPlayerId ? " (вы)" : "";
                 playersPanel.Children.Add(new TextBlock
                 {
-                    Text = $"{(isCurrent ? "▶ " : "")}{player.Name} — {player.Balance} грн",
+                    Text = $"{(isCurrent ? "▶ " : "")}{player.Name}{me} — {player.Balance} грн",
                     Foreground = PlayerColor(player.Id),
                     FontSize = 28,
                     FontWeight = isCurrent ? FontWeights.Bold : FontWeights.Normal
@@ -182,36 +186,13 @@ namespace Monopoly.App
             }
         }
 
-        private Brush PlayerColor(int playerId) => playerColors[playerId % playerColors.Length];
+        private Brush PlayerColor(int playerId) =>
+            PlayerPalette.Get(startInfo.ColorByPlayerId.TryGetValue(playerId, out int color) ? color : playerId);
 
-        public void RollDice() => Execute(new RollDice(CurrentId));
-
-        public void Buy() => Execute(new BuyProperty(CurrentId));
-
-        public void DeclineBuy() => Execute(new DeclinePurchase(CurrentId));
-
-        public void EndTurn() => Execute(new EndTurn(CurrentId));
-
-        // Пока игра на одном ПК, действует всегда тот, чей ход.
-        private void Execute(GameAction action)
-        {
-            var result = game.Execute(action);
-            if (!result.Success)
-            {
-                AddLog(result.Error!);
-                return;
-            }
-            foreach (var e in result.Events)
-            {
-                AddLog(EventText.Describe(e, State));
-            }
-            DrawBoard();
-        }
-
-        private void AddLog(string text)
+        public void AddLog(string text)
         {
             // Отдельный элемент, чтобы прокрутка шла к нему, а не к первой такой же строке.
-            var item = new ListBoxItem { Content = text };
+            var item = new ListBoxItem { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap } };
             actionLog.Items.Add(item);
             actionLog.ScrollIntoView(item);
         }
