@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- WPF client: board, dialogs, lobby. Game logic lives in Monopoly.Core. -->
+  <!-- WPF-клиент: поле, окна, лобби. Логика игры — в Monopoly.Core. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>

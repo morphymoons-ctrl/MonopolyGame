@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Game rules and state. No UI and no networking here. -->
+  <!-- Правила и состояние игры. Без интерфейса и без сети. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>

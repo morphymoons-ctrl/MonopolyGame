@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Host/client networking (stage 2): the host runs Monopoly.Core, clients send actions and receive events. -->
+  <!-- Сеть (этап 2): хост выполняет правила из Monopoly.Core, клиенты отправляют действия и получают события. -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>

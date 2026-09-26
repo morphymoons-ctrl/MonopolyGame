@@ -2,7 +2,7 @@ namespace Monopoly.Core
 {
     public static class Board
     {
-        // 32 cells around a 9x9 grid, clockwise from Start. Corners: 0, 8, 16, 24.
+        // 32 клетки по краю сетки 9x9, по часовой стрелке от «Старта». Углы: 0, 8, 16, 24.
         public const int CellCount = 32;
         public const int SideLength = 9;
 

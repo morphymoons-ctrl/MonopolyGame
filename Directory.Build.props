@@ -1,11 +1,11 @@
 <Project>
 
-  <!-- Shared settings for every project in the solution. -->
+  <!-- Общие настройки для всех проектов решения. -->
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <!-- Game version; clients will compare it with the host's on connect. -->
+    <!-- Версия игры; при подключении клиент сверяет её с версией хоста. -->
     <Version>0.1.0</Version>
   </PropertyGroup>
 
