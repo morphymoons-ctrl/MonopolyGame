@@ -5,4 +5,9 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Тесты подготавливают состояние (баланс, владельцев) через internal-сеттеры. -->
+    <InternalsVisibleTo Include="Monopoly.Tests" />
+  </ItemGroup>
+
 </Project>

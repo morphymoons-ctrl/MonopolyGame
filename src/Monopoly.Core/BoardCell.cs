@@ -10,7 +10,8 @@
         public string Name { get; }
         public CellType Type { get; }
         public int Price { get; }
-        public int OwnerId { get; set; } = -1;
+        // Id владельца; null — компания у банка.
+        public int? OwnerId { get; internal set; }
 
         public BoardCell(string name, CellType type, int price = 0)
         {

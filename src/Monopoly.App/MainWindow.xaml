@@ -10,12 +10,15 @@
         <Grid Width="1920" Height="1080">
             <Canvas Name="GameBoardCanvas" Width="1400" Height="1000" Margin="10"/>
             <ListBox Name="ActionLog" Width="450" Height="1000" Margin="1420,10,10,10" HorizontalAlignment="Right" FontSize="24"/>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="10,0,10,20">
-                <Button Content="Бросить кубики" Width="180" Height="60" Margin="10" FontSize="24" Click="RollDice_Click"/>
-                <Button Content="Купить" Width="180" Height="60" Margin="10" FontSize="24" Click="Buy_Click"/>
-                <Button Content="Передать ход" Width="180" Height="60" Margin="10" FontSize="24" Click="EndTurn_Click"/>
-                <Button Content="Заплатить залог" Width="180" Height="60" Margin="10" FontSize="24" Click="PayBail_Click"/>
-                <Button Content="Казино" Width="180" Height="60" Margin="10" FontSize="24" Click="Casino_Click"/>
+            <!-- Середина поля: игроки и кнопки хода. -->
+            <StackPanel Width="740" Margin="150,150,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <StackPanel Name="PlayersPanel" Margin="10"/>
+                <WrapPanel Margin="0,20,0,0">
+                    <Button Name="RollDiceButton" Content="Бросить кубики" Width="220" Height="60" Margin="10" FontSize="24" Click="RollDice_Click"/>
+                    <Button Name="BuyButton" Content="Купить" Width="220" Height="60" Margin="10" FontSize="24" Click="Buy_Click"/>
+                    <Button Name="DeclineButton" Content="Не покупать" Width="220" Height="60" Margin="10" FontSize="24" Click="Decline_Click"/>
+                    <Button Name="EndTurnButton" Content="Завершить ход" Width="220" Height="60" Margin="10" FontSize="24" Click="EndTurn_Click"/>
+                </WrapPanel>
             </StackPanel>
         </Grid>
     </Viewbox>

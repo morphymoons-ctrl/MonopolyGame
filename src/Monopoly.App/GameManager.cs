@@ -1,28 +1,25 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows;
-using System.Windows.Input;
 using Monopoly.Core;
 
 namespace Monopoly.App
 {
+    // Показывает состояние движка и передаёт ему действия. Правил здесь нет — они в Monopoly.Core.
     public class GameManager
     {
-        private List<Player> players = new();
-        private int currentPlayerIndex = 0;
-        private List<BoardCell> board = new();
-        private ListBox actionLog;
-        private Canvas boardCanvas;
+        private readonly Game game;
+        private readonly ListBox actionLog;
+        private readonly Canvas boardCanvas;
+        private readonly StackPanel playersPanel;
 
         private const int topCount = 9;
         private const int rightCount = 8;
         private const int bottomCount = 8;
         private const int leftCount = 6;
-
-        private BoardCell? lastLandedCell = null;
 
         private readonly Brush[] playerColors = new Brush[]
         {
@@ -33,27 +30,30 @@ namespace Monopoly.App
             Brushes.Purple
         };
 
-        public GameManager(ListBox log, Canvas canvas)
+        public GameManager(ListBox log, Canvas canvas, StackPanel players)
         {
             actionLog = log;
             boardCanvas = canvas;
-            InitPlayers();
-            InitBoard();
+            playersPanel = players;
+            // Пока все игроки за одним компьютером; лобби и сеть — этап 2.
+            game = Game.Start(new[] { "Игрок 1", "Игрок 2" });
+            foreach (var e in game.History)
+            {
+                AddLog(EventText.Describe(e, State));
+            }
         }
 
-        private void InitPlayers()
-        {
-            players.Clear();
-            players.Add(new Player("Игрок 1"));
-        }
+        private GameState State => game.State;
+        private int CurrentId => State.CurrentPlayer.Id;
 
-        private void InitBoard()
-        {
-            board = Board.CreateDefault();
-        }
+        public bool CanRollDice => game.CanExecute(new RollDice(CurrentId));
+        public bool CanBuy => game.CanExecute(new BuyProperty(CurrentId));
+        public bool CanDecline => game.CanExecute(new DeclinePurchase(CurrentId));
+        public bool CanEndTurn => game.CanExecute(new EndTurn(CurrentId));
 
         public void DrawBoard()
         {
+            var board = State.Board;
             boardCanvas.Children.Clear();
             double canvasWidth = boardCanvas.ActualWidth > 0 ? boardCanvas.ActualWidth : boardCanvas.Width;
             double canvasHeight = boardCanvas.ActualHeight > 0 ? boardCanvas.ActualHeight : boardCanvas.Height;
@@ -87,9 +87,9 @@ namespace Monopoly.App
                 }
 
                 Brush cellFill = Brushes.White;
-                if (board[i].OwnerId != -1 && board[i].OwnerId < playerColors.Length)
+                if (board[i].OwnerId is int owner)
                 {
-                    cellFill = playerColors[board[i].OwnerId];
+                    cellFill = PlayerColor(owner);
                 }
                 Rectangle rect = new Rectangle
                 {
@@ -116,6 +116,7 @@ namespace Monopoly.App
                 boardCanvas.Children.Add(tb);
             }
             DrawPlayers();
+            DrawPlayersPanel();
         }
 
         private void DrawPlayers()
@@ -126,10 +127,9 @@ namespace Monopoly.App
             double sizeY = canvasHeight / (topCount);
             double size = Math.Min(sizeX, sizeY);
 
-            int total = board.Count;
-            for (int i = 0; i < players.Count; i++)
+            int total = State.Board.Count;
+            foreach (var player in State.Players)
             {
-                var player = players[i];
                 int pos = player.Position % total;
                 double x = 0, y = 0;
                 if (pos < topCount)
@@ -157,7 +157,7 @@ namespace Monopoly.App
                 {
                     Width = size * 0.3,
                     Height = size * 0.3,
-                    Fill = playerColors[i % playerColors.Length]
+                    Fill = PlayerColor(player.Id)
                 };
                 Canvas.SetLeft(ellipse, x);
                 Canvas.SetTop(ellipse, y);
@@ -165,196 +165,55 @@ namespace Monopoly.App
             }
         }
 
-        public void RollDice()
+        // Список игроков с балансом; текущий — жирным.
+        private void DrawPlayersPanel()
         {
-            var player = players[currentPlayerIndex];
-
-            // Проверка на тюрьму
-            if (player.IsInJail)
+            playersPanel.Children.Clear();
+            foreach (var player in State.Players)
             {
-                var rand = new Random();
-                int dice1 = rand.Next(1, 7);
-                int dice2 = rand.Next(1, 7);
-                actionLog.Items.Add($"{player.Name} в тюрьме. Бросает кубики для выхода: {dice1} и {dice2}");
-
-                if (dice1 == dice2)
+                bool isCurrent = player == State.CurrentPlayer;
+                playersPanel.Children.Add(new TextBlock
                 {
-                    player.IsInJail = false;
-                    player.JailTurns = 0;
-                    actionLog.Items.Add($"{player.Name} выбил дубль и выходит из тюрьмы!");
-                }
-                else
-                {
-                    player.JailTurns++;
-                    if (player.JailTurns >= 3)
-                    {
-                        player.IsInJail = false;
-                        player.JailTurns = 0;
-                        player.Balance -= 200;
-                        actionLog.Items.Add($"{player.Name} отсидел 3 хода и заплатил 200 грн за выход.");
-                    }
-                    else
-                    {
-                        actionLog.Items.Add($"{player.Name} не выбил дубль. Осталось попыток: {3 - player.JailTurns}");
-                        DrawBoard();
-                        return;
-                    }
-                }
+                    Text = $"{(isCurrent ? "▶ " : "")}{player.Name} — {player.Balance} грн",
+                    Foreground = PlayerColor(player.Id),
+                    FontSize = 28,
+                    FontWeight = isCurrent ? FontWeights.Bold : FontWeights.Normal
+                });
             }
+        }
 
-            // Проверка на отдых
-            if (player.IsResting)
+        private Brush PlayerColor(int playerId) => playerColors[playerId % playerColors.Length];
+
+        public void RollDice() => Execute(new RollDice(CurrentId));
+
+        public void Buy() => Execute(new BuyProperty(CurrentId));
+
+        public void DeclineBuy() => Execute(new DeclinePurchase(CurrentId));
+
+        public void EndTurn() => Execute(new EndTurn(CurrentId));
+
+        // Пока игра на одном ПК, действует всегда тот, чей ход.
+        private void Execute(GameAction action)
+        {
+            var result = game.Execute(action);
+            if (!result.Success)
             {
-                player.IsResting = false;
-                actionLog.Items.Add($"{player.Name} отдыхает и пропускает ход.");
-                DrawBoard();
+                AddLog(result.Error!);
                 return;
             }
-
-            var randMove = new Random();
-            int dice1m = randMove.Next(1, 7);
-            int dice2m = randMove.Next(1, 7);
-            int sum = dice1m + dice2m;
-
-            actionLog.Items.Add($"{player.Name} бросил кубики: {dice1m} и {dice2m} (сумма: {sum})");
-
-            player.Position = (player.Position + sum) % board.Count;
-            var cell = board[player.Position];
-            lastLandedCell = cell;
-            actionLog.Items.Add($"{player.Name} переместился на: {cell.Name}");
-
-            // Обработка специальных клеток
-            if (cell.Type == CellType.Rest)
+            foreach (var e in result.Events)
             {
-                player.IsResting = true;
-                actionLog.Items.Add($"{player.Name} попал на клетку отдыха и пропустит следующий ход.");
+                AddLog(EventText.Describe(e, State));
             }
-            else if (cell.Type == CellType.Jail)
-            {
-                player.IsInJail = true;
-                player.JailTurns = 0;
-                actionLog.Items.Add($"{player.Name} попал в тюрьму и пропустит до 3 ходов или пока не выбьет дубль.");
-            }
-            else if (cell.Type == CellType.Casino)
-            {
-                Casino();
-            }
-            else if (cell.IsPurchasable)
-            {
-                if (cell.OwnerId == -1)
-                {
-                    actionLog.Items.Add($"{cell.Name} свободна. Можно купить.");
-                }
-                else if (cell.OwnerId != currentPlayerIndex)
-                {
-                    int rent = cell.Price / 2;
-                    player.Balance -= rent;
-                    players[cell.OwnerId].Balance += rent;
-                    actionLog.Items.Add($"{player.Name} заплатил аренду {rent} грн игроку {players[cell.OwnerId].Name}.");
-                }
-                else
-                {
-                    actionLog.Items.Add($"{player.Name} попал на свою клетку.");
-                }
-            }
-
             DrawBoard();
         }
 
-        public void Buy()
+        private void AddLog(string text)
         {
-            var player = players[currentPlayerIndex];
-            if (lastLandedCell == null)
-            {
-                actionLog.Items.Add("Сначала бросьте кубики.");
-                return;
-            }
-
-            if (!lastLandedCell.IsPurchasable)
-            {
-                actionLog.Items.Add("Эту клетку нельзя купить.");
-                return;
-            }
-
-            if (lastLandedCell.OwnerId != -1)
-            {
-                actionLog.Items.Add("Клетка уже куплена.");
-                return;
-            }
-
-            if (player.Balance < lastLandedCell.Price)
-            {
-                actionLog.Items.Add("Недостаточно средств для покупки.");
-                return;
-            }
-
-            player.Balance -= lastLandedCell.Price;
-            lastLandedCell.OwnerId = currentPlayerIndex;
-            actionLog.Items.Add($"{player.Name} купил {lastLandedCell.Name} за {lastLandedCell.Price} грн.");
-            DrawBoard();
-        }
-
-        public void EndTurn()
-        {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
-            actionLog.Items.Add($"Ход передан: теперь ходит {players[currentPlayerIndex].Name}");
-        }
-
-        public void PayBail()
-        {
-            var player = players[currentPlayerIndex];
-            if (player.IsInJail && player.Balance >= 200)
-            {
-                player.Balance -= 200;
-                player.IsInJail = false;
-                player.JailTurns = 0;
-                actionLog.Items.Add($"{player.Name} заплатил 200 грн и вышел из тюрьмы.");
-                DrawBoard();
-            }
-            else
-            {
-                actionLog.Items.Add("Нельзя выйти из тюрьмы или недостаточно средств.");
-            }
-        }
-
-        public void Casino()
-        {
-            var player = players[currentPlayerIndex];
-            int bet = 0;
-
-            // Простое окно для ввода ставки
-            var input = new InputBox("Введите ставку для казино (грн):", "Казино");
-            if (input.ShowDialog() == true)
-            {
-                if (!int.TryParse(input.InputText, out bet) || bet <= 0 || bet > player.Balance)
-                {
-                    actionLog.Items.Add("Некорректная ставка или недостаточно средств.");
-                    return;
-                }
-            }
-            else
-            {
-                actionLog.Items.Add("Ставка отменена.");
-                return;
-            }
-
-            // Рулетка: 0x, 1x, 2x, 3x
-            var rand = new Random();
-            int[] multipliers = { 0, 1, 2, 3 };
-            int result = multipliers[rand.Next(multipliers.Length)];
-            int win = bet * result - bet;
-
-            player.Balance += win;
-            string resText = result switch
-            {
-                0 => $"Проигрыш! Потеряно {bet} грн.",
-                1 => $"Ничья! Ставка возвращена.",
-                2 => $"Выигрыш! Получено {bet} грн.",
-                3 => $"Джекпот! Получено {bet * 2} грн.",
-                _ => ""
-            };
-            actionLog.Items.Add($"{player.Name} сыграл в казино: {resText}");
-            DrawBoard();
+            // Отдельный элемент, чтобы прокрутка шла к нему, а не к первой такой же строке.
+            var item = new ListBoxItem { Content = text };
+            actionLog.Items.Add(item);
+            actionLog.ScrollIntoView(item);
         }
     }
 }

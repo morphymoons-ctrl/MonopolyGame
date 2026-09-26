@@ -47,7 +47,7 @@ namespace Monopoly.Tests
         [Fact]
         public void NewBoard_HasNoOwners()
         {
-            Assert.All(board, cell => Assert.Equal(-1, cell.OwnerId));
+            Assert.All(board, cell => Assert.Null(cell.OwnerId));
         }
     }
 }
