@@ -9,12 +9,41 @@ namespace Monopoly.Core
 
     public sealed record TurnStarted(int PlayerId) : GameEvent;
 
+    public sealed record TurnSkipped(int PlayerId) : GameEvent;
+
+    public sealed record GameOver(int WinnerId) : GameEvent;
+
+    // --- Движение ---
+
     public sealed record DiceRolled(int PlayerId, int Die1, int Die2) : GameEvent
     {
         public int Total => Die1 + Die2;
+        public bool IsDouble => Die1 == Die2;
     }
 
+    // Выпал дубль — игрок бросает ещё раз.
+    public sealed record RollAgain(int PlayerId) : GameEvent;
+
     public sealed record PlayerMoved(int PlayerId, int From, int To) : GameEvent;
+
+    public sealed record PassedStart(int PlayerId, int Amount) : GameEvent;
+
+    // Игрок попал на «Отдых» и пропустит следующий ход.
+    public sealed record RestStarted(int PlayerId) : GameEvent;
+
+    // --- Тюрьма ---
+
+    public enum JailReason { ThreeDoubles, Card }
+
+    public enum JailExit { Double, Bail, Card, ForcedBail }
+
+    public sealed record SentToJail(int PlayerId, JailReason Reason) : GameEvent;
+
+    public sealed record JailRollFailed(int PlayerId, int Attempt) : GameEvent;
+
+    public sealed record LeftJail(int PlayerId, JailExit How) : GameEvent;
+
+    // --- Покупка и аукцион ---
 
     public sealed record PurchaseOffered(int PlayerId, int CellIndex, int Price) : GameEvent;
 
@@ -22,10 +51,67 @@ namespace Monopoly.Core
 
     public sealed record PurchaseDeclined(int PlayerId, int CellIndex) : GameEvent;
 
+    public sealed record AuctionStarted(int CellIndex) : GameEvent;
+
+    public sealed record BidPlaced(int PlayerId, int Amount) : GameEvent;
+
+    public sealed record AuctionPassed(int PlayerId) : GameEvent;
+
+    public sealed record AuctionWon(int PlayerId, int CellIndex, int Amount) : GameEvent;
+
+    public sealed record AuctionUnsold(int CellIndex) : GameEvent;
+
+    // --- Деньги ---
+
     public sealed record RentPaid(int PayerId, int OwnerId, int CellIndex, int Amount) : GameEvent;
 
-    // Игрок попал на «Отдых» и пропустит следующий ход.
-    public sealed record RestStarted(int PlayerId) : GameEvent;
+    // На заложенной компании аренды нет.
+    public sealed record RentSkipped(int PlayerId, int CellIndex) : GameEvent;
 
-    public sealed record TurnSkipped(int PlayerId) : GameEvent;
+    public sealed record PaidToBank(int PlayerId, int Amount) : GameEvent;
+
+    public sealed record ReceivedFromBank(int PlayerId, int Amount) : GameEvent;
+
+    public sealed record PaidToPlayer(int FromId, int ToId, int Amount) : GameEvent;
+
+    // Наличных не хватило — появился долг. CreditorId null — долг банку.
+    public sealed record DebtIncurred(int DebtorId, int? CreditorId, int Amount) : GameEvent;
+
+    public sealed record DebtPaid(int DebtorId, int? CreditorId, int Amount) : GameEvent;
+
+    // CreditorId null — имущество вернулось банку.
+    public sealed record PlayerBankrupt(int PlayerId, int? CreditorId) : GameEvent;
+
+    // --- Казино и «Шанс» ---
+
+    public sealed record CasinoOffered(int PlayerId) : GameEvent;
+
+    // Multiplier: 0 — проигрыш, 1 — ставка вернулась, 2 и 3 — выигрыш.
+    public sealed record CasinoPlayed(int PlayerId, int Bet, int Multiplier) : GameEvent
+    {
+        public int Payout => Bet * Multiplier;
+    }
+
+    public sealed record ChanceCardDrawn(int PlayerId, ChanceCard Card) : GameEvent;
+
+    // --- Имущество ---
+
+    // Level — новый уровень: 1–4 филиала, 5 — головной офис.
+    public sealed record BranchBuilt(int PlayerId, int CellIndex, int Level, int Cost) : GameEvent;
+
+    public sealed record BranchSold(int PlayerId, int CellIndex, int Level, int Amount) : GameEvent;
+
+    public sealed record CompanyMortgaged(int PlayerId, int CellIndex, int Amount) : GameEvent;
+
+    public sealed record CompanyRedeemed(int PlayerId, int CellIndex, int Amount) : GameEvent;
+
+    // --- Обмен ---
+
+    public sealed record TradeProposed(TradeOffer Offer) : GameEvent;
+
+    public sealed record TradeAccepted(TradeOffer Offer) : GameEvent;
+
+    public sealed record TradeRejected(int FromId, int ToId) : GameEvent;
+
+    public sealed record TradeCancelled(int FromId, int ToId) : GameEvent;
 }

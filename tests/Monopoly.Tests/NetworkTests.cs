@@ -46,7 +46,8 @@ namespace Monopoly.Tests
             int waitingId = 1 - currentId;
             string currentName = currentId == 0 ? "Хост" : "Гость";
 
-            Assert.Equal(new GameAction[] { new RollDice(currentId) }, currentFirst.AvailableActions);
+            Assert.Contains(new RollDice(currentId), currentFirst.AvailableActions);
+            Assert.Contains(currentFirst.AvailableActions, a => a is ProposeTrade);
             Assert.Empty(waitingFirst.AvailableActions);
 
             // Не в свой ход — отказ. Подставить чужой Id тоже нельзя: хост берёт Id по подключению.

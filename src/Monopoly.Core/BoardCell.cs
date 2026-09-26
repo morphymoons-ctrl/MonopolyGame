@@ -1,8 +1,8 @@
-﻿namespace Monopoly.Core
+namespace Monopoly.Core
 {
     public enum CellType
     {
-        Start, Jail, Rest, Casino, Supermarket, GasStation, Factory, Chance, TV, Food, Back, OnlineShop, Logistics, Bank, NetworkShop
+        Start, Jail, Rest, Casino, Supermarket, GasStation, Factory, Chance, TV, Food, OnlineShop, Logistics, Bank, NetworkShop
     }
 
     public class BoardCell
@@ -12,6 +12,9 @@
         public int Price { get; }
         // Id владельца; null — компания у банка.
         public int? OwnerId { get; internal set; }
+        // 0 — без филиалов, 1–4 — филиалы, 5 — головной офис.
+        public int Level { get; internal set; }
+        public bool IsMortgaged { get; internal set; }
 
         public BoardCell(string name, CellType type, int price = 0)
         {
@@ -29,5 +32,16 @@
             or CellType.Logistics
             or CellType.Bank
             or CellType.NetworkShop;
+
+        // Филиалы строятся только в группах по три; у АЗС и логистики своя аренда.
+        public bool IsBuildable => IsPurchasable && Type is not (CellType.GasStation or CellType.Logistics);
+
+        // Цена филиала и головного офиса — половина цены компании (§5).
+        public int BranchCost => Price / 2;
+        public int BranchSaleValue => BranchCost / 2;
+
+        // Залог — половина цены, выкуп — залог + 10% (§10).
+        public int MortgageValue => Price / 2;
+        public int RedeemCost => MortgageValue + MortgageValue / 10;
     }
 }

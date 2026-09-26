@@ -24,35 +24,86 @@ namespace Monopoly.Tests
         public void AllEventsOfCore_SurviveRoundTrip()
         {
             // Каждый новый тип события должен проходить по сети — тест напомнит, если нет.
+            var offer = new TradeOffer(0, 1, new TradeTerms(new[] { 1, 2 }, 100, 1), TradeTerms.Empty);
             var events = new GameEvent[]
             {
                 new TurnStarted(1),
+                new TurnSkipped(1),
+                new GameOver(2),
                 new DiceRolled(1, 3, 4),
+                new RollAgain(1),
                 new PlayerMoved(1, 30, 3),
+                new PassedStart(1, 200),
+                new RestStarted(1),
+                new SentToJail(1, JailReason.Card),
+                new JailRollFailed(1, 2),
+                new LeftJail(1, JailExit.ForcedBail),
                 new PurchaseOffered(1, 3, 140),
                 new PropertyBought(1, 3, 140),
                 new PurchaseDeclined(1, 3),
+                new AuctionStarted(3),
+                new BidPlaced(2, 30),
+                new AuctionPassed(0),
+                new AuctionWon(2, 3, 30),
+                new AuctionUnsold(3),
                 new RentPaid(1, 0, 4, 16),
-                new RestStarted(1),
-                new TurnSkipped(1),
+                new RentSkipped(1, 4),
+                new PaidToBank(1, 50),
+                new ReceivedFromBank(1, 150),
+                new PaidToPlayer(1, 2, 25),
+                new DebtIncurred(1, null, 100),
+                new DebtPaid(1, 2, 100),
+                new PlayerBankrupt(1, null),
+                new CasinoOffered(1),
+                new CasinoPlayed(1, 100, 3),
+                new ChanceCardDrawn(1, ChanceCard.Taxi),
+                new BranchBuilt(1, 3, 5, 70),
+                new BranchSold(1, 3, 4, 35),
+                new CompanyMortgaged(1, 3, 70),
+                new CompanyRedeemed(1, 3, 77),
+                new TradeRejected(0, 1),
+                new TradeCancelled(0, 1),
             };
+            var withLists = new[] { nameof(GameStarted), nameof(TradeProposed), nameof(TradeAccepted) };
             var eventTypes = typeof(GameEvent).Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(GameEvent)));
             Assert.Equal(
-                eventTypes.Select(t => t.Name).Except(new[] { nameof(GameStarted) }).Order(),
+                eventTypes.Select(t => t.Name).Except(withLists).Order(),
                 events.Select(e => e.GetType().Name).Order());
 
             Assert.Equal(events, RoundTrip(events));
 
-            var started = RoundTrip<GameEvent>(new GameStarted(42, new[] { 2, 0, 1 }));
-            Assert.Equal(new[] { 2, 0, 1 }, Assert.IsType<GameStarted>(started).TurnOrder);
-            Assert.Equal(42, ((GameStarted)started).Seed);
+            // У событий со списками равенство записей сравнивает списки по ссылке — проверяем поля.
+            var started = Assert.IsType<GameStarted>(RoundTrip<GameEvent>(new GameStarted(42, new[] { 2, 0, 1 })));
+            Assert.Equal(new[] { 2, 0, 1 }, started.TurnOrder);
+            Assert.Equal(42, started.Seed);
+
+            var proposed = Assert.IsType<TradeProposed>(RoundTrip<GameEvent>(new TradeProposed(offer)));
+            Assert.Equal(new[] { 1, 2 }, proposed.Offer.Give.Cells);
+            Assert.Equal(100, proposed.Offer.Give.Money);
+            Assert.Equal(1, proposed.Offer.Give.JailCards);
+            Assert.Empty(proposed.Offer.Take.Cells);
+            Assert.IsType<TradeAccepted>(RoundTrip<GameEvent>(new TradeAccepted(offer)));
+        }
+
+        [Fact]
+        public void TradeProposal_SurvivesRoundTrip()
+        {
+            GameAction action = new ProposeTrade(0, 2, new TradeTerms(new[] { 5 }, 0, 0), new TradeTerms(new int[0], 300, 0));
+
+            var copy = Assert.IsType<ProposeTrade>(RoundTrip(action));
+
+            Assert.Equal(2, copy.TargetId);
+            Assert.Equal(new[] { 5 }, copy.Give.Cells);
+            Assert.Equal(300, copy.Take.Money);
         }
 
         [Fact]
         public void GameUpdate_SurvivesRoundTrip()
         {
-            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(1, 2), shuffleTurnOrder: false);
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(1, 2), TestGame.Fixed);
             var result = game.Execute(new RollDice(0));
+            game.Execute(new DeclinePurchase(0));
+            game.Execute(new PlaceBid(1, 10));
             var update = new GameUpdate(result.Events, game.State.ToSnapshot(), game.GetAvailableActions(0));
 
             var copy = RoundTrip(update);
@@ -60,9 +111,11 @@ namespace Monopoly.Tests
             Assert.Equal(update.Events, copy.Events);
             Assert.Equal(update.AvailableActions, copy.AvailableActions);
             Assert.Equal(update.Snapshot.Players, copy.Snapshot.Players);
-            Assert.Equal(update.Snapshot.Owners, copy.Snapshot.Owners);
-            Assert.Equal(TurnPhase.BuyDecision, copy.Snapshot.Phase);
+            Assert.Equal(update.Snapshot.Cells, copy.Snapshot.Cells);
+            Assert.Equal(TurnPhase.Auction, copy.Snapshot.Phase);
             Assert.Equal(new DiceRoll(1, 2), copy.Snapshot.LastRoll);
+            Assert.Equal(1, copy.Snapshot.Auction!.LeaderId);
+            Assert.Equal(20, copy.Snapshot.Auction.MinBid);
         }
 
         [Theory]

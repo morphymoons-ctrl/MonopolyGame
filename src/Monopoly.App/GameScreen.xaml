@@ -1,23 +1,48 @@
 <UserControl x:Class="Monopoly.App.GameScreen"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- Прозрачная кнопка поверх клетки: щелчок мышью, клавиатура и UI Automation. -->
+        <Style x:Key="CellButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <Viewbox Stretch="Uniform">
-        <Grid Width="1920" Height="1080">
+        <Grid Width="1920" Height="1080" Background="White">
             <Canvas Name="GameBoardCanvas" Width="1000" Height="1000" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-            <ListBox Name="ActionLog" Width="870" Height="1000" Margin="1040,10,10,10" HorizontalAlignment="Left" FontSize="24"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
-            <!-- Середина поля: игроки и кнопки хода. -->
-            <StackPanel Width="740" Margin="150,150,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <TextBlock Name="TurnText" Margin="10" FontSize="36" FontWeight="Bold"/>
-                <StackPanel Name="PlayersPanel" Margin="10"/>
-                <WrapPanel Margin="0,20,0,0">
-                    <Button Name="RollDiceButton" Content="Бросить кубики" Width="220" Height="60" Margin="10" FontSize="24" Click="RollDice_Click"/>
-                    <Button Name="BuyButton" Content="Купить" Width="220" Height="60" Margin="10" FontSize="24" Click="Buy_Click"/>
-                    <Button Name="DeclineButton" Content="Не покупать" Width="220" Height="60" Margin="10" FontSize="24" Click="Decline_Click"/>
-                    <Button Name="EndTurnButton" Content="Завершить ход" Width="220" Height="60" Margin="10" FontSize="24" Click="EndTurn_Click"/>
+
+            <!-- Середина поля: чей ход, игроки, что происходит и кнопки. -->
+            <StackPanel Width="760" Margin="135,130,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <TextBlock Name="TurnText" FontSize="34" FontWeight="Bold" TextWrapping="Wrap"/>
+                <StackPanel Name="PlayersPanel" Margin="0,8,0,0"/>
+                <TextBlock Name="ContextText" FontSize="22" TextWrapping="Wrap" Margin="0,16,0,0"/>
+                <WrapPanel Name="ActionsPanel" Margin="0,8,0,0"/>
+                <WrapPanel Margin="0,24,0,0">
+                    <Button Name="TradeButton" Content="Предложить обмен…" Height="48" Padding="16,0" Margin="0,0,12,0" FontSize="20" Click="Trade_Click"/>
+                    <Button Content="Выйти в меню" Height="48" Padding="16,0" FontSize="20" Click="Leave_Click"/>
                 </WrapPanel>
-                <Button Content="Выйти в меню" Width="220" Height="50" Margin="10,40,10,10" FontSize="20" HorizontalAlignment="Left" Click="Leave_Click"/>
             </StackPanel>
+
+            <!-- Выбранная клетка: аренда и управление. -->
+            <Border Width="870" Height="330" Margin="1040,10,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    BorderBrush="Gray" BorderThickness="1" Padding="16">
+                <StackPanel>
+                    <TextBlock Name="CellTitle" FontSize="28" FontWeight="Bold" Text="Клетка не выбрана"/>
+                    <TextBlock Name="CellInfo" FontSize="20" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Text="Нажмите на клетку поля, чтобы увидеть аренду и управлять своей компанией."/>
+                    <WrapPanel Name="CellActions" Margin="0,12,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <ListBox Name="ActionLog" Width="870" Height="660" Margin="1040,350,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                     FontSize="22" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
         </Grid>
     </Viewbox>
 </UserControl>

@@ -7,11 +7,14 @@ namespace Monopoly.Core
         public string Name { get; }
         public int Balance { get; internal set; } = GameRules.StartingBalance;
         public int Position { get; internal set; } = 0;
-        // Тюрьма — этап 3.
         public bool IsInJail { get; internal set; } = false;
+        // Неудачные попытки выбросить дубль в тюрьме.
         public int JailTurns { get; internal set; } = 0;
         // Попал на «Отдых» — пропускает следующий ход.
         public bool IsResting { get; internal set; } = false;
+        // Карточки «Выйти из тюрьмы бесплатно».
+        public int JailCards { get; internal set; } = 0;
+        public bool IsBankrupt { get; internal set; } = false;
 
         public Player(int id, string name)
         {
