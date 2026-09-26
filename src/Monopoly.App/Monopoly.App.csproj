@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- WPF client: board, dialogs, lobby. Game logic lives in Monopoly.Core. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Monopoly</AssemblyName>
+    <RootNamespace>Monopoly.App</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Monopoly.Core\Monopoly.Core.csproj" />
+    <ProjectReference Include="..\Monopoly.Net\Monopoly.Net.csproj" />
+  </ItemGroup>
+
+</Project>

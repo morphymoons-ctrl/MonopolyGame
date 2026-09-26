@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Host/client networking (stage 2): the host runs Monopoly.Core, clients send actions and receive events. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Monopoly.Core\Monopoly.Core.csproj" />
+  </ItemGroup>
+
+</Project>

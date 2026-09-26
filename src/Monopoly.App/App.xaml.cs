@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace MonopolyGame
+namespace Monopoly.App
 {
     public partial class App : Application
     {

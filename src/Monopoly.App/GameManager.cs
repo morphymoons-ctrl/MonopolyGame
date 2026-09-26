@@ -5,8 +5,9 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows;
 using System.Windows.Input;
+using Monopoly.Core;
 
-namespace MonopolyGame
+namespace Monopoly.App
 {
     public class GameManager
     {
@@ -48,39 +49,7 @@ namespace MonopolyGame
 
         private void InitBoard()
         {
-            board.Clear();
-            board.Add(new BoardCell("Старт", CellType.Start));
-            board.Add(new BoardCell("АТБ", CellType.Supermarket, 100));
-            board.Add(new BoardCell("Варус", CellType.Supermarket, 120));
-            board.Add(new BoardCell("Сильпо", CellType.Supermarket, 140));
-            board.Add(new BoardCell("WOG", CellType.GasStation, 160));
-            board.Add(new BoardCell("АрселорМитал", CellType.Factory, 200));
-            board.Add(new BoardCell("Завод Стасика", CellType.Factory, 220));
-            board.Add(new BoardCell("Азовсталь", CellType.Factory, 240));
-            board.Add(new BoardCell("Тюрьма", CellType.Jail));
-            board.Add(new BoardCell("ТЕТ", CellType.TV, 100));
-            board.Add(new BoardCell("Новый канал", CellType.TV, 120));
-            board.Add(new BoardCell("Интел", CellType.TV, 140));
-            board.Add(new BoardCell("ОККО", CellType.GasStation, 160));
-            board.Add(new BoardCell("Пузата хата", CellType.Food, 200));
-            board.Add(new BoardCell("Pizza Day", CellType.Food, 220));
-            board.Add(new BoardCell("Булочная №1", CellType.Food, 240));
-            board.Add(new BoardCell("Казино", CellType.Casino));
-            board.Add(new BoardCell("Отдых", CellType.Rest));
-            board.Add(new BoardCell("Розетка", CellType.OnlineShop, 100));
-            board.Add(new BoardCell("Пром", CellType.OnlineShop, 120));
-            board.Add(new BoardCell("ОЛХ", CellType.OnlineShop, 140));
-            board.Add(new BoardCell("UPG", CellType.GasStation, 160));
-            board.Add(new BoardCell("Нова пошта", CellType.Logistics, 200));
-            board.Add(new BoardCell("Укрпошта", CellType.Logistics, 220));
-            board.Add(new BoardCell("Шанс", CellType.Chance));
-            board.Add(new BoardCell("ПУМБ", CellType.Bank, 100));
-            board.Add(new BoardCell("Приватбанк", CellType.Bank, 120));
-            board.Add(new BoardCell("Монобанк", CellType.Bank, 140));
-            board.Add(new BoardCell("Укрнафта", CellType.GasStation, 160));
-            board.Add(new BoardCell("Алло", CellType.NetworkShop, 200));
-            board.Add(new BoardCell("Цитрус", CellType.NetworkShop, 220));
-            board.Add(new BoardCell("Фокстрот", CellType.NetworkShop, 240));
+            board = Board.CreateDefault();
         }
 
         public void DrawBoard()
@@ -270,7 +239,7 @@ namespace MonopolyGame
             {
                 Casino();
             }
-            else if (IsPurchasable(cell))
+            else if (cell.IsPurchasable)
             {
                 if (cell.OwnerId == -1)
                 {
@@ -301,7 +270,7 @@ namespace MonopolyGame
                 return;
             }
 
-            if (!IsPurchasable(lastLandedCell))
+            if (!lastLandedCell.IsPurchasable)
             {
                 actionLog.Items.Add("Эту клетку нельзя купить.");
                 return;
@@ -323,19 +292,6 @@ namespace MonopolyGame
             lastLandedCell.OwnerId = currentPlayerIndex;
             actionLog.Items.Add($"{player.Name} купил {lastLandedCell.Name} за {lastLandedCell.Price} грн.");
             DrawBoard();
-        }
-
-        private bool IsPurchasable(BoardCell cell)
-        {
-            return cell.Type == CellType.Supermarket ||
-                   cell.Type == CellType.GasStation ||
-                   cell.Type == CellType.Factory ||
-                   cell.Type == CellType.TV ||
-                   cell.Type == CellType.Food ||
-                   cell.Type == CellType.OnlineShop ||
-                   cell.Type == CellType.Logistics ||
-                   cell.Type == CellType.Bank ||
-                   cell.Type == CellType.NetworkShop;
         }
 
         public void EndTurn()
@@ -399,46 +355,6 @@ namespace MonopolyGame
             };
             actionLog.Items.Add($"{player.Name} сыграл в казино: {resText}");
             DrawBoard();
-        }
-    }
-
-    // Простое окно для ввода числа (ставки)
-    public class InputBox : Window
-    {
-        public string InputText { get; private set; } = "";
-        private TextBox inputBox;
-        private bool result = false;
-
-        public InputBox(string prompt, string title)
-        {
-            Title = title;
-            Width = 400;
-            Height = 180;
-            WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            ResizeMode = ResizeMode.NoResize;
-            WindowStyle = WindowStyle.ToolWindow;
-
-            var panel = new StackPanel { Margin = new Thickness(10) };
-            panel.Children.Add(new TextBlock { Text = prompt, FontSize = 18, Margin = new Thickness(0, 0, 0, 10) });
-            inputBox = new TextBox { FontSize = 18, Margin = new Thickness(0, 0, 0, 10) };
-            panel.Children.Add(inputBox);
-
-            var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            var okBtn = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 10, 0) };
-            var cancelBtn = new Button { Content = "Отмена", Width = 80 };
-            okBtn.Click += (s, e) => { InputText = inputBox.Text; result = true; Close(); };
-            cancelBtn.Click += (s, e) => { result = false; Close(); };
-            btnPanel.Children.Add(okBtn);
-            btnPanel.Children.Add(cancelBtn);
-            panel.Children.Add(btnPanel);
-
-            Content = panel;
-        }
-
-        public new bool? ShowDialog()
-        {
-            base.ShowDialog();
-            return result;
         }
     }
 }

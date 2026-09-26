@@ -1,4 +1,4 @@
-﻿namespace MonopolyGame
+﻿namespace Monopoly.Core
 {
     public class Player
     {

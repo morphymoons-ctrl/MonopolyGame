@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace MonopolyGame
+namespace Monopoly.App
 {
     public partial class MainWindow : Window
     {

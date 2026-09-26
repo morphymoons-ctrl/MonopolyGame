@@ -1,4 +1,4 @@
-﻿namespace MonopolyGame
+﻿namespace Monopoly.Core
 {
     public enum CellType
     {
@@ -18,5 +18,15 @@
             Type = type;
             Price = price;
         }
+
+        public bool IsPurchasable => Type is CellType.Supermarket
+            or CellType.GasStation
+            or CellType.Factory
+            or CellType.TV
+            or CellType.Food
+            or CellType.OnlineShop
+            or CellType.Logistics
+            or CellType.Bank
+            or CellType.NetworkShop;
     }
 }
