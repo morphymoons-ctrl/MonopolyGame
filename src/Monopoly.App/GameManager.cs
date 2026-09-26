@@ -197,9 +197,7 @@ namespace Monopoly.App
             boardCanvas.Children.Clear();
             double u = Unit;
             var line = (Brush)Application.Current.Resources["BoardLineBrush"];
-            var paper = (Brush)Application.Current.Resources["BoardBrush"];
             var text = (Brush)Application.Current.Resources["BoardTextBrush"];
-            var muted = (Brush)Application.Current.Resources["BoardMutedBrush"];
 
             for (int i = 0; i < board.Count; i++)
             {
@@ -213,12 +211,14 @@ namespace Monopoly.App
                     Height = r.Height,
                     Stroke = line,
                     StrokeThickness = 1,
-                    Fill = state?.IsMortgaged == true ? PlayerPalette.Make("#DAD7CF") : cell.IsPurchasable ? paper : SpecialBackground(cell.Type)
+                    Fill = state?.IsMortgaged == true ? (Brush)Application.Current.Resources["CompanyMortgagedBrush"] : cell.IsPurchasable ? CompanyBackground(i) : SpecialBackground(cell.Type)
                 }, r.X, r.Y);
 
                 if (cell.IsPurchasable)
                 {
-                    DrawCompany(cell, state, i, r, u, text, muted);
+                    // Клетки компаний светлые — текст на них тёмный.
+                    DrawCompany(cell, state, i, r, u, (Brush)Application.Current.Resources["CompanyTextBrush"],
+                        (Brush)Application.Current.Resources["CompanyMutedBrush"]);
                 }
                 else
                 {
@@ -282,35 +282,33 @@ namespace Monopoly.App
                 AddText(icon, bar.X, bar.Y + (bar.Height - iconSize * 1.35) / 2, bar.Width, iconSize, FontWeights.Bold, GroupPalette.IconColor(cell.Type), GameFonts.Icons);
             }
 
-            // Логотип (или название, если логотипа нет) и цена под ним — одной группой по центру клетки.
-            // Центрируем в месте над рядом фишек и полосой владельца: они внизу клетки.
+            // Рамка логотипа и цена под ней — одной группой по центру места над рядом фишек и полосой владельца.
+            // Рамка одинаковая у всех клеток ряда, поэтому цены стоят на одной линии.
             double areaTop = c.Y + u * 0.04;
             double areaBottom = r.Bottom - u * 0.32;
             double priceHeight = u * 0.19, innerGap = u * 0.05;
-            double detail;
+            double boxWidth = c.Width - u * 0.14;
+            double boxHeight = Math.Min(u * 0.6, areaBottom - areaTop - priceHeight - innerGap);
+            double boxTop = areaTop + (areaBottom - areaTop - boxHeight - innerGap - priceHeight) / 2;
+            double detail = boxTop + boxHeight + innerGap;
             if (Logos.For(index) is { } logo)
             {
-                double logoHeight = Math.Min(u * 0.6, areaBottom - areaTop - priceHeight - innerGap);
-                double top = areaTop + (areaBottom - areaTop - logoHeight - innerGap - priceHeight) / 2;
+                var (width, height) = LogoSize(logo, boxWidth, boxHeight);
                 var image = new Image
                 {
                     Source = logo,
-                    Width = c.Width - u * 0.04,
-                    Height = logoHeight,
-                    Stretch = Stretch.Uniform,
+                    Width = width,
+                    Height = height,
+                    Stretch = Stretch.Fill,
                     Opacity = state?.IsMortgaged == true ? 0.4 : 1,
                     IsHitTestVisible = false
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-                Place(image, c.X + u * 0.02, top);
-                detail = top + logoHeight + innerGap;
+                Place(image, c.X + (c.Width - width) / 2, boxTop + (boxHeight - height) / 2);
             }
             else
             {
-                double nameHeight = u * 0.2;
-                double top = areaTop + (areaBottom - areaTop - nameHeight - innerGap - priceHeight) / 2;
-                AddText(cell.Name, c.X + 2, top, c.Width - 4, u * 0.16, FontWeights.Bold, text);
-                detail = top + nameHeight + innerGap;
+                AddText(cell.Name, c.X + 2, boxTop + (boxHeight - u * 0.2) / 2, c.Width - 4, u * 0.16, FontWeights.Bold, text);
             }
             if (state?.IsMortgaged == true)
             {
@@ -369,14 +367,41 @@ namespace Monopoly.App
             }
         }
 
+        // Фон клетки компании: градиент от центра поля к внешнему краю — в ту же сторону, где полоса группы.
+        private Brush CompanyBackground(int i)
+        {
+            int side = topCount - 1;
+            var (from, to) = i < side ? (new Point(0.5, 1), new Point(0.5, 0))      // верхний ряд: наружу — вверх
+                : i < 2 * side ? (new Point(0, 0.5), new Point(1, 0.5))             // правый столбец: вправо
+                : i < 3 * side ? (new Point(0.5, 0), new Point(0.5, 1))             // нижний ряд: вниз
+                : (new Point(1, 0.5), new Point(0, 0.5));                           // левый столбец: влево
+            var brush = new LinearGradientBrush((Color)Application.Current.Resources["BoardInnerColor"],
+                (Color)Application.Current.Resources["BoardOuterColor"], from, to);
+            brush.Freeze();
+            return brush;
+        }
+
+        // Размер логотипа в рамке: все логотипы получают примерно одинаковую площадь, чтобы квадратные
+        // не были огромными рядом с узкими широкими. Широкие упираются в ширину рамки, высокие — в высоту.
+        private static (double Width, double Height) LogoSize(ImageSource logo, double boxWidth, double boxHeight)
+        {
+            double aspect = logo.Width / logo.Height;
+            // Половина рамки: рамки в рядах и столбцах почти равны по площади — логотипы по всему полю одного веса.
+            double area = boxWidth * boxHeight * 0.5;
+            double width = Math.Sqrt(area * aspect), height = width / aspect;
+            double scale = Math.Min(1, Math.Min(boxWidth / width, boxHeight / height));
+            return (width * scale, height * scale);
+        }
+
         private static Brush SpecialBackground(CellType type) => type switch
         {
-            CellType.Start => PlayerPalette.Make("#DDF3E4"),
-            CellType.Jail => PlayerPalette.Make("#EFE3D3"),
-            CellType.Casino => PlayerPalette.Make("#F7DDEA"),
-            CellType.Rest => PlayerPalette.Make("#DDEBFA"),
-            CellType.Chance => PlayerPalette.Make("#FFF1C7"),
-            _ => Brushes.White,
+            // Графит с лёгким оттенком: особые клетки отличаются от компаний, светлый текст читается.
+            CellType.Start => PlayerPalette.Make("#34453A"),
+            CellType.Jail => PlayerPalette.Make("#4A4238"),
+            CellType.Casino => PlayerPalette.Make("#4A3844"),
+            CellType.Rest => PlayerPalette.Make("#36414F"),
+            CellType.Chance => PlayerPalette.Make("#4D4632"),
+            _ => (Brush)Application.Current.Resources["BoardBrush"],
         };
 
         private void AddText(string text, double x, double y, double width, double fontSize, FontWeight weight, Brush color, FontFamily? font = null)

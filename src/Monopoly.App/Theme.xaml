@@ -18,12 +18,23 @@
     <SolidColorBrush x:Key="DangerBrush" Color="#E5484D"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="#30A46C"/>
 
-    <!-- Поле. -->
-    <SolidColorBrush x:Key="BoardBrush" Color="#FBF6EA"/>
-    <SolidColorBrush x:Key="BoardCenterBrush" Color="#EEF3E8"/>
-    <SolidColorBrush x:Key="BoardLineBrush" Color="#2B3446"/>
-    <SolidColorBrush x:Key="BoardTextBrush" Color="#1E2533"/>
-    <SolidColorBrush x:Key="BoardMutedBrush" Color="#6A7285"/>
+    <!-- Поле: space grey — клетки чуть светлее, центр темнее. -->
+    <SolidColorBrush x:Key="BoardBrush" Color="#43464C"/>
+    <!-- Клетки компаний — слоновая кость с лёгким градиентом: у центра поля чуть темнее, к внешнему краю светлее
+         (GameManager.CompanyBackground). Текст на них тёмный. -->
+    <Color x:Key="BoardInnerColor">#EFE8D8</Color>
+    <Color x:Key="BoardOuterColor">#FFFDF6</Color>
+    <SolidColorBrush x:Key="CompanyTextBrush" Color="#1E2126"/>
+    <SolidColorBrush x:Key="CompanyMutedBrush" Color="#4A4F57"/>
+    <SolidColorBrush x:Key="CompanyMortgagedBrush" Color="#CFCABD"/>
+    <LinearGradientBrush x:Key="BoardCenterBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#3B3E44" Offset="0"/>
+        <GradientStop Color="#2E3035" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="BoardFrameBrush" Color="#25272B"/>
+    <SolidColorBrush x:Key="BoardLineBrush" Color="#2A2C31"/>
+    <SolidColorBrush x:Key="BoardTextBrush" Color="#EEF0F3"/>
+    <SolidColorBrush x:Key="BoardMutedBrush" Color="#B4BAC4"/>
 
     <LinearGradientBrush x:Key="TableBrush" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="{StaticResource TableTopColor}" Offset="0"/>
@@ -43,10 +54,10 @@
         <Setter Property="Padding" Value="20"/>
     </Style>
 
-    <!-- Карточка на светлом поле. -->
-    <Style x:Key="LightCard" TargetType="Border">
-        <Setter Property="Background" Value="White"/>
-        <Setter Property="BorderBrush" Value="#D9DDE5"/>
+    <!-- Карточка в центре поля: тёмная, в тон space grey. -->
+    <Style x:Key="BoardCard" TargetType="Border">
+        <Setter Property="Background" Value="#2A2D32"/>
+        <Setter Property="BorderBrush" Value="#565B63"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="14"/>
         <Setter Property="Padding" Value="20"/>
@@ -122,10 +133,10 @@
         <Setter Property="Foreground" Value="White"/>
     </Style>
 
-    <!-- Кнопки на светлом поле: основная та же, обычная — тёмно-синяя. -->
+    <!-- Кнопки в карточке на поле: основная та же, обычная — графитовая. -->
     <Style x:Key="BoardButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="#1F3354"/>
-        <Setter Property="BorderBrush" Value="#1F3354"/>
+        <Setter Property="Background" Value="#4B5058"/>
+        <Setter Property="BorderBrush" Value="#5E646D"/>
     </Style>
 
     <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}"/>

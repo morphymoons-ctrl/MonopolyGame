@@ -31,7 +31,7 @@ namespace Monopoly.Core
             new BoardCell("Стрипклуб", CellType.Nightlife, 140_000),
             new BoardCell("UPC", CellType.GasStation, 160_000),
             new BoardCell("Стара Пошта", CellType.Logistics, 200_000),
-            new BoardCell("Укрпошта", CellType.Logistics, 220_000),
+            new BoardCell("Укірпошта", CellType.Logistics, 220_000),
             new BoardCell("Шанс", CellType.Chance),
             new BoardCell("ПІМБ", CellType.Bank, 100_000),
             new BoardCell("ПривітБанк", CellType.Bank, 120_000),
