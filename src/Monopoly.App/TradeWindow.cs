@@ -24,7 +24,7 @@ namespace Monopoly.App
         {
             this.snapshot = snapshot;
             this.myId = myId;
-            Title = "Предложить обмен";
+            Title = "Запропонувати обмін";
             Width = 820;
             Height = 660;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -34,8 +34,8 @@ namespace Monopoly.App
             Background = (Brush)FindResource("SurfaceBrush");
             Foreground = (Brush)FindResource("TextBrush");
 
-            mine = new Side("Вы отдаёте");
-            theirs = new Side("Вы просите");
+            mine = new Side("Ви віддаєте");
+            theirs = new Side("Ви просите");
 
             foreach (var player in snapshot.Players.Where(p => p.Id != myId && !p.IsBankrupt))
             {
@@ -46,14 +46,14 @@ namespace Monopoly.App
             var root = new DockPanel { Margin = new Thickness(16) };
 
             var top = new StackPanel();
-            top.Children.Add(new TextBlock { Text = "С кем меняетесь" });
+            top.Children.Add(new TextBlock { Text = "З ким мінятися" });
             top.Children.Add(targetBox);
             DockPanel.SetDock(top, Dock.Top);
             root.Children.Add(top);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
-            var ok = new Button { Content = "Предложить", MinWidth = 150, Margin = new Thickness(0, 0, 10, 0), IsDefault = true, Style = (Style)FindResource("PrimaryButton") };
-            var cancel = new Button { Content = "Отмена", MinWidth = 110, IsCancel = true };
+            var ok = new Button { Content = "Запропонувати", MinWidth = 150, Margin = new Thickness(0, 0, 10, 0), IsDefault = true, Style = (Style)FindResource("PrimaryButton") };
+            var cancel = new Button { Content = "Скасувати", MinWidth = 110, IsCancel = true };
             ok.Click += (_, _) => Submit();
             buttons.Children.Add(ok);
             buttons.Children.Add(cancel);
@@ -96,7 +96,7 @@ namespace Monopoly.App
         {
             if (TargetId is not int target)
             {
-                errorText.Text = "Выберите, с кем меняться.";
+                errorText.Text = "Оберіть, з ким мінятися.";
                 return;
             }
             var give = mine.Terms(out var error);
@@ -130,7 +130,7 @@ namespace Monopoly.App
                     Padding = new Thickness(10),
                     Child = new ScrollViewer { Content = cells, Height = 270, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
                 });
-                Panel.Children.Add(new TextBlock { Text = "Деньги, грн", Margin = new Thickness(0, 8, 0, 0) });
+                Panel.Children.Add(new TextBlock { Text = "Гроші, грн", Margin = new Thickness(0, 8, 0, 0) });
                 Panel.Children.Add(money);
                 Panel.Children.Add(jailLabel);
                 Panel.Children.Add(jailCards);
@@ -146,18 +146,18 @@ namespace Monopoly.App
                     {
                         continue;
                     }
-                    string note = state.IsMortgaged ? " (заложена)" : state.Level > 0 ? " (есть филиалы)" : "";
+                    string note = state.IsMortgaged ? " (закладена)" : state.Level > 0 ? " (є філії)" : "";
                     cells.Children.Add(new CheckBox { Content = EventText.Cells[i].Name + note, Tag = i, Margin = new Thickness(0, 2, 0, 2) });
                 }
                 if (cells.Children.Count == 0)
                 {
-                    cells.Children.Add(new TextBlock { Text = "Компаний нет", Foreground = (Brush)Application.Current.Resources["MutedTextBrush"] });
+                    cells.Children.Add(new TextBlock { Text = "Компаній немає", Foreground = (Brush)Application.Current.Resources["MutedTextBrush"] });
                 }
 
                 var player = snapshot.FindPlayer(playerId)!;
                 money.Text = "0";
                 jailCards.Text = "0";
-                jailLabel.Text = $"Карточки «Выйти из тюрьмы» (есть: {player.JailCards})";
+                jailLabel.Text = $"Картки «Вийти з пєтушатні» (є: {player.JailCards})";
                 bool hasCards = player.JailCards > 0;
                 jailLabel.Visibility = hasCards ? Visibility.Visible : Visibility.Collapsed;
                 jailCards.Visibility = hasCards ? Visibility.Visible : Visibility.Collapsed;
@@ -168,12 +168,12 @@ namespace Monopoly.App
                 error = null;
                 if (!int.TryParse(money.Text.Trim(), out int moneyValue) || moneyValue < 0)
                 {
-                    error = "Деньги — целое число от 0.";
+                    error = "Гроші — ціле число від 0.";
                     return null;
                 }
                 if (!int.TryParse(jailCards.Text.Trim(), out int cardValue) || cardValue < 0)
                 {
-                    error = "Карточки — целое число от 0.";
+                    error = "Картки — ціле число від 0.";
                     return null;
                 }
                 var chosen = cells.Children.OfType<CheckBox>().Where(c => c.IsChecked == true).Select(c => (int)c.Tag).ToList();

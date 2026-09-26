@@ -13,7 +13,9 @@ namespace Monopoly.Net
         IReadOnlyList<SavedSeat> Seats,
         IReadOnlyList<GameAction> Actions,
         DateTime SavedAtUtc,
-        bool Finished)
+        bool Finished,
+        // Сколько шла партия до сохранения — для часов длительности партии.
+        int PlayedSeconds = 0)
     {
         public string? HostName => Seats.FirstOrDefault(s => s.IsHost)?.Name;
     }

@@ -27,6 +27,9 @@ namespace Monopoly.Net
     // SecondsToBot — через сколько за отключившегося начнёт играть бот.
     public sealed record SeatStatus(int PlayerId, SeatConnection Connection, int? SecondsToBot);
 
+    // Сколько идёт партия (без времени, пока хост был выключен). Running = false — партия закончилась.
+    public sealed record GameDuration(int Seconds, bool Running);
+
     // Кого ждёт игра и сколько секунд у них осталось.
     public sealed record TurnTimer(IReadOnlyList<int> AwaitedIds, int SecondsLeft);
 
@@ -38,7 +41,8 @@ namespace Monopoly.Net
         IReadOnlyList<GameAction> AvailableActions,
         TurnTimer? Timer = null,
         IReadOnlyList<SeatStatus>? Seats = null,
-        bool IsResync = false);
+        bool IsResync = false,
+        GameDuration? Duration = null);
 
     // Ответ хоста на поиск игр. Address заполняет клиент — по адресу, откуда пришёл ответ.
     public sealed record DiscoveredGame(

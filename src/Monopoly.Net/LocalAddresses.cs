@@ -12,8 +12,8 @@ namespace Monopoly.Net
         public const string Radmin = "Radmin VPN";
         public const string ZeroTier = "ZeroTier";
         public const string Tailscale = "Tailscale";
-        public const string Lan = "Локальная сеть";
-        public const string Other = "Другая сеть";
+        public const string Lan = "Локальна мережа";
+        public const string Other = "Інша мережа";
 
         // Сначала VPN (через них обычно играют с друзьями), потом локальная сеть.
         public static IReadOnlyList<LocalAddress> Get()

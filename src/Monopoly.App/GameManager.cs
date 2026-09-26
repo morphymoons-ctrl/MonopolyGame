@@ -142,30 +142,33 @@ namespace Monopoly.App
             DrawBoard();
         }
 
-        private double CellSize => boardCanvas.Width / topCount;
+        // Клетки прямоугольные: поле шире, чем выше, — так на широком мониторе оно крупнее.
+        private double CellWidth => boardCanvas.Width / topCount;
+        private double CellHeight => boardCanvas.Height / topCount;
 
         // Левый верхний угол клетки: по часовой стрелке от «Старта» в левом верхнем углу.
-        private static Point CellOrigin(int i, double size)
+        private Point CellOrigin(int i)
         {
+            double w = CellWidth, h = CellHeight;
             if (i < topCount)
             {
-                return new Point(i * size, 0);
+                return new Point(i * w, 0);
             }
             if (i < topCount + rightCount)
             {
-                return new Point((topCount - 1) * size, (i - topCount + 1) * size);
+                return new Point((topCount - 1) * w, (i - topCount + 1) * h);
             }
             if (i < topCount + rightCount + bottomCount)
             {
-                return new Point((topCount - 1 - (i - topCount - rightCount + 1)) * size, (topCount - 1) * size);
+                return new Point((topCount - 1 - (i - topCount - rightCount + 1)) * w, (topCount - 1) * h);
             }
-            return new Point(0, (topCount - 1 - (i - topCount - rightCount - bottomCount + 1)) * size);
+            return new Point(0, (topCount - 1 - (i - topCount - rightCount - bottomCount + 1)) * h);
         }
 
         public void DrawBoard()
         {
             boardCanvas.Children.Clear();
-            double size = CellSize;
+            double w = CellWidth, h = CellHeight;
             var line = (Brush)Application.Current.Resources["BoardLineBrush"];
             var paper = (Brush)Application.Current.Resources["BoardBrush"];
             var text = (Brush)Application.Current.Resources["BoardTextBrush"];
@@ -173,14 +176,14 @@ namespace Monopoly.App
 
             for (int i = 0; i < board.Count; i++)
             {
-                var origin = CellOrigin(i, size);
+                var origin = CellOrigin(i);
                 var cell = board[i];
                 var state = Snapshot?.Cells[i];
 
                 Place(new Rectangle
                 {
-                    Width = size,
-                    Height = size,
+                    Width = w,
+                    Height = h,
                     Stroke = line,
                     StrokeThickness = 1,
                     Fill = state?.IsMortgaged == true ? PlayerPalette.Make("#DAD7CF") : cell.IsPurchasable ? paper : SpecialBackground(cell.Type)
@@ -188,20 +191,20 @@ namespace Monopoly.App
 
                 if (cell.IsPurchasable)
                 {
-                    DrawCompany(cell, state, origin, size, text, muted);
+                    DrawCompany(cell, state, origin, w, h, text, muted);
                 }
                 else
                 {
-                    AddText(GroupPalette.Icon(cell.Type) ?? "", origin.X, origin.Y + size * 0.05, size, size * 0.28, FontWeights.Bold, text, "Segoe UI Symbol");
-                    AddText(cell.Name, origin.X, origin.Y + size * 0.44, size, size * 0.13, FontWeights.Bold, text);
+                    AddText(GroupPalette.Icon(cell.Type) ?? "", origin.X, origin.Y + h * 0.05, w, h * 0.28, FontWeights.Bold, text, "Segoe UI Symbol");
+                    AddText(cell.Name, origin.X, origin.Y + h * 0.44, w, h * 0.13, FontWeights.Bold, text);
                 }
 
                 if (SelectedCell == i)
                 {
                     Place(new Rectangle
                     {
-                        Width = size - 2,
-                        Height = size - 2,
+                        Width = w - 2,
+                        Height = h - 2,
                         Stroke = (Brush)Application.Current.Resources["AccentPressedBrush"],
                         StrokeThickness = 5,
                         IsHitTestVisible = false
@@ -210,7 +213,7 @@ namespace Monopoly.App
 
                 // Щелчок по клетке — прозрачная кнопка поверх неё (стиль CellButton в GameScreen.xaml).
                 int index = i;
-                var hit = new Button { Width = size, Height = size, Style = (Style)boardCanvas.FindResource("CellButton") };
+                var hit = new Button { Width = w, Height = h, Style = (Style)boardCanvas.FindResource("CellButton") };
                 AutomationProperties.SetName(hit, cell.Name);
                 AutomationProperties.SetAutomationId(hit, $"Cell{i}");
                 hit.Click += (_, _) => CellClicked?.Invoke(index);
@@ -220,56 +223,56 @@ namespace Monopoly.App
         }
 
         // Компания: полоса группы сверху, название, цена или филиалы, полоса владельца снизу.
-        private void DrawCompany(BoardCell cell, CellSnapshot? state, Point origin, double size, Brush text, Brush muted)
+        private void DrawCompany(BoardCell cell, CellSnapshot? state, Point origin, double w, double h, Brush text, Brush muted)
         {
-            double bar = size * 0.2;
-            Place(new Rectangle { Width = size - 2, Height = bar, Fill = GroupPalette.Get(cell.Type), IsHitTestVisible = false }, origin.X + 1, origin.Y + 1);
+            double bar = h * 0.2;
+            Place(new Rectangle { Width = w - 2, Height = bar, Fill = GroupPalette.Get(cell.Type), IsHitTestVisible = false }, origin.X + 1, origin.Y + 1);
             if (GroupPalette.Icon(cell.Type) is { } icon)
             {
-                AddText(icon, origin.X, origin.Y + 1, size, bar * 0.72, FontWeights.Bold, Brushes.White, "Segoe UI Symbol");
+                AddText(icon, origin.X, origin.Y + 1, w, bar * 0.72, FontWeights.Bold, Brushes.White, "Segoe UI Symbol");
             }
 
-            AddText(cell.Name, origin.X + 2, origin.Y + bar + size * 0.04, size - 4, size * 0.125, FontWeights.Bold, text);
+            AddText(cell.Name, origin.X + 2, origin.Y + bar + h * 0.04, w - 4, h * 0.13, FontWeights.Bold, text);
 
             if (state?.IsMortgaged == true)
             {
-                AddText("ЗАЛОГ", origin.X, origin.Y + size * 0.5, size, size * 0.12, FontWeights.Black, (Brush)Application.Current.Resources["DangerBrush"]);
+                AddText("ЗАСТАВА", origin.X, origin.Y + h * 0.5, w, h * 0.12, FontWeights.Black, (Brush)Application.Current.Resources["DangerBrush"]);
             }
             else if (state is { Level: > 0 })
             {
-                DrawBranches(state.Level, origin, size);
+                DrawBranches(state.Level, origin, w, h);
             }
             else if (state?.OwnerId is null)
             {
-                AddText(Format(cell.Price), origin.X, origin.Y + size * 0.5, size, size * 0.12, FontWeights.SemiBold, muted);
+                AddText(Format(cell.Price), origin.X, origin.Y + h * 0.5, w, h * 0.12, FontWeights.SemiBold, muted);
             }
 
             if (state?.OwnerId is int owner)
             {
-                Place(new Rectangle { Width = size - 2, Height = size * 0.1, Fill = PlayerColor(owner), IsHitTestVisible = false },
-                    origin.X + 1, origin.Y + size * 0.9 - 1);
+                Place(new Rectangle { Width = w - 2, Height = h * 0.1, Fill = PlayerColor(owner), IsHitTestVisible = false },
+                    origin.X + 1, origin.Y + h * 0.9 - 1);
             }
         }
 
         // Филиалы — зелёные домики, головной офис — красное здание.
-        private void DrawBranches(int level, Point origin, double size)
+        private void DrawBranches(int level, Point origin, double w, double h)
         {
             if (level == GameRules.HeadOfficeLevel)
             {
                 var office = new Border
                 {
-                    Width = size * 0.5,
-                    Height = size * 0.18,
+                    Width = h * 0.6,
+                    Height = h * 0.18,
                     CornerRadius = new CornerRadius(3),
                     Background = PlayerPalette.Make("#C62828"),
-                    Child = new TextBlock { Text = "ОФИС", Foreground = Brushes.White, FontSize = size * 0.1, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+                    Child = new TextBlock { Text = "ОФІС", Foreground = Brushes.White, FontSize = h * 0.1, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
                     IsHitTestVisible = false
                 };
-                Place(office, origin.X + size * 0.25, origin.Y + size * 0.5);
+                Place(office, origin.X + (w - h * 0.6) / 2, origin.Y + h * 0.5);
                 return;
             }
-            double house = size * 0.15, gap = size * 0.05;
-            double start = origin.X + (size - level * house - (level - 1) * gap) / 2;
+            double house = h * 0.15, gap = h * 0.05;
+            double start = origin.X + (w - level * house - (level - 1) * gap) / 2;
             for (int k = 0; k < level; k++)
             {
                 Place(new Rectangle
@@ -282,7 +285,7 @@ namespace Monopoly.App
                     Stroke = Brushes.White,
                     StrokeThickness = 1,
                     IsHitTestVisible = false
-                }, start + k * (house + gap), origin.Y + size * 0.52);
+                }, start + k * (house + gap), origin.Y + h * 0.52);
             }
         }
 
@@ -329,7 +332,7 @@ namespace Monopoly.App
         {
             if (!tokens.TryGetValue(playerId, out var token))
             {
-                double d = CellSize * 0.2;
+                double d = CellHeight * 0.2;
                 token = new Ellipse
                 {
                     Width = d,
@@ -341,7 +344,7 @@ namespace Monopoly.App
                 };
                 tokens[playerId] = token;
                 tokenCanvas.Children.Add(token);
-                var start = CellOrigin(0, CellSize);
+                var start = CellOrigin(0);
                 Canvas.SetLeft(token, start.X);
                 Canvas.SetTop(token, start.Y);
             }
@@ -351,10 +354,10 @@ namespace Monopoly.App
         // slot — место фишки на клетке, чтобы несколько фишек стояли рядом.
         private void PlaceToken(int playerId, int cell, int slot, int animationMs)
         {
-            double size = CellSize;
-            var origin = CellOrigin(cell, size);
-            double x = origin.X + size * 0.05 + slot * size * 0.185;
-            double y = origin.Y + size * 0.68;
+            double w = CellWidth, h = CellHeight;
+            var origin = CellOrigin(cell);
+            double x = origin.X + w * 0.05 + slot * w * 0.18;
+            double y = origin.Y + h * 0.68;
             var token = Token(playerId);
             if (animationMs <= 0)
             {
@@ -430,44 +433,44 @@ namespace Monopoly.App
                 var notes = new List<string>();
                 if (player.Id == MyPlayerId)
                 {
-                    notes.Add("вы");
+                    notes.Add("ви");
                 }
                 if (player.IsBankrupt)
                 {
-                    notes.Add("выбыл");
+                    notes.Add("вибув");
                 }
                 else if (seats.FirstOrDefault(s => s.PlayerId == player.Id) is { } seat)
                 {
                     if (seat.Connection == SeatConnection.Bot)
                     {
-                        notes.Add("играет бот");
+                        notes.Add("грає бот");
                     }
                     else if (seat.Connection == SeatConnection.Offline)
                     {
                         int left = Math.Max(0, (seat.SecondsToBot ?? 0) - (int)(DateTime.UtcNow - seatsReceived).TotalSeconds);
-                        notes.Add($"не в сети · бот через {left / 60}:{left % 60:00}");
+                        notes.Add($"не в мережі · бот через {left / 60}:{left % 60:00}");
                     }
                 }
                 if (!isCurrent && awaited.Contains(player.Id) && Snapshot.WinnerId is null)
                 {
-                    notes.Add("ждём ответа");
+                    notes.Add("чекаємо відповіді");
                 }
                 if (player.IsInJail)
                 {
-                    notes.Add("в тюрьме");
+                    notes.Add("у пєтушатні");
                 }
                 if (player.IsResting)
                 {
-                    notes.Add("отдыхает");
+                    notes.Add("чілить");
                 }
                 int companies = Snapshot.Cells.Count(c => c.OwnerId == player.Id);
                 if (companies > 0)
                 {
-                    notes.Add($"компаний: {companies}");
+                    notes.Add($"компаній: {companies}");
                 }
                 if (player.JailCards > 0)
                 {
-                    notes.Add($"карточек «Выйти из тюрьмы»: {player.JailCards}");
+                    notes.Add($"карток «Вийти з пєтушатні»: {player.JailCards}");
                 }
 
                 var grid = new Grid();
@@ -493,6 +496,7 @@ namespace Monopoly.App
                     {
                         Text = string.Join(" · ", notes),
                         FontSize = 15,
+                        TextWrapping = TextWrapping.Wrap,
                         Foreground = (Brush)Application.Current.Resources["MutedTextBrush"]
                     });
                 }

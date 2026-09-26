@@ -30,24 +30,24 @@ namespace Monopoly.Net
         public JoinResult Join(string connectionId, JoinRequest request, DateTime now)
         {
             if (request.Version != version)
-                return Fail($"Версии игры не совпадают: у хоста {version}, у вас {request.Version}. Нужна одна версия у всех.");
+                return Fail($"Версії гри не збігаються: у хоста {version}, у вас {request.Version}. Потрібна однакова версія в усіх.");
 
             string name = (request.Name ?? "").Trim();
             if (name.Length == 0)
-                return Fail("Введите имя.");
+                return Fail("Введіть ім'я.");
             if (IsStarted)
                 return Rejoin(connectionId, name);
 
             if (seats.Count >= GameRules.MaxPlayers)
-                return Fail($"Все {GameRules.MaxPlayers} мест заняты.");
+                return Fail($"Усі {GameRules.MaxPlayers} місць зайнято.");
             if (name.Length > MaxNameLength)
-                return Fail($"Имя слишком длинное: не больше {MaxNameLength} символов.");
+                return Fail($"Ім'я задовге: не більше {MaxNameLength} символів.");
             if (FindByName(name) is not null)
-                return Fail($"Имя «{name}» уже занято.");
+                return Fail($"Ім'я «{name}» уже зайняте.");
 
             bool isHost = request.HostToken == hostToken;
             if (isHost && seats.Any(s => s.IsHost))
-                return Fail("Хост уже в лобби.");
+                return Fail("Хост уже в лобі.");
 
             var seat = new Seat(nextSeatId++, name, FirstFreeColor(), isHost, isBot: false)
             {
@@ -64,9 +64,9 @@ namespace Monopoly.Net
         {
             var seat = FindByName(name);
             if (seat is null || seat.IsBot)
-                return Fail("Игра уже началась. Вернуться можно только под своим именем из этой партии.");
+                return Fail("Гра вже почалася. Повернутися можна лише під своїм ім'ям із цієї партії.");
             if (seat.ConnectionId is not null)
-                return Fail($"Игрок «{seat.Name}» уже в игре.");
+                return Fail($"Гравець «{seat.Name}» уже в грі.");
 
             seat.ConnectionId = connectionId;
             seat.DisconnectedAt = null;
@@ -97,7 +97,7 @@ namespace Monopoly.Net
             if (error is not null)
                 return error;
             if (seats.Count >= GameRules.MaxPlayers)
-                return $"Все {GameRules.MaxPlayers} мест заняты.";
+                return $"Усі {GameRules.MaxPlayers} місць зайнято.";
 
             int number = 1;
             while (FindByName($"Бот {number}") is not null)
@@ -113,7 +113,7 @@ namespace Monopoly.Net
                 return error;
             var seat = seats.FirstOrDefault(s => s.SeatId == seatId);
             if (seat is null || !seat.IsBot)
-                return "Такого бота нет.";
+                return "Такого бота немає.";
             seats.Remove(seat);
             return null;
         }
@@ -122,9 +122,9 @@ namespace Monopoly.Net
         {
             var seat = Find(connectionId);
             if (seat is null)
-                return "Вы не в лобби.";
+                return "Ви не в лобі.";
             if (IsStarted)
-                return "Игра уже началась.";
+                return "Гра вже почалася.";
             if (!seat.IsHost)
                 seat.IsReady = ready;
             return null;
@@ -134,13 +134,13 @@ namespace Monopoly.Net
         {
             var seat = Find(connectionId);
             if (seat is null)
-                return "Вы не в лобби.";
+                return "Ви не в лобі.";
             if (IsStarted)
-                return "Игра уже началась.";
+                return "Гра вже почалася.";
             if (colorIndex < 0 || colorIndex >= ColorCount)
-                return "Такого цвета нет.";
+                return "Такого кольору немає.";
             if (seats.Any(s => s != seat && s.ColorIndex == colorIndex))
-                return "Этот цвет уже занят.";
+                return "Цей колір уже зайнятий.";
             seat.ColorIndex = colorIndex;
             return null;
         }
@@ -151,7 +151,7 @@ namespace Monopoly.Net
             playerNames = Array.Empty<string>();
             var seat = Find(connectionId);
             if (seat is null || !seat.IsHost)
-                return "Начать игру может только хост.";
+                return "Почати гру може лише хост.";
             var reason = StartBlockedReason();
             if (reason is not null)
                 return reason;
@@ -235,20 +235,20 @@ namespace Monopoly.Net
         private string? StartBlockedReason()
         {
             if (IsStarted)
-                return "Игра уже идёт.";
+                return "Гра вже триває.";
             if (seats.Count < GameRules.MinPlayers)
-                return $"Нужно хотя бы {GameRules.MinPlayers} игрока.";
+                return $"Потрібно хоча б {GameRules.MinPlayers} гравці.";
             var notReady = seats.Where(s => !s.IsReady).Select(s => s.Name).ToList();
             if (notReady.Count > 0)
-                return $"Не готовы: {string.Join(", ", notReady)}.";
+                return $"Не готові: {string.Join(", ", notReady)}.";
             return null;
         }
 
         private string? RequireHostBeforeStart(string connectionId)
         {
             if (Find(connectionId) is not { IsHost: true })
-                return "Это может только хост.";
-            return IsStarted ? "Игра уже началась." : null;
+                return "Це може лише хост.";
+            return IsStarted ? "Гра вже почалася." : null;
         }
 
         private int FirstFreeColor() =>

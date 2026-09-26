@@ -26,7 +26,7 @@ namespace Monopoly.App
 
             var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             var okBtn = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 10, 0) };
-            var cancelBtn = new Button { Content = "Отмена", Width = 80 };
+            var cancelBtn = new Button { Content = "Скасувати", Width = 80 };
             okBtn.Click += (s, e) => { InputText = inputBox.Text; result = true; Close(); };
             cancelBtn.Click += (s, e) => { result = false; Close(); };
             btnPanel.Children.Add(okBtn);

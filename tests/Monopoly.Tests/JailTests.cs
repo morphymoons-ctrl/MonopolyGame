@@ -65,7 +65,7 @@ namespace Monopoly.Tests
         {
             var game = InJail();
 
-            Assert.Equal("У вас нет карточки «Выйти из тюрьмы».", game.Error(new UseJailCard(0)));
+            Assert.Equal("У вас немає картки «Вийти з пєтушатні».", game.Error(new UseJailCard(0)));
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace Monopoly.Tests
         {
             var game = Create();
 
-            Assert.Equal("Вы не в тюрьме.", game.Error(new PayBail(0)));
+            Assert.Equal("Ви не у пєтушатні.", game.Error(new PayBail(0)));
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace Monopoly.Tests
             Assert.Contains(new JailRollFailed(0, 1), result.Events);
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
             // Залог платят до броска; после неудачной попытки ход только заканчивается.
-            Assert.Equal("Кубики в этом ходу уже брошены.", game.Error(new PayBail(0)));
+            Assert.Equal("Кубики в цьому ході вже кинуто.", game.Error(new PayBail(0)));
         }
 
         [Fact]
@@ -173,7 +173,7 @@ namespace Monopoly.Tests
             var game = OnCasino(0);
             game.Do(new PlayCasino(0, 50));
 
-            Assert.Equal("Играть в казино можно только сразу после попадания на клетку.", game.Error(new PlayCasino(0, 50)));
+            Assert.Equal("Грати в казино можна лише одразу після потрапляння на клітинку.", game.Error(new PlayCasino(0, 50)));
         }
 
         [Fact]
@@ -190,9 +190,9 @@ namespace Monopoly.Tests
         {
             var game = OnCasino(0);
 
-            Assert.Equal("Ставка может быть 50, 100, 200, 300 грн.", game.Error(new PlayCasino(0, 75)));
+            Assert.Equal("Ставка може бути 50, 100, 200, 300 грн.", game.Error(new PlayCasino(0, 75)));
             game.P(0).Balance = 150;
-            Assert.Equal("Не хватает денег на ставку: у вас 150 грн.", game.Error(new PlayCasino(0, 200)));
+            Assert.Equal("Не вистачає грошей на ставку: у вас 150 грн.", game.Error(new PlayCasino(0, 200)));
         }
 
         [Fact]

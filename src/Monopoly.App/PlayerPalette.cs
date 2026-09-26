@@ -16,7 +16,7 @@ namespace Monopoly.App
             Make("#8E4EC6"),
         };
 
-        public static readonly string[] Names = { "Красный", "Синий", "Зелёный", "Оранжевый", "Фиолетовый" };
+        public static readonly string[] Names = { "Червоний", "Синій", "Зелений", "Помаранчевий", "Фіолетовий" };
 
         public static Brush Get(int colorIndex) => Brushes[colorIndex % Lobby.ColorCount];
 

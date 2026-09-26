@@ -30,6 +30,9 @@ namespace Monopoly.App
         // Таймер хода: до какого момента ждут решения и от кого.
         private DateTime? deadline;
         private IReadOnlyList<int> awaitedIds = Array.Empty<int>();
+        // Длительность партии от хоста и когда она пришла: дальше часы идут сами.
+        private GameDuration? duration;
+        private DateTime durationReceived;
         private readonly System.Windows.Threading.DispatcherTimer clock = new() { Interval = TimeSpan.FromSeconds(1) };
 
         public GameScreen(GameClient client, GameStartInfo info, UserSettings settings, Func<Task> leave)
@@ -54,6 +57,7 @@ namespace Monopoly.App
             clock.Tick += (_, _) =>
             {
                 ShowTimer();
+                ShowDuration();
                 gameManager.RefreshPlayers();
             };
             Loaded += (_, _) => clock.Start();
@@ -63,6 +67,19 @@ namespace Monopoly.App
         public void ShowReconnecting(bool reconnecting)
         {
             ReconnectOverlay.Visibility = reconnecting ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        // Сколько идёт партия; после победы — сколько она шла.
+        private void ShowDuration()
+        {
+            if (duration is null)
+            {
+                DurationText.Text = "";
+                return;
+            }
+            int seconds = duration.Seconds + (duration.Running ? (int)(DateTime.UtcNow - durationReceived).TotalSeconds : 0);
+            string time = $"{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}";
+            DurationText.Text = duration.Running ? $"Партія триває {time}" : $"Партія тривала {time}";
         }
 
         // Отсчёт считается от момента, когда пришло обновление: часы у компьютеров могут не совпадать.
@@ -79,7 +96,7 @@ namespace Monopoly.App
             TimerText.Foreground = mine && left <= 15
                 ? (Brush)FindResource("DangerBrush")
                 : (Brush)FindResource("BoardMutedBrush");
-            TimerText.ToolTip = mine ? "Когда время выйдет, игра сделает ход за вас" : null;
+            TimerText.ToolTip = mine ? "Коли час вийде, гра зробить хід за вас" : null;
         }
 
         private int MyId => gameManager.MyPlayerId;
@@ -91,7 +108,13 @@ namespace Monopoly.App
             deadline = update.Timer is { } timer ? DateTime.UtcNow.AddSeconds(timer.SecondsLeft) : null;
             awaitedIds = update.Timer?.AwaitedIds ?? Array.Empty<int>();
             gameManager.SetStatus(update.Seats, awaitedIds);
+            if (update.Duration is not null)
+            {
+                duration = update.Duration;
+                durationReceived = DateTime.UtcNow;
+            }
             ShowTimer();
+            ShowDuration();
             updates.Enqueue(update);
             if (!playing)
             {
@@ -136,7 +159,7 @@ namespace Monopoly.App
         {
             if (Snapshot is not { } s)
             {
-                ContextTitle.Text = "Раздаём фишки…";
+                ContextTitle.Text = "Роздаємо фішки…";
                 ContextText.Text = "";
                 ContextBar.Visibility = Visibility.Collapsed;
                 return;
@@ -153,7 +176,7 @@ namespace Monopoly.App
         private (string Title, string Text, Brush? Bar) Describe(GameSnapshot s)
         {
             string Name(int id) => s.FindPlayer(id)?.Name ?? "?";
-            string Target(int? creditor) => creditor is int c ? $"игроку {Name(c)}" : "банку";
+            string Target(int? creditor) => creditor is int c ? $"гравцю {Name(c)}" : "банку";
             var danger = (Brush)FindResource("DangerBrush");
             var blue = (Brush)FindResource("BlueBrush");
             var me = s.FindPlayer(MyId);
@@ -162,53 +185,53 @@ namespace Monopoly.App
             switch (s.Phase)
             {
                 case TurnPhase.GameOver:
-                    return ($"Победил {Name(s.WinnerId!.Value)}!", "Партия окончена. Выйдите в меню, чтобы собрать новую.", (Brush)FindResource("AccentBrush"));
+                    return ($"Перемога: {Name(s.WinnerId!.Value)}!", "Партію закінчено. Вийдіть у меню, щоб зібрати нову.", (Brush)FindResource("AccentBrush"));
                 case TurnPhase.Debt when s.Debt!.DebtorId == MyId:
-                    return ("Не хватает денег",
-                        $"Долг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Нажмите на свою компанию на поле, чтобы продать филиалы или заложить её. Долг спишется сам, как только хватит денег.",
+                    return ("Бракує грошей",
+                        $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Натисніть на свою компанію на полі, щоб продати філії або закласти її. Борг спишеться сам, щойно вистачить грошей.",
                         danger);
                 case TurnPhase.Debt:
-                    return ($"{Name(s.Debt!.DebtorId)} ищет деньги", $"Долг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Ждём.", danger);
+                    return ($"{Name(s.Debt!.DebtorId)} шукає гроші", $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Чекаємо.", danger);
                 case TurnPhase.Auction:
                     var auction = s.Auction!;
                     var lot = EventText.Cells[auction.CellIndex];
                     string bid = auction.LeaderId is int leader
                         ? $"Ставка {GameManager.Format(auction.HighBid)} — {Name(leader)}."
-                        : $"Ставок пока нет. Первая — от {GameManager.Format(auction.MinBid)}.";
+                        : $"Ставок поки немає. Перша — від {GameManager.Format(auction.MinBid)}.";
                     var passed = auction.PassedIds.Select(Name).ToList();
-                    string passedText = passed.Count > 0 ? $" Спасовали: {string.Join(", ", passed)}." : "";
-                    return ($"Аукцион: «{lot.Name}»", $"Цена компании {GameManager.Format(lot.Price)}. {bid}{passedText}", GroupPalette.Get(lot.Type));
+                    string passedText = passed.Count > 0 ? $" Спасували: {string.Join(", ", passed)}." : "";
+                    return ($"Аукціон: «{lot.Name}»", $"Ціна компанії {GameManager.Format(lot.Price)}. {bid}{passedText}", GroupPalette.Get(lot.Type));
                 case TurnPhase.TradeOffer when s.Trade!.ToId == MyId:
-                    return ("Вам предлагают обмен", $"{Name(s.Trade.FromId)} {EventText.DescribeOffer(s.Trade, s)}", blue);
+                    return ("Вам пропонують обмін", $"{Name(s.Trade.FromId)} {EventText.DescribeOffer(s.Trade, s)}", blue);
                 case TurnPhase.TradeOffer when s.Trade!.FromId == MyId:
-                    return ($"Ждём ответа: {Name(s.Trade.ToId)}", $"Вы {EventText.DescribeOffer(s.Trade, s)}", blue);
+                    return ($"Чекаємо відповіді: {Name(s.Trade.ToId)}", $"Ви {EventText.DescribeOffer(s.Trade, s)}", blue);
                 case TurnPhase.TradeOffer:
-                    return ("Идёт обмен", $"{Name(s.Trade!.FromId)} → {Name(s.Trade.ToId)}: {EventText.DescribeOffer(s.Trade, s)}", blue);
+                    return ("Триває обмін", $"{Name(s.Trade!.FromId)} → {Name(s.Trade.ToId)}: {EventText.DescribeOffer(s.Trade, s)}", blue);
                 case TurnPhase.BuyDecision:
                     var cell = EventText.Cells[s.PendingPurchase!.Value];
                     return myTurn
-                        ? ($"«{cell.Name}» свободна", $"{EventText.GroupName(cell.Type)} · {GameManager.Format(cell.Price)}. Купите её или откажитесь — тогда начнётся аукцион.", GroupPalette.Get(cell.Type))
-                        : ($"{Name(s.CurrentPlayerId)} решает", $"Покупать ли «{cell.Name}» за {GameManager.Format(cell.Price)}.", GroupPalette.Get(cell.Type));
+                        ? ($"«{cell.Name}» вільна", $"{EventText.GroupName(cell.Type)} · {GameManager.Format(cell.Price)}. Купіть її або відмовтеся — тоді почнеться аукціон.", GroupPalette.Get(cell.Type))
+                        : ($"{Name(s.CurrentPlayerId)} вирішує", $"Чи купувати «{cell.Name}» за {GameManager.Format(cell.Price)}.", GroupPalette.Get(cell.Type));
             }
 
             if (!myTurn)
             {
                 var current = s.FindPlayer(s.CurrentPlayerId)!;
-                return ($"Ходит {current.Name}", current.IsInJail ? "Сидит в тюрьме." : "", null);
+                return ($"Ходить {current.Name}", current.IsInJail ? "Сидить у пєтушатні." : "", null);
             }
             if (s.Phase == TurnPhase.AwaitingRoll && me?.IsInJail == true)
             {
-                return ("Вы в тюрьме", $"Заплатите залог {GameManager.Format(GameRules.BailAmount)}, используйте карточку или бросьте кубики — нужен дубль.", null);
+                return ("Ви у пєтушатні", $"Заплатіть заставу {GameManager.Format(GameRules.BailAmount)}, використайте картку або киньте кубики — потрібен дубль.", null);
             }
             if (s.Phase == TurnPhase.AwaitingRoll)
             {
                 return s.LastRoll is null
-                    ? ("Ваш ход", "Бросьте кубики. До броска можно строить филиалы, закладывать компании и предлагать обмен.", null)
-                    : ("Дубль! Бросайте ещё раз", "", null);
+                    ? ("Ваш хід", "Киньте кубики. До кидка можна будувати філії, закладати компанії та пропонувати обмін.", null)
+                    : ("Дубль! Кидайте ще раз", "", null);
             }
             return s.CasinoAvailable
-                ? ("Казино", "Ставка 50–300 грн: 50% — проигрыш, 10% — возврат, 35% — ×2, 5% — ×3. Можно не играть — просто завершите ход.", PlayerPalette.Make("#E0569B"))
-                : ("Ваш ход", "Можно строить филиалы, закладывать компании и предлагать обмен. Потом завершите ход.", null);
+                ? ("Казино", "Ставка 50–300 грн: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3. Можна не грати — просто завершіть хід.", PlayerPalette.Make("#E0569B"))
+                : ("Ваш хід", "Можна будувати філії, закладати компанії та пропонувати обмін. Потім завершіть хід.", null);
         }
 
         // --- Кнопки действий ---
@@ -308,8 +331,8 @@ namespace Monopoly.App
             }
 
             string owner = state?.OwnerId is int id ? Snapshot?.FindPlayer(id)?.Name ?? "?" : "банк";
-            string status = state is { IsMortgaged: true } ? " · заложена, аренды нет" : "";
-            CellInfo.Text = $"{EventText.GroupName(cell.Type)} · цена {GameManager.Format(cell.Price)} · владелец: {owner}{status}";
+            string status = state is { IsMortgaged: true } ? " · закладена, оренди немає" : "";
+            CellInfo.Text = $"{EventText.GroupName(cell.Type)} · ціна {GameManager.Format(cell.Price)} · власник: {owner}{status}";
             FillRentTable(index, cell, state);
 
             if (!Busy)
@@ -319,11 +342,11 @@ namespace Monopoly.App
                     (string Label, string Style)? button = action switch
                     {
                         BuildBranch b when b.CellIndex == index => (state?.Level == GameRules.HeadOfficeLevel - 1
-                            ? $"Головной офис · {GameManager.Format(cell.BranchCost)}"
-                            : $"Филиал · {GameManager.Format(cell.BranchCost)}", "PrimaryButton"),
-                        SellBranch s when s.CellIndex == index => ($"Продать филиал · +{GameManager.Format(cell.BranchSaleValue)}", "SecondaryButton"),
-                        MortgageCompany m when m.CellIndex == index => ($"Заложить · +{GameManager.Format(cell.MortgageValue)}", "SecondaryButton"),
-                        RedeemCompany r when r.CellIndex == index => ($"Выкупить · {GameManager.Format(cell.RedeemCost)}", "PrimaryButton"),
+                            ? $"Головний офіс · {GameManager.Format(cell.BranchCost)}"
+                            : $"Філія · {GameManager.Format(cell.BranchCost)}", "PrimaryButton"),
+                        SellBranch s when s.CellIndex == index => ($"Продати філію · +{GameManager.Format(cell.BranchSaleValue)}", "SecondaryButton"),
+                        MortgageCompany m when m.CellIndex == index => ($"Закласти · +{GameManager.Format(cell.MortgageValue)}", "SecondaryButton"),
+                        RedeemCompany r when r.CellIndex == index => ($"Викупити · {GameManager.Format(cell.RedeemCost)}", "PrimaryButton"),
                         _ => null,
                     };
                     if (button is { } b2)
@@ -351,20 +374,20 @@ namespace Monopoly.App
                 case CellType.GasStation:
                     for (int count = 1; count < GameRules.GasStationRent.Count; count++)
                     {
-                        rows.Add(($"{count} АЗС у владельца", GameManager.Format(GameRules.GasStationRent[count])));
+                        rows.Add(($"{count} АЗС у власника", GameManager.Format(GameRules.GasStationRent[count])));
                     }
                     active = ownedInGroup - 1;
                     break;
                 case CellType.Logistics:
-                    rows.Add(("Одна компания", $"кубики × {GameRules.LogisticsSingle}"));
-                    rows.Add(("Обе компании", $"кубики × {GameRules.LogisticsBoth}"));
+                    rows.Add(("Одна компанія", $"кубики × {GameRules.LogisticsSingle}"));
+                    rows.Add(("Обидві компанії", $"кубики × {GameRules.LogisticsBoth}"));
                     active = ownedInGroup - 1;
                     break;
                 default:
                     int rent = GameRules.BaseRent(cell);
-                    rows.Add(("Аренда", GameManager.Format(rent)));
-                    rows.Add(("Вся группа", GameManager.Format(rent * GameRules.MonopolyMultiplier)));
-                    string[] names = { "", "1 филиал", "2 филиала", "3 филиала", "4 филиала", "Головной офис" };
+                    rows.Add(("Оренда", GameManager.Format(rent)));
+                    rows.Add(("Уся група", GameManager.Format(rent * GameRules.MonopolyMultiplier)));
+                    string[] names = { "", "1 філія", "2 філії", "3 філії", "4 філії", "Головний офіс" };
                     for (int level = 1; level <= GameRules.HeadOfficeLevel; level++)
                     {
                         rows.Add((names[level], GameManager.Format(rent * GameRules.LevelMultipliers[level])));
@@ -397,8 +420,8 @@ namespace Monopoly.App
 
             RentTable.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             string costs = cell.IsBuildable
-                ? $"Филиал {GameManager.Format(cell.BranchCost)} (продажа {GameManager.Format(cell.BranchSaleValue)}) · залог {GameManager.Format(cell.MortgageValue)} · выкуп {GameManager.Format(cell.RedeemCost)}"
-                : $"Залог {GameManager.Format(cell.MortgageValue)} · выкуп {GameManager.Format(cell.RedeemCost)}";
+                ? $"Філія {GameManager.Format(cell.BranchCost)} (продаж {GameManager.Format(cell.BranchSaleValue)}) · застава {GameManager.Format(cell.MortgageValue)} · викуп {GameManager.Format(cell.RedeemCost)}"
+                : $"Застава {GameManager.Format(cell.MortgageValue)} · викуп {GameManager.Format(cell.RedeemCost)}";
             var footer = new TextBlock { Text = costs, FontSize = 15, Foreground = (Brush)FindResource("MutedTextBrush"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
             Grid.SetRow(footer, rows.Count);
             Grid.SetColumnSpan(footer, 2);
@@ -407,11 +430,11 @@ namespace Monopoly.App
 
         private static string DescribeSpecial(CellType type) => type switch
         {
-            CellType.Start => $"Проход или попадание — +{GameManager.Format(GameRules.StartBonus)}.",
-            CellType.Jail => $"Здесь просто в гостях. В тюрьму попадают по карточке «Шанса» или за три дубля подряд. Залог — {GameManager.Format(GameRules.BailAmount)}.",
-            CellType.Casino => "Ставка 50–300 грн сразу после попадания: 50% — проигрыш, 10% — возврат, 35% — ×2, 5% — ×3.",
-            CellType.Rest => "Пропуск следующего хода.",
-            CellType.Chance => "Карточка из колоды «Шанса»: деньги, перемещение, тюрьма или выход из неё.",
+            CellType.Start => $"Прохід або потрапляння — +{GameManager.Format(GameRules.StartBonus)}.",
+            CellType.Jail => $"Тут просто в гостях. До пєтушатні потрапляють за карткою «Шансу» або за три дублі поспіль. Застава — {GameManager.Format(GameRules.BailAmount)}.",
+            CellType.Casino => "Ставка 50–300 грн одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
+            CellType.Rest => "Пропуск наступного ходу.",
+            CellType.Chance => "Картка з колоди «Шансу»: гроші, переміщення, пєтушатня або вихід з неї.",
             _ => "",
         };
 
@@ -440,13 +463,13 @@ namespace Monopoly.App
 
         private void UpdateSoundButton()
         {
-            SoundButton.Content = sounds.Enabled ? "🔊  Звук" : "🔈  Без звука";
+            SoundButton.Content = sounds.Enabled ? "🔊  Звук" : "🔈  Без звуку";
         }
 
         private async void Leave_Click(object sender, RoutedEventArgs e)
         {
-            var answer = MessageBox.Show(Window.GetWindow(this)!, "Выйти из партии? Вернуться в неё пока нельзя.",
-                "Монополия", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var answer = MessageBox.Show(Window.GetWindow(this)!, "Вийти з партії? Хост збереже ваше місце, повернутися можна під тим самим ім'ям.",
+                "Монополія", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (answer == MessageBoxResult.Yes)
             {
                 await leave();

@@ -44,7 +44,7 @@ namespace Monopoly.Tests
         [Fact]
         public void Timeout_InDebt_SellsBranchesFirst_ThenMortgagesCheapest()
         {
-            // Аня встаёт на «Сильпо» Богдана с головным офисом (980). Наличных 600,
+            // Аня встаёт на «Сільпо» Богдана с головным офисом (980). Наличных 600,
             // остальное соберёт, продав филиалы ТВ и заложив компании.
             var game = CreateFor(3, 1, 2);
             game.Give(1, Atb, Varus, Silpo);
@@ -99,7 +99,7 @@ namespace Monopoly.Tests
             var ex = Assert.Throws<InvalidDataException>(() =>
                 Game.Replay(new[] { "А", "Б" }, 1, new GameAction[] { new EndTurn(0) }));
 
-            Assert.Contains("Сохранение не подходит", ex.Message);
+            Assert.Contains("Збереження не підходить", ex.Message);
         }
 
         [Fact]

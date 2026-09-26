@@ -26,7 +26,7 @@ namespace Monopoly.Tests
 
             var result = lobby.Join("c1", new JoinRequest("Аня", "1.2.4"), T0);
 
-            Assert.Equal("Версии игры не совпадают: у хоста 1.2.3, у вас 1.2.4. Нужна одна версия у всех.", result.Error);
+            Assert.Equal("Версії гри не збігаються: у хоста 1.2.3, у вас 1.2.4. Потрібна однакова версія в усіх.", result.Error);
             Assert.Equal(1, lobby.PlayerCount);
         }
 
@@ -40,14 +40,14 @@ namespace Monopoly.Tests
             var extra = Join(lobby, "c-extra", "Лишний");
 
             Assert.Equal(5, lobby.PlayerCount);
-            Assert.Equal("Все 5 мест заняты.", extra.Error);
+            Assert.Equal("Усі 5 місць зайнято.", extra.Error);
         }
 
         [Theory]
-        [InlineData("", "Введите имя.")]
-        [InlineData("   ", "Введите имя.")]
-        [InlineData("хост", "Имя «хост» уже занято.")]
-        [InlineData("Очень-очень длинное имя", "Имя слишком длинное: не больше 20 символов.")]
+        [InlineData("", "Введіть ім'я.")]
+        [InlineData("   ", "Введіть ім'я.")]
+        [InlineData("хост", "Ім'я «хост» уже зайняте.")]
+        [InlineData("Очень-очень длинное имя", "Ім'я задовге: не більше 20 символів.")]
         public void Join_WithBadName_IsRejected(string name, string error)
         {
             var lobby = CreateLobbyWithHost();
@@ -65,7 +65,7 @@ namespace Monopoly.Tests
 
             Assert.True(seats[0].IsHost);
             Assert.False(seats[1].IsHost);
-            Assert.Equal("Хост уже в лобби.", lobby.Join("c2", new JoinRequest("Второй", Version, Token), T0).Error);
+            Assert.Equal("Хост уже в лобі.", lobby.Join("c2", new JoinRequest("Второй", Version, Token), T0).Error);
         }
 
         [Fact]
@@ -86,8 +86,8 @@ namespace Monopoly.Tests
             var lobby = CreateLobbyWithHost();
             Join(lobby, "c1", "Аня");
 
-            Assert.Equal("Этот цвет уже занят.", lobby.SetColor("c1", 0));
-            Assert.Equal("Такого цвета нет.", lobby.SetColor("c1", Lobby.ColorCount));
+            Assert.Equal("Цей колір уже зайнятий.", lobby.SetColor("c1", 0));
+            Assert.Equal("Такого кольору немає.", lobby.SetColor("c1", Lobby.ColorCount));
             Assert.Null(lobby.SetColor("c1", 4));
         }
 
@@ -96,8 +96,8 @@ namespace Monopoly.Tests
         {
             var lobby = CreateLobbyWithHost();
 
-            Assert.Equal("Нужно хотя бы 2 игрока.", lobby.GetState().StartBlockedReason);
-            Assert.Equal("Нужно хотя бы 2 игрока.", lobby.Start("host", out _));
+            Assert.Equal("Потрібно хоча б 2 гравці.", lobby.GetState().StartBlockedReason);
+            Assert.Equal("Потрібно хоча б 2 гравці.", lobby.Start("host", out _));
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace Monopoly.Tests
             Join(lobby, "c2", "Богдан");
             lobby.SetReady("c1", true);
 
-            Assert.Equal("Не готовы: Богдан.", lobby.Start("host", out _));
+            Assert.Equal("Не готові: Богдан.", lobby.Start("host", out _));
 
             lobby.SetReady("c2", true);
             Assert.Null(lobby.GetState().StartBlockedReason);
@@ -121,7 +121,7 @@ namespace Monopoly.Tests
             Join(lobby, "c1", "Аня");
             lobby.SetReady("c1", true);
 
-            Assert.Equal("Начать игру может только хост.", lobby.Start("c1", out _));
+            Assert.Equal("Почати гру може лише хост.", lobby.Start("c1", out _));
         }
 
         [Fact]
@@ -139,7 +139,7 @@ namespace Monopoly.Tests
             Assert.Equal(new[] { "Хост", "Аня" }, names);
             Assert.Equal(1, lobby.FindPlayerId("c1"));
             Assert.Equal(4, lobby.ColorByPlayerId()[1]);
-            Assert.Equal("Игра уже началась. Вернуться можно только под своим именем из этой партии.", Join(lobby, "c2", "Опоздавший").Error);
+            Assert.Equal("Гра вже почалася. Повернутися можна лише під своїм ім'ям із цієї партії.", Join(lobby, "c2", "Опоздавший").Error);
         }
 
         [Fact]
@@ -197,7 +197,7 @@ namespace Monopoly.Tests
         {
             var lobby = StartedWithAnya();
 
-            Assert.Equal("Игрок «Аня» уже в игре.", Join(lobby, "c9", "Аня").Error);
+            Assert.Equal("Гравець «Аня» уже в грі.", Join(lobby, "c9", "Аня").Error);
         }
 
         [Fact]
@@ -225,7 +225,7 @@ namespace Monopoly.Tests
             var lobby = CreateLobbyWithHost();
             Join(lobby, "c1", "Аня");
 
-            Assert.Equal("Это может только хост.", lobby.AddBot("c1"));
+            Assert.Equal("Це може лише хост.", lobby.AddBot("c1"));
             Assert.Null(lobby.AddBot("host"));
             Assert.Null(lobby.AddBot("host"));
 
@@ -234,7 +234,7 @@ namespace Monopoly.Tests
             Assert.All(bots, b => Assert.True(b.IsReady));
 
             Assert.Null(lobby.RemoveBot("host", bots[0].SeatId));
-            Assert.Equal("Такого бота нет.", lobby.RemoveBot("host", 999));
+            Assert.Equal("Такого бота немає.", lobby.RemoveBot("host", 999));
             Assert.Equal(3, lobby.PlayerCount);
         }
 
@@ -246,7 +246,7 @@ namespace Monopoly.Tests
             lobby.Start("host", out _);
 
             Assert.True(lobby.IsBotControlled(1));
-            Assert.Equal("Игра уже началась. Вернуться можно только под своим именем из этой партии.", Join(lobby, "c1", "Бот 1").Error);
+            Assert.Equal("Гра вже почалася. Повернутися можна лише під своїм ім'ям із цієї партії.", Join(lobby, "c1", "Бот 1").Error);
         }
 
         [Fact]

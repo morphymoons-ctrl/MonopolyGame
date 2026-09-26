@@ -33,7 +33,7 @@ namespace Monopoly.Tests
             var game = Create(3, 5);
             game.Give(0, Atb, Varus);
 
-            Assert.Equal("Филиалы строятся, только когда у вас вся группа.", game.Error(new BuildBranch(0, Atb)));
+            Assert.Equal("Філії будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace Monopoly.Tests
             var game = WithSupermarkets();
             game.Do(new BuildBranch(0, Atb));
 
-            Assert.Equal("Стройте равномерно: сначала на других компаниях группы.", game.Error(new BuildBranch(0, Atb)));
+            Assert.Equal("Будуйте рівномірно: спершу на інших компаніях групи.", game.Error(new BuildBranch(0, Atb)));
             game.Do(new BuildBranch(0, Varus));
             game.Do(new BuildBranch(0, Silpo));
             game.Do(new BuildBranch(0, Atb));
@@ -61,7 +61,7 @@ namespace Monopoly.Tests
             Assert.Contains(new BranchBuilt(0, Silpo, 5, 70), result.Events);
             game.Do(new BuildBranch(0, Atb));
             game.Do(new BuildBranch(0, Varus));
-            Assert.Equal("Здесь уже головной офис.", game.Error(new BuildBranch(0, Silpo)));
+            Assert.Equal("Тут уже головний офіс.", game.Error(new BuildBranch(0, Silpo)));
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace Monopoly.Tests
             var game = Create(3, 5);
             game.Give(0, Wog, Okko, Upg, Ukrnafta);
 
-            Assert.Equal("На АЗС и логистике филиалы не строятся.", game.Error(new BuildBranch(0, Wog)));
+            Assert.Equal("На АЗС і логістиці філії не будуються.", game.Error(new BuildBranch(0, Wog)));
         }
 
         [Fact]
@@ -79,7 +79,7 @@ namespace Monopoly.Tests
             var game = WithSupermarkets();
             game.State.Board[Atb].IsMortgaged = true;
 
-            Assert.Equal("В группе есть заложенная компания — сначала выкупите её.", game.Error(new BuildBranch(0, Silpo)));
+            Assert.Equal("У групі є закладена компанія — спершу викупіть її.", game.Error(new BuildBranch(0, Silpo)));
         }
 
         [Fact]
@@ -88,7 +88,7 @@ namespace Monopoly.Tests
             var game = WithSupermarkets();
             game.P(0).Balance = 60;
 
-            Assert.Equal("Не хватает денег: филиал стоит 70 грн.", game.Error(new BuildBranch(0, Silpo)));
+            Assert.Equal("Не вистачає грошей: філія коштує 70 грн.", game.Error(new BuildBranch(0, Silpo)));
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace Monopoly.Tests
             var game = Create(3, 5);
             game.Give(1, Atb, Varus, Silpo);
 
-            Assert.Equal("Сейчас ходит Аня.", game.Error(new BuildBranch(1, Silpo)));
+            Assert.Equal("Зараз ходить Аня.", game.Error(new BuildBranch(1, Silpo)));
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace Monopoly.Tests
             game.State.Board[Silpo].Level = 2;
             game.State.Board[Varus].Level = 2;
 
-            Assert.Equal("Продавайте равномерно: сначала с других компаний группы.", game.Error(new SellBranch(0, Atb)));
+            Assert.Equal("Продавайте рівномірно: спершу з інших компаній групи.", game.Error(new SellBranch(0, Atb)));
             var result = game.Do(new SellBranch(0, Silpo));
 
             Assert.Equal(1, Level(game, Silpo));
@@ -121,7 +121,7 @@ namespace Monopoly.Tests
         {
             var game = WithSupermarkets();
 
-            Assert.Equal("Здесь нет филиалов.", game.Error(new SellBranch(0, Silpo)));
+            Assert.Equal("Тут немає філій.", game.Error(new SellBranch(0, Silpo)));
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace Monopoly.Tests
             game.Do(new MortgageCompany(0, Atb));
             Assert.True(game.State.Board[Atb].IsMortgaged);
             Assert.Equal(GameRules.StartingBalance + 50, game.P(0).Balance);
-            Assert.Equal("Компания уже заложена.", game.Error(new MortgageCompany(0, Atb)));
+            Assert.Equal("Компанію вже закладено.", game.Error(new MortgageCompany(0, Atb)));
 
             game.Do(new RedeemCompany(0, Atb));
             Assert.False(game.State.Board[Atb].IsMortgaged);
@@ -145,7 +145,7 @@ namespace Monopoly.Tests
             var game = WithSupermarkets();
             game.State.Board[Silpo].Level = 1;
 
-            Assert.Equal("Сначала продайте филиалы в этой группе.", game.Error(new MortgageCompany(0, Atb)));
+            Assert.Equal("Спершу продайте філії в цій групі.", game.Error(new MortgageCompany(0, Atb)));
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace Monopoly.Tests
             game.State.Board[Silpo].IsMortgaged = true;
             game.P(0).Balance = 70;
 
-            Assert.Equal("Не хватает денег: выкуп стоит 77 грн.", game.Error(new RedeemCompany(0, Silpo)));
+            Assert.Equal("Не вистачає грошей: викуп коштує 77 грн.", game.Error(new RedeemCompany(0, Silpo)));
         }
 
         [Fact]
@@ -164,8 +164,8 @@ namespace Monopoly.Tests
             var game = WithSupermarkets();
             game.Give(1, Wog);
 
-            Assert.Equal("Это не ваша компания.", game.Error(new MortgageCompany(0, Wog)));
-            Assert.Equal("Нет такой клетки.", game.Error(new MortgageCompany(0, 99)));
+            Assert.Equal("Це не ваша компанія.", game.Error(new MortgageCompany(0, Wog)));
+            Assert.Equal("Немає такої клітинки.", game.Error(new MortgageCompany(0, 99)));
         }
     }
 }

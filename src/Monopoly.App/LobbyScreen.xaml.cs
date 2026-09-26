@@ -37,26 +37,26 @@ namespace Monopoly.App
             }
             else
             {
-                ConnectionTitle.Text = "Подключено";
-                ConnectionHint.Text = $"Хост: {client.Address}. Игра начнётся, когда хост нажмёт «Начать».";
+                ConnectionTitle.Text = "Підключено";
+                ConnectionHint.Text = $"Хост: {client.Address}. Гра почнеться, коли хост натисне «Почати».";
             }
         }
 
         public void Show(LobbyState lobby)
         {
             state = lobby;
-            SeatsTitle.Text = $"Игроки: {lobby.Seats.Count} из {lobby.MaxPlayers}";
+            SeatsTitle.Text = $"Гравці: {lobby.Seats.Count} з {lobby.MaxPlayers}";
 
             SeatsPanel.Children.Clear();
             foreach (var seat in lobby.Seats)
             {
-                string role = seat.IsHost ? "хост" : seat.IsBot ? "бот" : seat.IsReady ? "готов" : "не готов";
-                string me = seat.SeatId == client.SeatId ? " (вы)" : "";
+                string role = seat.IsHost ? "хост" : seat.IsBot ? "бот" : seat.IsReady ? "готовий" : "не готовий";
+                string me = seat.SeatId == client.SeatId ? " (ви)" : "";
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 4) };
                 if (isHost && seat.IsBot)
                 {
                     int seatId = seat.SeatId;
-                    var remove = new Button { Content = "✕", FontSize = 12, MinHeight = 24, Padding = new Thickness(8, 0, 8, 0), Margin = new Thickness(0, 0, 10, 0), ToolTip = "Убрать бота" };
+                    var remove = new Button { Content = "✕", FontSize = 12, MinHeight = 24, Padding = new Thickness(8, 0, 8, 0), Margin = new Thickness(0, 0, 10, 0), ToolTip = "Прибрати бота" };
                     remove.Click += async (_, _) => StatusText.Text = await client.RemoveBotAsync(seatId) ?? "";
                     row.Children.Add(remove);
                 }
@@ -90,7 +90,7 @@ namespace Monopoly.App
                     BorderBrush = mine?.ColorIndex == color ? (Brush)FindResource("AccentBrush") : (Brush)FindResource("SurfaceBorderBrush"),
                     BorderThickness = new Thickness(mine?.ColorIndex == color ? 3 : 1),
                     IsEnabled = !taken,
-                    ToolTip = PlayerPalette.Names[color] + (taken ? " — занят" : ""),
+                    ToolTip = PlayerPalette.Names[color] + (taken ? " — зайнятий" : ""),
                     Tag = color
                 };
                 button.Click += Color_Click;
@@ -103,19 +103,19 @@ namespace Monopoly.App
 
             StartButton.IsEnabled = lobby.StartBlockedReason is null;
             StartHint.Text = isHost
-                ? lobby.StartBlockedReason ?? "Все готовы — можно начинать."
+                ? lobby.StartBlockedReason ?? "Усі готові — можна починати."
                 : "";
         }
 
         private void ShowHostAddresses()
         {
-            ConnectionTitle.Text = "Адреса для друзей";
+            ConnectionTitle.Text = "Адреси для друзів";
             var addresses = LocalAddresses.Get();
             AddressesPanel.Children.Clear();
             foreach (var address in addresses)
             {
                 var row = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
-                var copy = new Button { Content = "Скопировать", Padding = new Thickness(10, 2, 10, 2), MinHeight = 30, FontSize = 14 };
+                var copy = new Button { Content = "Копіювати", Padding = new Thickness(10, 2, 10, 2), MinHeight = 30, FontSize = 14 };
                 copy.Click += (_, _) => CopyAddress(address.Address);
                 DockPanel.SetDock(copy, Dock.Right);
                 row.Children.Add(copy);
@@ -127,8 +127,8 @@ namespace Monopoly.App
                 AddressesPanel.Children.Add(row);
             }
             ConnectionHint.Text = addresses.Count == 0
-                ? "Не найдено ни одной сети. Проверьте подключение к интернету или VPN."
-                : $"Друзья вводят один из адресов — тот, что из той же сети, что у них (Radmin, ZeroTier, Tailscale или локальная). Порт {NetDefaults.Port}.";
+                ? "Не знайдено жодної мережі. Перевірте підключення до інтернету або VPN."
+                : "";
         }
 
         private void CopyAddress(string address)
@@ -137,12 +137,12 @@ namespace Monopoly.App
             {
                 Clipboard.SetText(address);
                 StatusText.Text = "";
-                StartHint.Text = $"Адрес {address} скопирован.";
+                StartHint.Text = $"Адресу {address} скопійовано.";
             }
             catch (System.Runtime.InteropServices.COMException)
             {
                 // Буфер обмена занят другой программой.
-                StatusText.Text = "Не удалось скопировать — попробуйте ещё раз.";
+                StatusText.Text = "Не вдалося скопіювати — спробуйте ще раз.";
             }
         }
 
@@ -157,14 +157,14 @@ namespace Monopoly.App
                 case FirewallStatus.Blocked:
                     FirewallPanel.Visibility = Visibility.Visible;
                     FirewallText.Foreground = PlayerPalette.Make("#FF8A8D");
-                    FirewallText.Text = "Брандмауэр Windows блокирует игру — друзья не смогут подключиться. " +
-                        "Так бывает, если в окне брандмауэра нажали «Отмена». " +
-                        "Нажмите кнопку и подтвердите запрос Windows (нужны права администратора).";
+                    FirewallText.Text = "Брандмауер Windows блокує гру — друзі не зможуть підключитися. " +
+                        "Так буває, якщо у вікні брандмауера натиснули «Скасувати». " +
+                        "Натисніть кнопку й підтвердьте запит Windows (потрібні права адміністратора).";
                     break;
                 default:
                     FirewallPanel.Visibility = Visibility.Visible;
-                    FirewallText.Text = $"Если друзья не могут подключиться, откройте порт {NetDefaults.Port} в брандмауэре Windows: " +
-                        "нажмите кнопку и подтвердите запрос Windows (нужны права администратора).";
+                    FirewallText.Text = $"Якщо друзі не можуть підключитися, відкрийте порт {NetDefaults.Port} у брандмауері Windows: " +
+                        "натисніть кнопку й підтвердьте запит Windows (потрібні права адміністратора).";
                     break;
             }
         }
@@ -177,8 +177,8 @@ namespace Monopoly.App
             FirewallButton.IsEnabled = true;
             if (!confirmed)
             {
-                FirewallText.Text = "Windows не дала изменить правила. Вручную: Брандмауэр Защитника Windows → Дополнительные параметры → " +
-                    $"Правила для входящих подключений: удалите запрещающие правила «Monopoly» и откройте порт {NetDefaults.Port} (TCP и UDP).";
+                FirewallText.Text = "Windows не дозволила змінити правила. Вручну: Брандмауер Захисника Windows → Додаткові параметри → " +
+                    $"Правила для вхідних підключень: видаліть заборонні правила «Monopoly» і відкрийте порт {NetDefaults.Port} (TCP і UDP).";
                 return;
             }
 
@@ -187,7 +187,7 @@ namespace Monopoly.App
             {
                 FirewallPanel.Visibility = Visibility.Visible;
                 FirewallText.Foreground = (Brush)FindResource("SuccessBrush");
-                FirewallText.Text = "Готово: брандмауэр пропускает игру.";
+                FirewallText.Text = "Готово: брандмауер пропускає гру.";
                 FirewallButton.Visibility = Visibility.Collapsed;
             }
         }

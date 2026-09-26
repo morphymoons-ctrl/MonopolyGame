@@ -104,7 +104,7 @@ namespace Monopoly.Tests
             var game = Create(3, 5, 1, 2);
             game.Do(new RollDice(0));
 
-            Assert.Equal("Кубики в этом ходу уже брошены.", game.Error(new RollDice(0)));
+            Assert.Equal("Кубики в цьому ході вже кинуто.", game.Error(new RollDice(0)));
             Assert.Equal(Jail, game.P(0).Position);
         }
 
@@ -142,7 +142,7 @@ namespace Monopoly.Tests
 
             Assert.Contains(new RollAgain(0), first.Events);
             Assert.Equal(TurnPhase.AwaitingRoll, game.State.Phase);
-            Assert.Equal("Выпал дубль — бросьте кубики ещё раз.", game.Error(new EndTurn(0)));
+            Assert.Equal("Випав дубль — киньте кубики ще раз.", game.Error(new EndTurn(0)));
 
             game.Do(new RollDice(0));
             Assert.Equal(Jail + 3, game.P(0).Position);
@@ -153,7 +153,7 @@ namespace Monopoly.Tests
         {
             var game = Create(3, 5);
 
-            Assert.Equal("Сейчас ходит Аня.", game.Error(new RollDice(1)));
+            Assert.Equal("Зараз ходить Аня.", game.Error(new RollDice(1)));
             Assert.Equal(0, game.P(1).Position);
         }
 
@@ -162,7 +162,7 @@ namespace Monopoly.Tests
         {
             var game = Create(3, 5);
 
-            Assert.Equal("Нет такого игрока.", game.Error(new RollDice(42)));
+            Assert.Equal("Немає такого гравця.", game.Error(new RollDice(42)));
         }
 
         [Fact]
@@ -245,7 +245,7 @@ namespace Monopoly.Tests
             var game = Create(1, 2);
             game.Do(new RollDice(0));
 
-            Assert.Equal("Сначала решите, покупать ли «Сильпо».", game.Error(new EndTurn(0)));
+            Assert.Equal("Спершу вирішіть, чи купувати «Сільпо».", game.Error(new EndTurn(0)));
             Assert.Same(game.P(0), game.State.CurrentPlayer);
         }
 
@@ -270,7 +270,7 @@ namespace Monopoly.Tests
             game.P(0).Balance = 100;
             game.Do(new RollDice(0));
 
-            Assert.Equal("Не хватает денег: «Сильпо» стоит 140 грн, у вас 100 грн.", game.Error(new BuyProperty(0)));
+            Assert.Equal("Не вистачає грошей: «Сільпо» коштує 140 грн, у вас 100 грн.", game.Error(new BuyProperty(0)));
             game.Do(new DeclinePurchase(0));
             Assert.Equal(TurnPhase.Auction, game.State.Phase);
         }
@@ -280,9 +280,9 @@ namespace Monopoly.Tests
         {
             var game = Create(3, 5);
 
-            Assert.Equal("Сейчас нечего покупать.", game.Error(new BuyProperty(0)));
+            Assert.Equal("Зараз нічого купувати.", game.Error(new BuyProperty(0)));
             game.Do(new RollDice(0));
-            Assert.Equal("Сейчас нечего покупать.", game.Error(new BuyProperty(0)));
+            Assert.Equal("Зараз нічого купувати.", game.Error(new BuyProperty(0)));
         }
 
         // --- Конец хода и особые клетки ---
@@ -292,7 +292,7 @@ namespace Monopoly.Tests
         {
             var game = Create();
 
-            Assert.Equal("Сначала бросьте кубики.", game.Error(new EndTurn(0)));
+            Assert.Equal("Спершу киньте кубики.", game.Error(new EndTurn(0)));
         }
 
         [Fact]

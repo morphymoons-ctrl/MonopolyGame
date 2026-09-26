@@ -16,24 +16,24 @@ namespace Monopoly.Core
         {
             var auction = State.Auction;
             if (State.Phase != TurnPhase.Auction || auction is null)
-                return "Сейчас нет аукциона.";
+                return "Зараз немає аукціону.";
             if (auction.Passed.Contains(player.Id))
-                return "Вы уже спасовали.";
+                return "Ви вже спасували.";
             if (auction.LeaderId == player.Id)
-                return "Ваша ставка и так самая высокая.";
+                return "Ваша ставка й так найвища.";
             if (amount < auction.MinBid)
-                return $"Ставка должна быть не меньше {auction.MinBid} грн.";
-            return amount > player.Balance ? $"Не хватает денег: у вас {player.Balance} грн." : null;
+                return $"Ставка має бути не менше {auction.MinBid} грн.";
+            return amount > player.Balance ? $"Не вистачає грошей: у вас {player.Balance} грн." : null;
         }
 
         private string? ValidatePass(Player player)
         {
             var auction = State.Auction;
             if (State.Phase != TurnPhase.Auction || auction is null)
-                return "Сейчас нет аукциона.";
+                return "Зараз немає аукціону.";
             if (auction.Passed.Contains(player.Id))
-                return "Вы уже спасовали.";
-            return auction.LeaderId == player.Id ? "Лидер аукциона не может спасовать." : null;
+                return "Ви вже спасували.";
+            return auction.LeaderId == player.Id ? "Лідер аукціону не може спасувати." : null;
         }
 
         private void Bid(Player player, int amount, List<GameEvent> events)

@@ -11,7 +11,7 @@ namespace Monopoly.Core
             {
                 var result = game.Execute(action);
                 if (!result.Success)
-                    throw new InvalidDataException($"Сохранение не подходит к правилам этой версии: {result.Error}");
+                    throw new InvalidDataException($"Збереження не підходить до правил цієї версії: {result.Error}");
             }
             return game;
         }

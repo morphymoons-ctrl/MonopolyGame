@@ -12,8 +12,8 @@ namespace Monopoly.Core
         private string? ValidateOwnCell(Player player, int cellIndex)
         {
             if (cellIndex < 0 || cellIndex >= State.Board.Count)
-                return "Нет такой клетки.";
-            return State.Board[cellIndex].OwnerId == player.Id ? null : "Это не ваша компания.";
+                return "Немає такої клітинки.";
+            return State.Board[cellIndex].OwnerId == player.Id ? null : "Це не ваша компанія.";
         }
 
         private string? ValidateBuild(Player player, int cellIndex)
@@ -25,16 +25,16 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             var group = State.GroupOf(cell).ToList();
             if (!cell.IsBuildable)
-                return "На АЗС и логистике филиалы не строятся.";
+                return "На АЗС і логістиці філії не будуються.";
             if (!GameRules.IsMonopoly(State.Board, cell.Type, player.Id))
-                return "Филиалы строятся, только когда у вас вся группа.";
+                return "Філії будуються, лише коли у вас уся група.";
             if (group.Any(c => c.IsMortgaged))
-                return "В группе есть заложенная компания — сначала выкупите её.";
+                return "У групі є закладена компанія — спершу викупіть її.";
             if (cell.Level == GameRules.HeadOfficeLevel)
-                return "Здесь уже головной офис.";
+                return "Тут уже головний офіс.";
             if (cell.Level > group.Min(c => c.Level))
-                return "Стройте равномерно: сначала на других компаниях группы.";
-            return player.Balance < cell.BranchCost ? $"Не хватает денег: филиал стоит {cell.BranchCost} грн." : null;
+                return "Будуйте рівномірно: спершу на інших компаніях групи.";
+            return player.Balance < cell.BranchCost ? $"Не вистачає грошей: філія коштує {cell.BranchCost} грн." : null;
         }
 
         private string? ValidateSell(Player player, int cellIndex)
@@ -45,9 +45,9 @@ namespace Monopoly.Core
 
             var cell = State.Board[cellIndex];
             if (cell.Level == 0)
-                return "Здесь нет филиалов.";
+                return "Тут немає філій.";
             return cell.Level < State.GroupOf(cell).Max(c => c.Level)
-                ? "Продавайте равномерно: сначала с других компаний группы."
+                ? "Продавайте рівномірно: спершу з інших компаній групи."
                 : null;
         }
 
@@ -59,8 +59,8 @@ namespace Monopoly.Core
 
             var cell = State.Board[cellIndex];
             if (cell.IsMortgaged)
-                return "Компания уже заложена.";
-            return State.GroupOf(cell).Any(c => c.Level > 0) ? "Сначала продайте филиалы в этой группе." : null;
+                return "Компанію вже закладено.";
+            return State.GroupOf(cell).Any(c => c.Level > 0) ? "Спершу продайте філії в цій групі." : null;
         }
 
         private string? ValidateRedeem(Player player, int cellIndex)
@@ -71,8 +71,8 @@ namespace Monopoly.Core
 
             var cell = State.Board[cellIndex];
             if (!cell.IsMortgaged)
-                return "Компания не заложена.";
-            return player.Balance < cell.RedeemCost ? $"Не хватает денег: выкуп стоит {cell.RedeemCost} грн." : null;
+                return "Компанію не закладено.";
+            return player.Balance < cell.RedeemCost ? $"Не вистачає грошей: викуп коштує {cell.RedeemCost} грн." : null;
         }
 
         private void Build(Player player, int cellIndex, List<GameEvent> events)

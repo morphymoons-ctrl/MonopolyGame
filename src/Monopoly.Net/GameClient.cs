@@ -64,7 +64,7 @@ namespace Monopoly.Net
             connection.Closed += _ =>
             {
                 if (!disposing)
-                    ConnectionLost?.Invoke("Связь с хостом потеряна: хост вышел из игры или пропала сеть.");
+                    ConnectionLost?.Invoke("Зв'язок із хостом втрачено: хост вийшов із гри або зникла мережа.");
                 return Task.CompletedTask;
             };
         }
@@ -84,7 +84,7 @@ namespace Monopoly.Net
             {
                 if (cancellationToken.IsCancellationRequested)
                     throw;
-                return $"Не удалось подключиться к {Address}. Проверьте адрес, что игра создана, и брандмауэр на компьютере хоста.";
+                return $"Не вдалося підключитися до {Address}. Перевірте адресу, чи створено гру, і брандмауер на комп'ютері хоста.";
             }
 
             var error = await JoinAsync(cancellationToken);
@@ -106,7 +106,7 @@ namespace Monopoly.Net
             }
             catch (Exception ex) when (ex is InvalidOperationException or HubException)
             {
-                return "Связь с хостом оборвалась при входе.";
+                return "Зв'язок із хостом обірвався під час входу.";
             }
             if (result.Error is null)
                 SeatId = result.SeatId;
@@ -133,11 +133,11 @@ namespace Monopoly.Net
             }
             catch (InvalidOperationException)
             {
-                return "Нет связи с хостом.";
+                return "Немає зв'язку з хостом.";
             }
             catch (HubException)
             {
-                return "Хост не смог выполнить запрос.";
+                return "Хост не зміг виконати запит.";
             }
         }
 

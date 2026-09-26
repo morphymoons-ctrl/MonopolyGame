@@ -35,9 +35,9 @@ namespace Monopoly.Core
         {
             ArgumentNullException.ThrowIfNull(playerNames);
             if (playerNames.Count < GameRules.MinPlayers || playerNames.Count > GameRules.MaxPlayers)
-                throw new ArgumentException($"Нужно от {GameRules.MinPlayers} до {GameRules.MaxPlayers} игроков.", nameof(playerNames));
+                throw new ArgumentException($"Потрібно від {GameRules.MinPlayers} до {GameRules.MaxPlayers} гравців.", nameof(playerNames));
             if (playerNames.Any(string.IsNullOrWhiteSpace))
-                throw new ArgumentException("У каждого игрока должно быть имя.", nameof(playerNames));
+                throw new ArgumentException("Кожен гравець повинен мати ім'я.", nameof(playerNames));
 
             this.random = random ?? throw new ArgumentNullException(nameof(random));
             this.options = options ?? new GameOptions();
@@ -204,7 +204,7 @@ namespace Monopoly.Core
         {
             var player = State.FindPlayer(action.PlayerId);
             if (player is null)
-                return "Нет такого игрока.";
+                return "Немає такого гравця.";
             var common = ValidateCommon(player);
             if (common is not null)
                 return common;
@@ -216,9 +216,9 @@ namespace Monopoly.Core
                 DeclinePurchase => NothingToBuy(player) ?? RequireTurn(player, TurnPhase.BuyDecision),
                 EndTurn => RequireTurn(player, TurnPhase.Manage),
                 PayBail => ValidateJailExit(player)
-                    ?? (player.Balance < GameRules.BailAmount ? $"Не хватает денег на залог: нужно {GameRules.BailAmount} грн." : null),
+                    ?? (player.Balance < GameRules.BailAmount ? $"Не вистачає грошей на заставу: потрібно {GameRules.BailAmount} грн." : null),
                 UseJailCard => ValidateJailExit(player)
-                    ?? (player.JailCards == 0 ? "У вас нет карточки «Выйти из тюрьмы»." : null),
+                    ?? (player.JailCards == 0 ? "У вас немає картки «Вийти з пєтушатні»." : null),
                 PlayCasino casino => ValidateCasino(player, casino.Bet),
                 PlaceBid bid => ValidateBid(player, bid.Amount),
                 PassAuction => ValidatePass(player),
@@ -232,17 +232,17 @@ namespace Monopoly.Core
                 CancelTrade => ValidateCancel(player),
                 DeclareBankruptcy => State.Phase == TurnPhase.Debt && State.Debts[0].DebtorId == player.Id
                     ? null
-                    : "Объявить банкротство можно, только когда нечем заплатить долг.",
-                _ => "Неизвестное действие.",
+                    : "Оголосити банкрутство можна, лише коли нема чим сплатити борг.",
+                _ => "Невідома дія.",
             };
         }
 
         private string? ValidateCommon(Player player)
         {
             if (State.Phase == TurnPhase.GameOver)
-                return "Игра окончена.";
+                return "Гру закінчено.";
             if (player.IsBankrupt)
-                return "Вы выбыли из игры.";
+                return "Ви вибули з гри.";
             return null;
         }
 
@@ -251,36 +251,36 @@ namespace Monopoly.Core
         {
             var current = State.CurrentPlayer;
             if (allowed.Contains(State.Phase))
-                return player == current ? null : $"Сейчас ходит {current.Name}.";
+                return player == current ? null : $"Зараз ходить {current.Name}.";
 
             switch (State.Phase)
             {
                 case TurnPhase.Debt:
                     var debtor = State.FindPlayer(State.Debts[0].DebtorId)!;
                     return debtor == player
-                        ? "Сначала закройте долг: продайте филиалы или заложите компании."
-                        : $"Ждём, пока {debtor.Name} закроет долг.";
+                        ? "Спершу закрийте борг: продайте філії або закладіть компанії."
+                        : $"Чекаємо, поки {debtor.Name} закриє борг.";
                 case TurnPhase.Auction:
-                    return "Сейчас идёт аукцион.";
+                    return "Зараз триває аукціон.";
                 case TurnPhase.TradeOffer:
-                    return $"Ждём ответа {State.FindPlayer(State.Trade!.ToId)!.Name} на предложение обмена.";
+                    return $"Чекаємо відповіді від гравця {State.FindPlayer(State.Trade!.ToId)!.Name} на пропозицію обміну.";
                 case TurnPhase.GameOver:
-                    return "Игра окончена.";
+                    return "Гру закінчено.";
             }
 
             if (player != current)
-                return $"Сейчас ходит {current.Name}.";
+                return $"Зараз ходить {current.Name}.";
             return State.Phase switch
             {
-                TurnPhase.BuyDecision => $"Сначала решите, покупать ли «{State.CurrentCell.Name}».",
-                TurnPhase.AwaitingRoll => State.LastRoll is null ? "Сначала бросьте кубики." : "Выпал дубль — бросьте кубики ещё раз.",
-                _ => "Кубики в этом ходу уже брошены.",
+                TurnPhase.BuyDecision => $"Спершу вирішіть, чи купувати «{State.CurrentCell.Name}».",
+                TurnPhase.AwaitingRoll => State.LastRoll is null ? "Спершу киньте кубики." : "Випав дубль — киньте кубики ще раз.",
+                _ => "Кубики в цьому ході вже кинуто.",
             };
         }
 
         private string? NothingToBuy(Player player) =>
             player == State.CurrentPlayer && State.Phase is TurnPhase.AwaitingRoll or TurnPhase.Manage
-                ? "Сейчас нечего покупать."
+                ? "Зараз нічого купувати."
                 : null;
 
         private string? ValidateBuy(Player player)
@@ -290,12 +290,12 @@ namespace Monopoly.Core
                 return error;
             var cell = State.CurrentCell;
             return player.Balance < cell.Price
-                ? $"Не хватает денег: «{cell.Name}» стоит {cell.Price} грн, у вас {player.Balance} грн."
+                ? $"Не вистачає грошей: «{cell.Name}» коштує {cell.Price} грн, у вас {player.Balance} грн."
                 : null;
         }
 
         private string? ValidateJailExit(Player player) =>
-            RequireTurn(player, TurnPhase.AwaitingRoll) ?? (player.IsInJail ? null : "Вы не в тюрьме.");
+            RequireTurn(player, TurnPhase.AwaitingRoll) ?? (player.IsInJail ? null : "Ви не у пєтушатні.");
 
         private string? ValidateCasino(Player player, int bet)
         {
@@ -303,10 +303,10 @@ namespace Monopoly.Core
             if (error is not null)
                 return error;
             if (!State.CasinoAvailable)
-                return "Играть в казино можно только сразу после попадания на клетку.";
+                return "Грати в казино можна лише одразу після потрапляння на клітинку.";
             if (!GameRules.CasinoBets.Contains(bet))
-                return $"Ставка может быть {string.Join(", ", GameRules.CasinoBets)} грн.";
-            return bet > player.Balance ? $"Не хватает денег на ставку: у вас {player.Balance} грн." : null;
+                return $"Ставка може бути {string.Join(", ", GameRules.CasinoBets)} грн.";
+            return bet > player.Balance ? $"Не вистачає грошей на ставку: у вас {player.Balance} грн." : null;
         }
 
         // --- Ход ---

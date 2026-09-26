@@ -10,7 +10,7 @@ namespace Monopoly.Core
                 return error;
             var target = State.FindPlayer(proposal.TargetId);
             if (target is null || target.IsBankrupt || target == player)
-                return "Выберите, с кем меняться.";
+                return "Оберіть, з ким мінятися.";
             return ValidateOffer(new TradeOffer(player.Id, target.Id, proposal.Give, proposal.Take));
         }
 
@@ -18,33 +18,33 @@ namespace Monopoly.Core
         private string? ValidateOffer(TradeOffer offer)
         {
             if (offer.Give is null || offer.Take is null || offer.Give.Cells is null || offer.Take.Cells is null)
-                return "Неверные условия обмена.";
+                return "Неправильні умови обміну.";
             if (offer.Give.IsEmpty && offer.Take.IsEmpty)
-                return "Обмен пустой: добавьте компании, деньги или карточки.";
+                return "Обмін порожній: додайте компанії, гроші або картки.";
             var from = State.FindPlayer(offer.FromId)!;
             var to = State.FindPlayer(offer.ToId)!;
-            return ValidateTerms(from, offer.Give, "у вас") ?? ValidateTerms(to, offer.Take, $"у игрока {to.Name}");
+            return ValidateTerms(from, offer.Give, "у вас") ?? ValidateTerms(to, offer.Take, $"у гравця {to.Name}");
         }
 
         private string? ValidateTerms(Player owner, TradeTerms terms, string whose)
         {
             if (terms.Money < 0 || terms.JailCards < 0)
-                return "Неверные условия обмена.";
+                return "Неправильні умови обміну.";
             if (terms.Money > owner.Balance)
-                return $"Столько денег {whose} нет: {owner.Balance} грн.";
+                return $"Стільки грошей {whose} немає: {owner.Balance} грн.";
             if (terms.JailCards > owner.JailCards)
-                return $"Столько карточек «Выйти из тюрьмы» {whose} нет.";
+                return $"Стільки карток «Вийти з пєтушатні» {whose} немає.";
             if (terms.Cells.Distinct().Count() != terms.Cells.Count)
-                return "Компания указана дважды.";
+                return "Компанію вказано двічі.";
             foreach (int index in terms.Cells)
             {
                 if (index < 0 || index >= State.Board.Count)
-                    return "Нет такой клетки.";
+                    return "Немає такої клітинки.";
                 var cell = State.Board[index];
                 if (cell.OwnerId != owner.Id)
-                    return $"«{cell.Name}» {whose} нет.";
+                    return $"«{cell.Name}» {whose} немає.";
                 if (State.GroupOf(cell).Any(c => c.Level > 0))
-                    return $"«{cell.Name}» нельзя менять: в группе стоят филиалы.";
+                    return $"«{cell.Name}» не можна обміняти: у групі є філії.";
             }
             return null;
         }
@@ -52,15 +52,15 @@ namespace Monopoly.Core
         private string? ValidateAnswer(Player player)
         {
             if (State.Phase != TurnPhase.TradeOffer || State.Trade is null)
-                return State.Phase == TurnPhase.GameOver ? "Игра окончена." : "Сейчас нет предложений обмена.";
-            return State.Trade.ToId == player.Id ? null : "Ответить на обмен может только тот, кому его предложили.";
+                return State.Phase == TurnPhase.GameOver ? "Гру закінчено." : "Зараз немає пропозицій обміну.";
+            return State.Trade.ToId == player.Id ? null : "Відповісти на обмін може лише той, кому його запропонували.";
         }
 
         private string? ValidateCancel(Player player)
         {
             if (State.Phase != TurnPhase.TradeOffer || State.Trade is null)
-                return "Сейчас нет предложений обмена.";
-            return State.Trade.FromId == player.Id ? null : "Отозвать обмен может только тот, кто его предложил.";
+                return "Зараз немає пропозицій обміну.";
+            return State.Trade.FromId == player.Id ? null : "Відкликати обмін може лише той, хто його запропонував.";
         }
 
         private void Propose(Player player, ProposeTrade proposal, List<GameEvent> events)

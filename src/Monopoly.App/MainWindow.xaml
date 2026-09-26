@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Monopoly.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Монополия"
+        Title="Монополія"
         Width="1920" Height="1080"
         MinWidth="1280" MinHeight="720"
         ResizeMode="CanResizeWithGrip"

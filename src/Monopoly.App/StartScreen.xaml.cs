@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,6 +17,7 @@ namespace Monopoly.App
         private readonly Func<string, string, Task<string?>> join;
         private readonly Func<SaveFile, Task<string?>> resume;
         private readonly UserSettings settings;
+        private readonly SaveStore saves;
         private bool busy;
 
         public StartScreen(UserSettings settings, SaveStore saves, Func<string, Task<string?>> create,
@@ -26,23 +28,29 @@ namespace Monopoly.App
             this.create = create;
             this.join = join;
             this.resume = resume;
+            this.saves = saves;
 
             NameBox.Text = settings.Name.Length > 0 ? settings.Name : DefaultName();
             AddressBox.Text = settings.LastAddress;
             StatusText.Text = message ?? "";
-            VersionText.Text = $"Версия {NetDefaults.GameVersion}";
-            ShowSaves(saves);
+            VersionText.Text = $"Версія {NetDefaults.GameVersion}";
+            ShowSaves();
             Loaded += async (_, _) => await SearchAsync();
         }
 
-        // Три последние незаконченные партии этого хоста.
-        private void ShowSaves(SaveStore saves)
+        // Три последние незаконченные партии этого хоста: продолжить или удалить.
+        private void ShowSaves()
         {
             SavesPanel.Children.Clear();
             foreach (var save in saves.ListUnfinished().Take(3))
             {
                 var row = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
-                var button = new Button { Content = "Продолжить", MinWidth = 140, Margin = new Thickness(10, 0, 0, 0) };
+                var delete = new Button { Content = "Видалити", Margin = new Thickness(8, 0, 0, 0), Padding = new Thickness(12, 4, 12, 4) };
+                delete.Click += (_, _) => DeleteSave(save);
+                DockPanel.SetDock(delete, Dock.Right);
+                row.Children.Add(delete);
+
+                var button = new Button { Content = "Продовжити", MinWidth = 140, Margin = new Thickness(10, 0, 0, 0) };
                 button.Click += async (_, _) => await RunResumeAsync(save);
                 DockPanel.SetDock(button, Dock.Right);
                 row.Children.Add(button);
@@ -51,7 +59,7 @@ namespace Monopoly.App
                 text.Children.Add(new TextBlock { Text = string.Join(", ", save.Seats.Select(s => s.Name)), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
                 text.Children.Add(new TextBlock
                 {
-                    Text = $"{save.SavedAtUtc.ToLocalTime():d MMMM, HH:mm} · ходов: {save.Actions.Count}",
+                    Text = string.Create(CultureInfo.GetCultureInfo("uk-UA"), $"{save.SavedAtUtc.ToLocalTime():d MMMM, HH:mm} · дій: {save.Actions.Count}"),
                     Style = (Style)FindResource("Muted"),
                     FontSize = 14
                 });
@@ -61,6 +69,24 @@ namespace Monopoly.App
             SavesSection.Visibility = SavesPanel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        // Удаление необратимо — сначала спрашиваем.
+        private void DeleteSave(SaveFile save)
+        {
+            if (busy)
+            {
+                return;
+            }
+            string players = string.Join(", ", save.Seats.Select(s => s.Name));
+            var answer = MessageBox.Show(Window.GetWindow(this)!,
+                $"Видалити збережену партію ({players})? Продовжити її вже не вийде.",
+                "Монополія", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (answer == MessageBoxResult.Yes)
+            {
+                saves.Delete(save.GameId);
+                ShowSaves();
+            }
+        }
+
         private async Task RunResumeAsync(SaveFile save)
         {
             if (busy)
@@ -68,7 +94,7 @@ namespace Monopoly.App
                 return;
             }
             SetBusy(true);
-            StatusText.Text = "Открываем партию…";
+            StatusText.Text = "Відкриваємо партію…";
             var error = await resume(save);
             StatusText.Text = error ?? "";
             SetBusy(false);
@@ -82,7 +108,7 @@ namespace Monopoly.App
 
         private async void Create_Click(object sender, RoutedEventArgs e)
         {
-            await RunAsync("Создаём игру…", name => create(name));
+            await RunAsync("Створюємо гру…", name => create(name));
         }
 
         private async void Join_Click(object sender, RoutedEventArgs e)
@@ -124,10 +150,10 @@ namespace Monopoly.App
             string address = AddressBox.Text.Trim();
             if (address.Length == 0)
             {
-                StatusText.Text = "Введите IP хоста или выберите игру в списке.";
+                StatusText.Text = "Введіть IP хоста або оберіть гру в списку.";
                 return;
             }
-            await RunAsync($"Подключаемся к {address}…", name => join(name, address));
+            await RunAsync($"Підключаємося до {address}…", name => join(name, address));
             if (StatusText.Text.Length == 0)
             {
                 settings.LastAddress = address;
@@ -144,7 +170,7 @@ namespace Monopoly.App
             string name = NameBox.Text.Trim();
             if (name.Length == 0)
             {
-                StatusText.Text = "Введите имя.";
+                StatusText.Text = "Введіть ім'я.";
                 return;
             }
 
@@ -167,26 +193,26 @@ namespace Monopoly.App
         private async Task SearchAsync()
         {
             SearchButton.IsEnabled = false;
-            SearchStatus.Text = "Ищем игры…";
+            SearchStatus.Text = "Шукаємо ігри…";
             GamesList.Items.Clear();
 
             var games = await GameFinder.FindAsync(TimeSpan.FromSeconds(1.5));
             foreach (var game in games)
             {
-                string text = $"{game.HostName} — {game.Address} · игроков {game.Players}/{game.MaxPlayers}";
+                string text = $"{game.HostName} — {game.Address} · гравців {game.Players}/{game.MaxPlayers}";
                 if (game.InProgress)
                 {
-                    text += " · идёт игра";
+                    text += " · гра триває";
                 }
                 if (game.Version != NetDefaults.GameVersion)
                 {
-                    text += $" · другая версия ({game.Version})";
+                    text += $" · інша версія ({game.Version})";
                 }
                 GamesList.Items.Add(new ListBoxItem { Content = text, Tag = game });
             }
 
             SearchStatus.Text = games.Count == 0
-                ? "Игр не найдено. Через Tailscale поиск не работает — введите IP хоста вручную."
+                ? "Ігор не знайдено."
                 : "";
             SearchButton.IsEnabled = true;
         }

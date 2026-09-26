@@ -35,6 +35,10 @@ namespace Monopoly.Net
         private Game? game;
         // Когда в игре что-то изменилось в последний раз: от этого момента считаются таймер хода и пауза бота.
         private DateTime lastChange = DateTime.UtcNow;
+        // Длительность партии: сыграно до этого запуска хоста + с момента запуска; после победы часы стоят.
+        private TimeSpan playedBefore;
+        private DateTime playStarted = DateTime.UtcNow;
+        private TimeSpan? finalDuration;
         // Описание для ответа на поиск; обновляется после каждой операции, читается из потока UDP.
         private volatile DiscoveredGame discoveryInfo;
 
@@ -62,10 +66,12 @@ namespace Monopoly.Net
         public static Task<GameHost> ResumeAsync(SaveFile save, GameHostOptions? options = null)
         {
             if (save.Version != NetDefaults.GameVersion)
-                throw new InvalidDataException($"Сохранение от версии {save.Version}, а игра — {NetDefaults.GameVersion}.");
+                throw new InvalidDataException($"Збереження від версії {save.Version}, а гра — {NetDefaults.GameVersion}.");
 
             var host = new GameHost(options ?? new GameHostOptions(), save.GameId);
             host.game = Game.Replay(save.Seats.Select(s => s.Name).ToList(), save.Seed, save.Actions);
+            host.playedBefore = TimeSpan.FromSeconds(save.PlayedSeconds);
+            host.playStarted = Now;
             host.lobby.Restore(save.Seats, Now);
             host.discoveryInfo = host.DescribeForDiscovery();
             return LaunchAsync(host);
@@ -110,7 +116,7 @@ namespace Monopoly.Net
             int playerId = lobby.FindPlayerId(connectionId)!.Value;
             await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId, lobby.ColorByPlayerId()));
             await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.Update, MakeUpdate(game.History, playerId, resync: true));
-            await SendToAllAsync(ClientMethods.Notice, $"{lobby.FindName(connectionId)} вернулся в игру.");
+            await SendToAllAsync(ClientMethods.Notice, $"{lobby.FindName(connectionId)} повернувся до гри.");
             await SendUpdateAsync(Array.Empty<GameEvent>());
             return result;
         });
@@ -130,6 +136,7 @@ namespace Monopoly.Net
                 return error;
 
             game = Game.Start(names);
+            playStarted = Now;
             lastChange = Now;
             Save();
             var colors = lobby.ColorByPlayerId();
@@ -142,9 +149,9 @@ namespace Monopoly.Net
         internal Task<string?> ExecuteAsync(string connectionId, GameAction action) => Locked(async () =>
         {
             if (game is null)
-                return "Игра ещё не началась.";
+                return "Гра ще не почалася.";
             if (lobby.FindPlayerId(connectionId) is not int playerId)
-                return "Вы не участвуете в этой игре.";
+                return "Ви не берете участі в цій грі.";
 
             // Действует всегда тот, кто прислал действие, — чужой PlayerId подставить нельзя.
             return await ApplyAsync(action with { PlayerId = playerId });
@@ -159,7 +166,7 @@ namespace Monopoly.Net
             if (game is not null)
             {
                 int minutes = (int)Math.Round(options.BotTakeover.TotalMinutes);
-                await SendToAllAsync(ClientMethods.Notice, $"{name} отключился. Место ждёт его {minutes} мин, потом за него сыграет бот.");
+                await SendToAllAsync(ClientMethods.Notice, $"{name} відключився. Місце чекає на нього {minutes} хв, потім за нього зіграє бот.");
                 await SendUpdateAsync(Array.Empty<GameEvent>());
             }
             else
@@ -189,7 +196,7 @@ namespace Monopoly.Net
             var now = Now;
             foreach (var name in lobby.Tick(now, options.BotTakeover))
             {
-                await SendToAllAsync(ClientMethods.Notice, $"{name} не вернулся — за него играет бот.");
+                await SendToAllAsync(ClientMethods.Notice, $"{name} не повернувся — за нього грає бот.");
                 await SendUpdateAsync(Array.Empty<GameEvent>());
             }
             if (game is null || game.State.Phase == TurnPhase.GameOver)
@@ -237,20 +244,24 @@ namespace Monopoly.Net
             if (!result.Success)
                 return result.Error;
             lastChange = Now;
+            if (game.State.Phase == TurnPhase.GameOver)
+                finalDuration ??= Played(lastChange);
             Save();
             await SendUpdateAsync(result.Events);
             return null;
         }
+
+        private TimeSpan Played(DateTime now) => finalDuration ?? playedBefore + (now - playStarted);
 
         private void Save()
         {
             if (options.Saves is null || game?.Seed is not int seed)
                 return;
             options.Saves.Write(new SaveFile(gameId, NetDefaults.GameVersion, seed, lobby.SavedSeats(),
-                game.Actions.ToList(), Now, game.State.Phase == TurnPhase.GameOver));
+                game.Actions.ToList(), Now, game.State.Phase == TurnPhase.GameOver, (int)Played(Now).TotalSeconds));
         }
 
-        private IHubContext<GameHub> Hub => hub ?? throw new InvalidOperationException("Хост не запущен.");
+        private IHubContext<GameHub> Hub => hub ?? throw new InvalidOperationException("Хост не запущено.");
 
         private Task<string?> LobbyChange(Func<string?> change) => Locked(async () =>
         {
@@ -285,7 +296,8 @@ namespace Monopoly.Net
                 ? null
                 : new TurnTimer(awaited, Math.Max(0, (int)Math.Ceiling((lastChange + options.TurnTimeout - now).TotalSeconds)));
             return new GameUpdate(events, game.State.ToSnapshot(), game.GetAvailableActions(playerId), timer,
-                lobby.SeatStatuses(now, options.BotTakeover), resync);
+                lobby.SeatStatuses(now, options.BotTakeover), resync,
+                new GameDuration((int)Played(now).TotalSeconds, finalDuration is null));
         }
 
         private DiscoveredGame DescribeForDiscovery() =>

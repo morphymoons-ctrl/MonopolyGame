@@ -20,11 +20,11 @@ namespace Monopoly.Tests
             await using var guest = new Inbox($"127.0.0.1:{port}");
 
             Assert.Null(await hostPlayer.Client.ConnectAsync("Хост", host.HostToken));
-            Assert.Null(await guest.Client.ConnectAsync("Гость"));
+            Assert.Null(await guest.Client.ConnectAsync("Гість"));
 
             var lobby = await guest.WaitLobbyAsync(s => s.Seats.Count == 2);
-            Assert.Equal("Не готовы: Гость.", lobby.StartBlockedReason);
-            Assert.Equal("Начать игру может только хост.", await guest.Client.StartGameAsync());
+            Assert.Equal("Не готові: Гість.", lobby.StartBlockedReason);
+            Assert.Equal("Почати гру може лише хост.", await guest.Client.StartGameAsync());
 
             Assert.Null(await guest.Client.SetReadyAsync(true));
             Assert.Null(await hostPlayer.Client.StartGameAsync());
@@ -44,15 +44,15 @@ namespace Monopoly.Tests
             var (current, waiting) = currentId == 0 ? (hostPlayer, guest) : (guest, hostPlayer);
             var (currentFirst, waitingFirst) = currentId == 0 ? (hostFirst, guestFirst) : (guestFirst, hostFirst);
             int waitingId = 1 - currentId;
-            string currentName = currentId == 0 ? "Хост" : "Гость";
+            string currentName = currentId == 0 ? "Хост" : "Гість";
 
             Assert.Contains(new RollDice(currentId), currentFirst.AvailableActions);
             Assert.Contains(currentFirst.AvailableActions, a => a is ProposeTrade);
             Assert.Empty(waitingFirst.AvailableActions);
 
             // Не в свой ход — отказ. Подставить чужой Id тоже нельзя: хост берёт Id по подключению.
-            Assert.Equal($"Сейчас ходит {currentName}.", await waiting.Client.SendActionAsync(new RollDice(waitingId)));
-            Assert.Equal($"Сейчас ходит {currentName}.", await waiting.Client.SendActionAsync(new RollDice(currentId)));
+            Assert.Equal($"Зараз ходить {currentName}.", await waiting.Client.SendActionAsync(new RollDice(waitingId)));
+            Assert.Equal($"Зараз ходить {currentName}.", await waiting.Client.SendActionAsync(new RollDice(currentId)));
 
             Assert.Null(await current.Client.SendActionAsync(new RollDice(currentId)));
 
@@ -79,7 +79,7 @@ namespace Monopoly.Tests
 
             var error = await client.ConnectAsync("Аня");
 
-            Assert.StartsWith($"Не удалось подключиться к 127.0.0.1:{port}.", error);
+            Assert.StartsWith($"Не вдалося підключитися до 127.0.0.1:{port}.", error);
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace Monopoly.Tests
         private static async Task<int> StartTwoPlayerGameAsync(GameHost host, Inbox hostPlayer, Inbox guest)
         {
             Assert.Null(await hostPlayer.Client.ConnectAsync("Хост", host.HostToken));
-            Assert.Null(await guest.Client.ConnectAsync("Гость"));
+            Assert.Null(await guest.Client.ConnectAsync("Гість"));
             await guest.WaitLobbyAsync(s => s.Seats.Count == 2);
             Assert.Null(await guest.Client.SetReadyAsync(true));
             Assert.Null(await hostPlayer.Client.StartGameAsync());
@@ -141,7 +141,7 @@ namespace Monopoly.Tests
             await using var hostPlayer = new Inbox($"127.0.0.1:{port}");
             await using var guest = new Inbox($"127.0.0.1:{port}");
             Assert.Null(await hostPlayer.Client.ConnectAsync("Хост", host.HostToken));
-            Assert.Null(await guest.Client.ConnectAsync("Гость"));
+            Assert.Null(await guest.Client.ConnectAsync("Гість"));
             await guest.WaitLobbyAsync(s => s.Seats.Count == 2);
             await guest.Client.SetReadyAsync(true);
             await hostPlayer.Client.StartGameAsync();
@@ -151,6 +151,8 @@ namespace Monopoly.Tests
             Assert.Equal(new[] { update.Snapshot.CurrentPlayerId }, update.Timer!.AwaitedIds);
             Assert.InRange(update.Timer.SecondsLeft, 75, 80);
             Assert.All(update.Seats!, s => Assert.Equal(SeatConnection.Online, s.Connection));
+            Assert.True(update.Duration!.Running);
+            Assert.InRange(update.Duration.Seconds, 0, 5);
         }
 
         [Fact]
@@ -163,19 +165,19 @@ namespace Monopoly.Tests
             await StartTwoPlayerGameAsync(host, hostPlayer, guest);
 
             await guest.DisposeAsync();
-            await hostPlayer.WaitNoticeAsync("Гость отключился");
+            await hostPlayer.WaitNoticeAsync("Гість відключився");
             var offline = await hostPlayer.WaitUpdateAsync(u => u.Seats!.Any(s => s.Connection == SeatConnection.Offline));
             Assert.Equal(SeatConnection.Offline, offline.Seats!.Single(s => s.PlayerId == 1).Connection);
 
             await using var back = new Inbox($"127.0.0.1:{port}");
-            Assert.Null(await back.Client.ConnectAsync("Гость"));
+            Assert.Null(await back.Client.ConnectAsync("Гість"));
 
             var info = await back.Starts.Reader.ReadAsync().AsTask().WaitAsync(Timeout);
             var resync = await back.NextUpdateAsync();
             Assert.Equal(1, info.MyPlayerId);
             Assert.True(resync.IsResync);
             Assert.IsType<GameStarted>(resync.Events[0]);
-            await hostPlayer.WaitNoticeAsync("Гость вернулся");
+            await hostPlayer.WaitNoticeAsync("Гість повернувся");
         }
 
         [Fact]
@@ -192,7 +194,7 @@ namespace Monopoly.Tests
 
             await guest.DisposeAsync();
 
-            await hostPlayer.WaitNoticeAsync("за него играет бот");
+            await hostPlayer.WaitNoticeAsync("за нього грає бот");
             var update = await hostPlayer.WaitUpdateAsync(u => u.Seats!.Any(s => s.Connection == SeatConnection.Bot));
             Assert.Equal(SeatConnection.Bot, update.Seats!.Single(s => s.PlayerId == 1).Connection);
         }
@@ -236,6 +238,7 @@ namespace Monopoly.Tests
             var save = Assert.Single(store.ListUnfinished());
             Assert.Equal("Хост", save.HostName);
             Assert.NotEmpty(save.Actions);
+            Assert.True(save.PlayedSeconds >= 0);
 
             int port2 = FreePort();
             await using var resumed = await GameHost.ResumeAsync(save, new GameHostOptions { Port = port2, EnableDiscovery = false, Saves = store });
@@ -248,6 +251,7 @@ namespace Monopoly.Tests
             Assert.Equal(before.Players, resync.Snapshot.Players);
             Assert.Equal(before.Cells, resync.Snapshot.Cells);
             Assert.Contains(resync.Seats!, s => s.PlayerId == 1 && s.Connection == SeatConnection.Offline);
+            Assert.True(resync.Duration!.Seconds >= save.PlayedSeconds);
 
             await resumed.DisposeAsync();
             Directory.Delete(store.Directory, recursive: true);

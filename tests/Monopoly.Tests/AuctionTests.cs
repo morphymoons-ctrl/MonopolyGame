@@ -3,7 +3,7 @@ using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
 {
-    // Аукцион (RULES.md, §4). Три игрока: Аня (0) отказывается от «Сильпо», дальше торгуются все.
+    // Аукцион (RULES.md, §4). Три игрока: Аня (0) отказывается от «Сільпо», дальше торгуются все.
     public class AuctionTests
     {
         private static Game DeclinedSilpo()
@@ -24,7 +24,7 @@ namespace Monopoly.Tests
 
             Assert.Equal(TurnPhase.Auction, game.State.Phase);
             Assert.Contains(new AuctionStarted(Silpo), result.Events);
-            Assert.Equal("Сейчас идёт аукцион.", game.Error(new EndTurn(0)));
+            Assert.Equal("Зараз триває аукціон.", game.Error(new EndTurn(0)));
         }
 
         [Fact]
@@ -47,7 +47,7 @@ namespace Monopoly.Tests
             var game = DeclinedSilpo();
 
             game.Do(new PlaceBid(1, 10));
-            Assert.Equal("Ставка должна быть не меньше 20 грн.", game.Error(new PlaceBid(2, 15)));
+            Assert.Equal("Ставка має бути не менше 20 грн.", game.Error(new PlaceBid(2, 15)));
             game.Do(new PlaceBid(2, 20));
             game.Do(new PassAuction(0));
             var last = game.Do(new PassAuction(1));
@@ -78,11 +78,11 @@ namespace Monopoly.Tests
             game.Do(new PlaceBid(1, 10));
             game.Do(new PassAuction(2));
 
-            Assert.Equal("Лидер аукциона не может спасовать.", game.Error(new PassAuction(1)));
-            Assert.Equal("Ваша ставка и так самая высокая.", game.Error(new PlaceBid(1, 50)));
-            Assert.Equal("Вы уже спасовали.", game.Error(new PlaceBid(2, 50)));
+            Assert.Equal("Лідер аукціону не може спасувати.", game.Error(new PassAuction(1)));
+            Assert.Equal("Ваша ставка й так найвища.", game.Error(new PlaceBid(1, 50)));
+            Assert.Equal("Ви вже спасували.", game.Error(new PlaceBid(2, 50)));
             game.P(0).Balance = 15;
-            Assert.Equal("Не хватает денег: у вас 15 грн.", game.Error(new PlaceBid(0, 20)));
+            Assert.Equal("Не вистачає грошей: у вас 15 грн.", game.Error(new PlaceBid(0, 20)));
         }
 
         [Fact]
@@ -90,7 +90,7 @@ namespace Monopoly.Tests
         {
             var game = DeclinedSilpo();
 
-            Assert.Equal("Ставка должна быть не меньше 10 грн.", game.Error(new PlaceBid(1, 5)));
+            Assert.Equal("Ставка має бути не менше 10 грн.", game.Error(new PlaceBid(1, 5)));
             Assert.Contains(new PlaceBid(1, 10), game.GetAvailableActions(1));
         }
 
@@ -99,7 +99,7 @@ namespace Monopoly.Tests
         {
             var game = CreateFor(3);
 
-            Assert.Equal("Сейчас нет аукциона.", game.Error(new PlaceBid(1, 10)));
+            Assert.Equal("Зараз немає аукціону.", game.Error(new PlaceBid(1, 10)));
         }
 
         [Fact]

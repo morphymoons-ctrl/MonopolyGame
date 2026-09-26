@@ -25,22 +25,20 @@
         <Viewbox Stretch="Uniform">
             <Grid Width="1920" Height="1080">
 
-                <!-- Поле в рамке. -->
-                <Border Margin="36,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                <!-- Поле в рамке: шире, чем выше, — клетки прямоугольные (1300 / 9 × 1000 / 9). -->
+                <Border Margin="24,28,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
                         Background="#1F3354" CornerRadius="22" Padding="12" Effect="{StaticResource SoftShadow}">
-                    <Grid Width="1000" Height="1000">
-                        <Border Margin="111" Background="{StaticResource BoardCenterBrush}"/>
-                        <Canvas Name="GameBoardCanvas" Width="1000" Height="1000"/>
+                    <Grid Width="1300" Height="1000">
+                        <Border Margin="144.4,111.1" Background="{StaticResource BoardCenterBrush}"/>
+                        <Canvas Name="GameBoardCanvas" Width="1300" Height="1000"/>
 
                         <!-- Середина поля: логотип, кубики и карточка хода. -->
-                        <StackPanel Margin="140,135,140,0" VerticalAlignment="Top">
-                            <TextBlock Text="МОНОПОЛИЯ" FontSize="60" FontWeight="Black" HorizontalAlignment="Center" Foreground="#1F3354">
+                        <StackPanel Margin="200,135,200,0" VerticalAlignment="Top">
+                            <TextBlock Text="МОНОПОЛІЯ" FontSize="60" FontWeight="Black" HorizontalAlignment="Center" Foreground="#1F3354">
                                 <TextBlock.Effect>
                                     <DropShadowEffect ShadowDepth="3" BlurRadius="0" Color="#FFD24A" Opacity="1"/>
                                 </TextBlock.Effect>
                             </TextBlock>
-                            <TextBlock Text="украинские бренды · гривна" FontSize="18" HorizontalAlignment="Center"
-                                       Foreground="{StaticResource BoardMutedBrush}" Margin="0,2,0,0"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,26,0,26">
                                 <ContentControl Name="Die1Host" Margin="0,0,20,0"/>
                                 <ContentControl Name="Die2Host"/>
@@ -61,12 +59,16 @@
                             </Border>
                         </StackPanel>
 
-                        <Canvas Name="TokenCanvas" Width="1000" Height="1000" IsHitTestVisible="False"/>
+                        <!-- Длительность партии — внизу середины поля. -->
+                        <TextBlock Name="DurationText" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,128"
+                                   FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource BoardMutedBrush}"/>
+
+                        <Canvas Name="TokenCanvas" Width="1300" Height="1000" IsHitTestVisible="False"/>
                     </Grid>
                 </Border>
 
                 <!-- Правая колонка: игроки, карточка компании, журнал, кнопки. -->
-                <Grid Margin="1084,28,36,28">
+                <Grid Margin="1372,28,24,28">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -79,11 +81,11 @@
                     <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,4,0,12" Padding="16">
                         <StackPanel>
                             <Border Name="DeedHeader" CornerRadius="10" Padding="16,10" Background="#1F3354">
-                                <TextBlock Name="CellTitle" FontSize="26" FontWeight="Bold" Foreground="White" Text="Карточка клетки"/>
+                                <TextBlock Name="CellTitle" FontSize="26" FontWeight="Bold" Foreground="White" Text="Картка клітинки"/>
                             </Border>
                             <TextBlock Name="CellInfo" FontSize="17" Margin="2,10,2,0" TextWrapping="Wrap"
                                        Foreground="{StaticResource MutedTextBrush}"
-                                       Text="Нажмите на клетку поля — здесь появятся аренда и кнопки для своей компании."/>
+                                       Text="Натисніть на клітинку поля — тут з'являться оренда й кнопки для вашої компанії."/>
                             <Grid Name="RentTable" Margin="2,8,2,0"/>
                             <WrapPanel Name="CellActions" Margin="0,10,0,0"/>
                         </StackPanel>
@@ -93,11 +95,22 @@
                         <ListBox Name="ActionLog" Style="{StaticResource DarkList}" FontSize="17"/>
                     </Border>
 
-                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,12,0,0">
-                        <Button Name="TradeButton" Content="⇄  Предложить обмен" FontSize="18" Margin="0,0,10,0" Click="Trade_Click"/>
-                        <Button Name="SoundButton" FontSize="18" Margin="0,0,10,0" Click="Sound_Click"/>
-                        <Button Content="Выйти в меню" FontSize="18" Click="Leave_Click"/>
-                    </StackPanel>
+                    <!-- Узкая колонка: обмен на всю ширину, под ним звук и выход. -->
+                    <Grid Grid.Row="3" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Button Name="TradeButton" Grid.ColumnSpan="3" Content="⇄  Запропонувати обмін" FontSize="17" Click="Trade_Click"/>
+                        <Button Name="SoundButton" Grid.Row="2" FontSize="17" Click="Sound_Click"/>
+                        <Button Grid.Row="2" Grid.Column="2" Content="Вийти в меню" FontSize="17" Click="Leave_Click"/>
+                    </Grid>
                 </Grid>
             </Grid>
         </Viewbox>
@@ -107,8 +120,8 @@
             <Border Style="{StaticResource Card}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="32,24"
                     Effect="{StaticResource SoftShadow}">
                 <StackPanel>
-                    <TextBlock Text="Связь с хостом пропала" Style="{StaticResource Title}" FontSize="26" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Переподключаемся… Место в партии ждёт вас 2 минуты." Style="{StaticResource Muted}"
+                    <TextBlock Text="Зв'язок із хостом зник" Style="{StaticResource Title}" FontSize="26" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Перепідключаємося… Місце в партії чекає на вас 2 хвилини." Style="{StaticResource Muted}"
                                FontSize="17" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>

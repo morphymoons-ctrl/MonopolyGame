@@ -3,7 +3,7 @@ using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
 {
-    // Долги и банкротство (RULES.md, §12). Аня (0) встаёт на «Сильпо» Богдана (1): аренда 14.
+    // Долги и банкротство (RULES.md, §12). Аня (0) встаёт на «Сільпо» Богдана (1): аренда 14.
     public class DebtTests
     {
         private static Game RentDue(int players = 2)
@@ -24,7 +24,7 @@ namespace Monopoly.Tests
 
             Assert.Equal(TurnPhase.Debt, game.State.Phase);
             Assert.Contains(new DebtIncurred(0, 1, 14), roll.Events);
-            Assert.Equal("Сначала закройте долг: продайте филиалы или заложите компании.", game.Error(new EndTurn(0)));
+            Assert.Equal("Спершу закрийте борг: продайте філії або закладіть компанії.", game.Error(new EndTurn(0)));
             Assert.Contains(new MortgageCompany(0, Atb), game.GetAvailableActions(0));
 
             var mortgage = game.Do(new MortgageCompany(0, Atb));
@@ -49,7 +49,7 @@ namespace Monopoly.Tests
             Assert.Contains(new PlayerBankrupt(0, 1), result.Events);
             Assert.Contains(new GameOver(1), result.Events);
             Assert.Equal(TurnPhase.GameOver, game.State.Phase);
-            Assert.Equal("Игра окончена.", game.Error(new RollDice(1)));
+            Assert.Equal("Гру закінчено.", game.Error(new RollDice(1)));
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace Monopoly.Tests
         {
             var game = Create();
 
-            Assert.Equal("Объявить банкротство можно, только когда нечем заплатить долг.", game.Error(new DeclareBankruptcy(0)));
+            Assert.Equal("Оголосити банкрутство можна, лише коли нема чим сплатити борг.", game.Error(new DeclareBankruptcy(0)));
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace Monopoly.Tests
 
             Assert.Equal(TurnPhase.Debt, game.State.Phase);
             Assert.Equal(GameRules.StartingBalance - 20, game.P(2).Balance);
-            Assert.Equal("Ждём, пока Богдан закроет долг.", game.Error(new EndTurn(0)));
+            Assert.Equal("Чекаємо, поки Богдан закриє борг.", game.Error(new EndTurn(0)));
 
             game.Do(new MortgageCompany(1, Atb));
 
@@ -169,7 +169,7 @@ namespace Monopoly.Tests
             game.Do(new EndTurn(0));
 
             Assert.Same(game.P(2), game.State.CurrentPlayer);
-            Assert.Equal("Вы выбыли из игры.", game.Error(new RollDice(1)));
+            Assert.Equal("Ви вибули з гри.", game.Error(new RollDice(1)));
         }
     }
 }

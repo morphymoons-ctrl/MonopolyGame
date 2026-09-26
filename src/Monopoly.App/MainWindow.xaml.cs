@@ -59,7 +59,7 @@ namespace Monopoly.App
             }
             catch (InvalidDataException ex)
             {
-                return $"Не удалось открыть сохранение: {ex.Message}";
+                return $"Не вдалося відкрити збереження: {ex.Message}";
             }
             return await ConnectOrStopAsync("127.0.0.1", host.HostName ?? settings.Name, host.HostToken);
         }
@@ -67,8 +67,8 @@ namespace Monopoly.App
         private Task<string?> JoinGameAsync(string name, string address) => ConnectOrStopAsync(address, name, null);
 
         private static string PortBusyMessage =>
-            $"Порт {NetDefaults.Port} занят — похоже, игра уже создана на этом компьютере. " +
-            "Чтобы зайти в неё второй копией, подключитесь к 127.0.0.1.";
+            $"Порт {NetDefaults.Port} зайнятий — схоже, гру вже створено на цьому комп'ютері. " +
+            "Щоб зайти в неї другою копією, підключіться до 127.0.0.1.";
 
         private async Task<string?> ConnectOrStopAsync(string address, string name, string? hostToken)
         {
@@ -89,7 +89,7 @@ namespace Monopoly.App
             }
             catch (UriFormatException)
             {
-                return $"Неверный адрес: {address}.";
+                return $"Неправильна адреса: {address}.";
             }
 
             // Сообщения приходят из потоков сети — переносим их в поток окна.
@@ -152,7 +152,7 @@ namespace Monopoly.App
         {
             bool inGame = gameScreen is not null;
             await StopNetworkAsync();
-            ShowStart(inGame ? $"{text} Чтобы вернуться в партию, подключитесь к тому же хосту под тем же именем." : text);
+            ShowStart(inGame ? $"{text} Щоб повернутися до партії, підключіться до того самого хоста під тим самим ім'ям." : text);
         }
 
         private async Task LeaveAsync()

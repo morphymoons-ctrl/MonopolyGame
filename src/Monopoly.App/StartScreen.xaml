@@ -4,40 +4,40 @@
              FontFamily="{StaticResource UiFont}" FontSize="17" Foreground="{StaticResource TextBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{StaticResource TableBrush}">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16,24">
-            <TextBlock Text="МОНОПОЛИЯ" FontSize="64" FontWeight="Black" HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}">
+            <TextBlock Text="МОНОПОЛІЯ" FontSize="64" FontWeight="Black" HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}">
                 <TextBlock.Effect>
                     <DropShadowEffect ShadowDepth="4" BlurRadius="0" Color="#2F7BFF" Opacity="1"/>
                 </TextBlock.Effect>
             </TextBlock>
-            <TextBlock Text="украинские бренды · гривна · до 5 игроков по сети" HorizontalAlignment="Center"
-                       Style="{StaticResource Muted}" Margin="0,4,0,24"/>
+            <TextBlock Text="для децелов (Максімка, Ілюшка, Данюшка, Ярушка і Чушка)" HorizontalAlignment="Center"
+                       Style="{StaticResource Muted}" FontSize="13" FontStyle="Italic" Margin="0,2,0,24"/>
 
             <Border Style="{StaticResource Card}" Width="620" Padding="28" Effect="{StaticResource SoftShadow}">
                 <StackPanel>
-                    <TextBlock Text="Ваше имя" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="Ваше ім'я" Style="{StaticResource Muted}"/>
                     <TextBox Name="NameBox" MaxLength="20" FontSize="20" Margin="0,6,0,18"/>
 
-                    <Button Name="CreateButton" Content="Создать игру" Style="{StaticResource PrimaryButton}" FontSize="20" MinHeight="52" Click="Create_Click"/>
-                    <TextBlock Text="Вы станете хостом, друзья подключатся к вам." Style="{StaticResource Muted}" FontSize="14" Margin="0,6,0,0"/>
+                    <Button Name="CreateButton" Content="Створити гру" Style="{StaticResource PrimaryButton}" FontSize="20" MinHeight="52" Click="Create_Click"/>
+                    <TextBlock Text="Ви станете хостом, друзі підключаться до вас." Style="{StaticResource Muted}" FontSize="14" Margin="0,6,0,0"/>
 
                     <!-- Незаконченные партии, где этот компьютер был хостом. -->
                     <StackPanel Name="SavesSection" Visibility="Collapsed" Margin="0,18,0,0">
-                        <TextBlock Text="Продолжить партию" FontWeight="Bold" FontSize="19"/>
+                        <TextBlock Text="Продовжити партію" FontWeight="Bold" FontSize="19"/>
                         <StackPanel Name="SavesPanel" Margin="0,8,0,0"/>
                     </StackPanel>
 
                     <Border Height="1" Background="{StaticResource SurfaceBorderBrush}" Margin="0,22"/>
 
-                    <TextBlock Text="Подключиться к игре" FontWeight="Bold" FontSize="19"/>
+                    <TextBlock Text="Підключитися до гри" FontWeight="Bold" FontSize="19"/>
                     <DockPanel Margin="0,10,0,0">
-                        <Button Name="JoinButton" Content="Подключиться" DockPanel.Dock="Right" Margin="10,0,0,0" MinWidth="160" Click="Join_Click"/>
+                        <Button Name="JoinButton" Content="Підключитися" DockPanel.Dock="Right" Margin="10,0,0,0" MinWidth="160" Click="Join_Click"/>
                         <TextBox Name="AddressBox" KeyDown="AddressBox_KeyDown"/>
                     </DockPanel>
-                    <TextBlock Text="IP хоста, например 26.12.34.56. Порт указывать не нужно." Style="{StaticResource Muted}" FontSize="14" Margin="0,6,0,18"/>
+                    <TextBlock Text="IP хоста, наприклад 26.12.34.56. Порт вказувати не треба." Style="{StaticResource Muted}" FontSize="14" Margin="0,6,0,18"/>
 
                     <DockPanel>
-                        <Button Name="SearchButton" Content="⟳  Обновить" DockPanel.Dock="Right" FontSize="15" MinHeight="32" Padding="12,4" Click="Search_Click"/>
-                        <TextBlock Text="Игры в сети" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <Button Name="SearchButton" Content="⟳  Оновити" DockPanel.Dock="Right" FontSize="15" MinHeight="32" Padding="12,4" Click="Search_Click"/>
+                        <TextBlock Text="Ігри в мережі" VerticalAlignment="Center" FontWeight="Bold"/>
                     </DockPanel>
                     <Border Background="#0F1C30" CornerRadius="10" Margin="0,8,0,0" Padding="4" BorderBrush="{StaticResource SurfaceBorderBrush}" BorderThickness="1">
                         <ListBox Name="GamesList" Height="120" Style="{StaticResource DarkList}"
