@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,27 +8,70 @@ using Monopoly.Net;
 
 namespace Monopoly.App
 {
-    // Первый экран: имя, «Создать игру», «Подключиться» и найденные в сети игры.
+    // Первый экран: имя, «Создать игру», «Продолжить партию», «Подключиться» и найденные в сети игры.
     public partial class StartScreen : UserControl
     {
         // Возвращают текст ошибки или null, если всё получилось.
         private readonly Func<string, Task<string?>> create;
         private readonly Func<string, string, Task<string?>> join;
+        private readonly Func<SaveFile, Task<string?>> resume;
         private readonly UserSettings settings;
         private bool busy;
 
-        public StartScreen(UserSettings settings, Func<string, Task<string?>> create, Func<string, string, Task<string?>> join, string? message)
+        public StartScreen(UserSettings settings, SaveStore saves, Func<string, Task<string?>> create,
+            Func<string, string, Task<string?>> join, Func<SaveFile, Task<string?>> resume, string? message)
         {
             InitializeComponent();
             this.settings = settings;
             this.create = create;
             this.join = join;
+            this.resume = resume;
 
             NameBox.Text = settings.Name.Length > 0 ? settings.Name : DefaultName();
             AddressBox.Text = settings.LastAddress;
             StatusText.Text = message ?? "";
             VersionText.Text = $"Версия {NetDefaults.GameVersion}";
+            ShowSaves(saves);
             Loaded += async (_, _) => await SearchAsync();
+        }
+
+        // Три последние незаконченные партии этого хоста.
+        private void ShowSaves(SaveStore saves)
+        {
+            SavesPanel.Children.Clear();
+            foreach (var save in saves.ListUnfinished().Take(3))
+            {
+                var row = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
+                var button = new Button { Content = "Продолжить", MinWidth = 140, Margin = new Thickness(10, 0, 0, 0) };
+                button.Click += async (_, _) => await RunResumeAsync(save);
+                DockPanel.SetDock(button, Dock.Right);
+                row.Children.Add(button);
+
+                var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                text.Children.Add(new TextBlock { Text = string.Join(", ", save.Seats.Select(s => s.Name)), FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+                text.Children.Add(new TextBlock
+                {
+                    Text = $"{save.SavedAtUtc.ToLocalTime():d MMMM, HH:mm} · ходов: {save.Actions.Count}",
+                    Style = (Style)FindResource("Muted"),
+                    FontSize = 14
+                });
+                row.Children.Add(text);
+                SavesPanel.Children.Add(row);
+            }
+            SavesSection.Visibility = SavesPanel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private async Task RunResumeAsync(SaveFile save)
+        {
+            if (busy)
+            {
+                return;
+            }
+            SetBusy(true);
+            StatusText.Text = "Открываем партию…";
+            var error = await resume(save);
+            StatusText.Text = error ?? "";
+            SetBusy(false);
         }
 
         private static string DefaultName()

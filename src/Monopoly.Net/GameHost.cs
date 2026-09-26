@@ -8,42 +8,77 @@ using Monopoly.Core;
 
 namespace Monopoly.Net
 {
-    // Сервер игры внутри приложения того, кто создал игру. Только он выполняет правила.
+    public sealed record GameHostOptions
+    {
+        public int Port { get; init; } = NetDefaults.Port;
+        public bool EnableDiscovery { get; init; } = true;
+        public TimeSpan TurnTimeout { get; init; } = NetDefaults.TurnTimeout;
+        public TimeSpan BotTakeover { get; init; } = NetDefaults.BotTakeover;
+        public TimeSpan BotDelay { get; init; } = NetDefaults.BotDelay;
+        // Куда сохранять партию после каждого действия; null — не сохранять.
+        public SaveStore? Saves { get; init; }
+    }
+
+    // Сервер игры внутри приложения того, кто создал игру. Только он выполняет правила,
+    // следит за таймером хода и играет за ботов.
     public sealed class GameHost : IAsyncDisposable
     {
         // Все обращения к лобби и игре — по очереди, вместе с рассылкой: так клиенты получают события по порядку.
         private readonly SemaphoreSlim gate = new(1, 1);
+        private readonly GameHostOptions options;
         private readonly Lobby lobby;
-        private readonly Guid gameId = Guid.NewGuid();
+        private readonly Guid gameId;
+        private readonly CancellationTokenSource stop = new();
         private WebApplication? app;
         private IHubContext<GameHub>? hub;
         private DiscoveryResponder? discovery;
         private Game? game;
+        // Когда в игре что-то изменилось в последний раз: от этого момента считаются таймер хода и пауза бота.
+        private DateTime lastChange = DateTime.UtcNow;
         // Описание для ответа на поиск; обновляется после каждой операции, читается из потока UDP.
         private volatile DiscoveredGame discoveryInfo;
 
-        public int Port { get; }
+        public int Port => options.Port;
         // Передаётся собственному клиенту хоста, чтобы лобби узнало хоста.
         public string HostToken { get; } = Guid.NewGuid().ToString("N");
+        // Имя хоста в продолженной партии: под ним приложение хоста возвращается на своё место.
+        public string? HostName => lobby.HostName;
 
-        private GameHost(int port)
+        private GameHost(GameHostOptions options, Guid gameId)
         {
-            Port = port;
+            this.options = options;
+            this.gameId = gameId;
             lobby = new Lobby(HostToken, NetDefaults.GameVersion);
             discoveryInfo = DescribeForDiscovery();
         }
 
-        // Запускает сервер на всех адресах компьютера. Если порт занят — исключение IOException.
-        public static async Task<GameHost> StartAsync(int port = NetDefaults.Port, bool enableDiscovery = true)
-        {
-            var host = new GameHost(port);
+        private static DateTime Now => DateTime.UtcNow;
 
+        // Новая игра. Если порт занят — исключение IOException.
+        public static Task<GameHost> StartAsync(GameHostOptions? options = null) =>
+            LaunchAsync(new GameHost(options ?? new GameHostOptions(), Guid.NewGuid()));
+
+        // Продолжение сохранённой партии: все места ждут своих игроков.
+        public static Task<GameHost> ResumeAsync(SaveFile save, GameHostOptions? options = null)
+        {
+            if (save.Version != NetDefaults.GameVersion)
+                throw new InvalidDataException($"Сохранение от версии {save.Version}, а игра — {NetDefaults.GameVersion}.");
+
+            var host = new GameHost(options ?? new GameHostOptions(), save.GameId);
+            host.game = Game.Replay(save.Seats.Select(s => s.Name).ToList(), save.Seed, save.Actions);
+            host.lobby.Restore(save.Seats, Now);
+            host.discoveryInfo = host.DescribeForDiscovery();
+            return LaunchAsync(host);
+        }
+
+        private static async Task<GameHost> LaunchAsync(GameHost host)
+        {
             var builder = WebApplication.CreateSlimBuilder();
             builder.Logging.ClearProviders();
-            builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Any, port));
+            builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Any, host.Port));
             builder.Services.AddSingleton(host);
             builder.Services.AddSignalR()
-                .AddJsonProtocol(options => ProtocolJson.Configure(options.PayloadSerializerOptions));
+                .AddJsonProtocol(json => ProtocolJson.Configure(json.PayloadSerializerOptions));
 
             var app = builder.Build();
             app.MapHub<GameHub>(NetDefaults.HubPath);
@@ -51,34 +86,42 @@ namespace Monopoly.Net
 
             host.app = app;
             host.hub = app.Services.GetRequiredService<IHubContext<GameHub>>();
-            if (enableDiscovery)
-                host.discovery = DiscoveryResponder.TryStart(port, () => host.discoveryInfo);
+            if (host.options.EnableDiscovery)
+                host.discovery = DiscoveryResponder.TryStart(host.Port, () => host.discoveryInfo);
+            _ = host.RunClockAsync();
             return host;
         }
 
+        // --- Вызовы клиентов ---
+
         internal Task<JoinResult> JoinAsync(string connectionId, JoinRequest request) => Locked(async () =>
         {
-            var result = lobby.Join(connectionId, request);
-            if (result.Error is null)
+            var result = lobby.Join(connectionId, request, Now);
+            if (result.Error is not null)
+                return result;
+
+            if (game is null)
+            {
                 await SendLobbyAsync();
+                return result;
+            }
+
+            // Вернулся в идущую партию: кто он, вся история и новости для остальных.
+            int playerId = lobby.FindPlayerId(connectionId)!.Value;
+            await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId, lobby.ColorByPlayerId()));
+            await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.Update, MakeUpdate(game.History, playerId, resync: true));
+            await SendToAllAsync(ClientMethods.Notice, $"{lobby.FindName(connectionId)} вернулся в игру.");
+            await SendUpdateAsync(Array.Empty<GameEvent>());
             return result;
         });
 
-        internal Task<string?> SetReadyAsync(string connectionId, bool ready) => Locked(async () =>
-        {
-            var error = lobby.SetReady(connectionId, ready);
-            if (error is null)
-                await SendLobbyAsync();
-            return error;
-        });
+        internal Task<string?> SetReadyAsync(string connectionId, bool ready) => LobbyChange(() => lobby.SetReady(connectionId, ready));
 
-        internal Task<string?> SetColorAsync(string connectionId, int colorIndex) => Locked(async () =>
-        {
-            var error = lobby.SetColor(connectionId, colorIndex);
-            if (error is null)
-                await SendLobbyAsync();
-            return error;
-        });
+        internal Task<string?> SetColorAsync(string connectionId, int colorIndex) => LobbyChange(() => lobby.SetColor(connectionId, colorIndex));
+
+        internal Task<string?> AddBotAsync(string connectionId) => LobbyChange(() => lobby.AddBot(connectionId));
+
+        internal Task<string?> RemoveBotAsync(string connectionId, int seatId) => LobbyChange(() => lobby.RemoveBot(connectionId, seatId));
 
         internal Task<string?> StartGameAsync(string connectionId) => Locked(async () =>
         {
@@ -87,6 +130,8 @@ namespace Monopoly.Net
                 return error;
 
             game = Game.Start(names);
+            lastChange = Now;
+            Save();
             var colors = lobby.ColorByPlayerId();
             foreach (var (connection, playerId) in lobby.Connections())
                 await Hub.Clients.Client(connection).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId!.Value, colors));
@@ -102,27 +147,118 @@ namespace Monopoly.Net
                 return "Вы не участвуете в этой игре.";
 
             // Действует всегда тот, кто прислал действие, — чужой PlayerId подставить нельзя.
-            var result = game.Execute(action with { PlayerId = playerId });
-            if (!result.Success)
-                return result.Error;
-            await SendUpdateAsync(result.Events);
-            return null;
+            return await ApplyAsync(action with { PlayerId = playerId });
         });
 
         internal Task DisconnectedAsync(string connectionId) => Locked(async () =>
         {
             var name = lobby.FindName(connectionId);
-            lobby.Leave(connectionId);
+            lobby.Leave(connectionId, Now);
             if (name is null)
                 return 0;
-            if (lobby.IsStarted)
-                await SendToAllAsync(ClientMethods.Notice, $"{name} отключился.");
+            if (game is not null)
+            {
+                int minutes = (int)Math.Round(options.BotTakeover.TotalMinutes);
+                await SendToAllAsync(ClientMethods.Notice, $"{name} отключился. Место ждёт его {minutes} мин, потом за него сыграет бот.");
+                await SendUpdateAsync(Array.Empty<GameEvent>());
+            }
             else
+            {
                 await SendLobbyAsync();
+            }
             return 0;
         });
 
+        // --- Часы: таймер хода, боты, передача места боту ---
+
+        private async Task RunClockAsync()
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(200));
+            try
+            {
+                while (await timer.WaitForNextTickAsync(stop.Token))
+                    await Locked(TickAsync);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        private async Task<int> TickAsync()
+        {
+            var now = Now;
+            foreach (var name in lobby.Tick(now, options.BotTakeover))
+            {
+                await SendToAllAsync(ClientMethods.Notice, $"{name} не вернулся — за него играет бот.");
+                await SendUpdateAsync(Array.Empty<GameEvent>());
+            }
+            if (game is null || game.State.Phase == TurnPhase.GameOver)
+                return 0;
+
+            var awaited = game.AwaitedPlayers();
+
+            // Бот ходит с паузой, чтобы люди успевали следить. По одному действию за такт.
+            if (now - lastChange >= options.BotDelay)
+            {
+                foreach (int id in awaited.Where(lobby.IsBotControlled))
+                {
+                    if (Bot.Choose(game, id) is { } action)
+                    {
+                        await ApplyAsync(action);
+                        return 0;
+                    }
+                }
+            }
+
+            // Время вышло — автодействие за всех, кого ждали (RULES.md, §13).
+            if (now - lastChange >= options.TurnTimeout)
+            {
+                foreach (int id in awaited)
+                {
+                    // Долг закрывается целиком, остальное — одним действием.
+                    for (int step = 0; step < 100; step++)
+                    {
+                        var action = game.TimeoutAction(id);
+                        if (action is null || await ApplyAsync(action) is not null)
+                            break;
+                        if (action is not (SellBranch or MortgageCompany))
+                            break;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        // --- Общее ---
+
+        private async Task<string?> ApplyAsync(GameAction action)
+        {
+            var result = game!.Execute(action);
+            if (!result.Success)
+                return result.Error;
+            lastChange = Now;
+            Save();
+            await SendUpdateAsync(result.Events);
+            return null;
+        }
+
+        private void Save()
+        {
+            if (options.Saves is null || game?.Seed is not int seed)
+                return;
+            options.Saves.Write(new SaveFile(gameId, NetDefaults.GameVersion, seed, lobby.SavedSeats(),
+                game.Actions.ToList(), Now, game.State.Phase == TurnPhase.GameOver));
+        }
+
         private IHubContext<GameHub> Hub => hub ?? throw new InvalidOperationException("Хост не запущен.");
+
+        private Task<string?> LobbyChange(Func<string?> change) => Locked(async () =>
+        {
+            var error = change();
+            if (error is null)
+                await SendLobbyAsync();
+            return error;
+        });
 
         private Task SendLobbyAsync() => SendToAllAsync(ClientMethods.Lobby, lobby.GetState());
 
@@ -135,19 +271,25 @@ namespace Monopoly.Net
         // Каждому — свои доступные действия, остальное общее.
         private async Task SendUpdateAsync(IReadOnlyList<GameEvent> events)
         {
-            var snapshot = game!.State.ToSnapshot();
+            if (game is null)
+                return;
             foreach (var (connection, playerId) in lobby.Connections())
-            {
-                var update = new GameUpdate(events, snapshot, game.GetAvailableActions(playerId!.Value));
-                await Hub.Clients.Client(connection).SendAsync(ClientMethods.Update, update);
-            }
+                await Hub.Clients.Client(connection).SendAsync(ClientMethods.Update, MakeUpdate(events, playerId!.Value));
         }
 
-        private DiscoveredGame DescribeForDiscovery()
+        private GameUpdate MakeUpdate(IReadOnlyList<GameEvent> events, int playerId, bool resync = false)
         {
-            return new DiscoveredGame(gameId, lobby.HostName ?? "?", NetDefaults.GameVersion, Port,
-                lobby.PlayerCount, GameRules.MaxPlayers, lobby.IsStarted);
+            var now = Now;
+            var awaited = game!.AwaitedPlayers();
+            var timer = awaited.Count == 0
+                ? null
+                : new TurnTimer(awaited, Math.Max(0, (int)Math.Ceiling((lastChange + options.TurnTimeout - now).TotalSeconds)));
+            return new GameUpdate(events, game.State.ToSnapshot(), game.GetAvailableActions(playerId), timer,
+                lobby.SeatStatuses(now, options.BotTakeover), resync);
         }
+
+        private DiscoveredGame DescribeForDiscovery() =>
+            new(gameId, lobby.HostName ?? "?", NetDefaults.GameVersion, Port, lobby.PlayerCount, GameRules.MaxPlayers, lobby.IsStarted);
 
         private async Task<T> Locked<T>(Func<Task<T>> action)
         {
@@ -165,6 +307,7 @@ namespace Monopoly.Net
 
         public async ValueTask DisposeAsync()
         {
+            stop.Cancel();
             discovery?.Dispose();
             if (app is not null)
             {
@@ -189,6 +332,10 @@ namespace Monopoly.Net
         public Task<string?> SetReady(bool ready) => host.SetReadyAsync(Context.ConnectionId, ready);
 
         public Task<string?> SetColor(int colorIndex) => host.SetColorAsync(Context.ConnectionId, colorIndex);
+
+        public Task<string?> AddBot() => host.AddBotAsync(Context.ConnectionId);
+
+        public Task<string?> RemoveBot(int seatId) => host.RemoveBotAsync(Context.ConnectionId, seatId);
 
         public Task<string?> StartGame() => host.StartGameAsync(Context.ConnectionId);
 

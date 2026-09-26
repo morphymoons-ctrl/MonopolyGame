@@ -27,6 +27,10 @@ namespace Monopoly.App
         private IReadOnlyList<GameAction> available = Array.Empty<GameAction>();
         // Действие отправлено, ответа ещё нет — кнопки скрыты.
         private bool sending;
+        // Таймер хода: до какого момента ждут решения и от кого.
+        private DateTime? deadline;
+        private IReadOnlyList<int> awaitedIds = Array.Empty<int>();
+        private readonly System.Windows.Threading.DispatcherTimer clock = new() { Interval = TimeSpan.FromSeconds(1) };
 
         public GameScreen(GameClient client, GameStartInfo info, UserSettings settings, Func<Task> leave)
         {
@@ -46,6 +50,36 @@ namespace Monopoly.App
             gameManager.DrawBoard();
             UpdateSoundButton();
             Refresh();
+
+            clock.Tick += (_, _) =>
+            {
+                ShowTimer();
+                gameManager.RefreshPlayers();
+            };
+            Loaded += (_, _) => clock.Start();
+            Unloaded += (_, _) => clock.Stop();
+        }
+
+        public void ShowReconnecting(bool reconnecting)
+        {
+            ReconnectOverlay.Visibility = reconnecting ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        // Отсчёт считается от момента, когда пришло обновление: часы у компьютеров могут не совпадать.
+        private void ShowTimer()
+        {
+            if (deadline is not DateTime until || Snapshot?.WinnerId is not null)
+            {
+                TimerText.Text = "";
+                return;
+            }
+            int left = Math.Max(0, (int)Math.Ceiling((until - DateTime.UtcNow).TotalSeconds));
+            TimerText.Text = $"⏱ {left / 60}:{left % 60:00}";
+            bool mine = awaitedIds.Contains(MyId);
+            TimerText.Foreground = mine && left <= 15
+                ? (Brush)FindResource("DangerBrush")
+                : (Brush)FindResource("BoardMutedBrush");
+            TimerText.ToolTip = mine ? "Когда время выйдет, игра сделает ход за вас" : null;
         }
 
         private int MyId => gameManager.MyPlayerId;
@@ -54,6 +88,10 @@ namespace Monopoly.App
 
         public void Apply(GameUpdate update)
         {
+            deadline = update.Timer is { } timer ? DateTime.UtcNow.AddSeconds(timer.SecondsLeft) : null;
+            awaitedIds = update.Timer?.AwaitedIds ?? Array.Empty<int>();
+            gameManager.SetStatus(update.Seats, awaitedIds);
+            ShowTimer();
             updates.Enqueue(update);
             if (!playing)
             {
@@ -70,7 +108,14 @@ namespace Monopoly.App
             while (updates.Count > 0)
             {
                 var update = updates.Dequeue();
-                await gameManager.PlayAsync(update, die1, die2, sounds);
+                if (update.IsResync)
+                {
+                    gameManager.LoadHistory(update);
+                }
+                else
+                {
+                    await gameManager.PlayAsync(update, die1, die2, sounds);
+                }
                 available = update.AvailableActions;
                 sending = false;
             }

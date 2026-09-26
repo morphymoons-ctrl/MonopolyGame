@@ -29,6 +29,7 @@ namespace Monopoly.App
 
             ReadyBox.Visibility = isHost ? Visibility.Collapsed : Visibility.Visible;
             StartButton.Visibility = isHost ? Visibility.Visible : Visibility.Collapsed;
+            AddBotButton.Visibility = isHost ? Visibility.Visible : Visibility.Collapsed;
             if (isHost)
             {
                 ShowHostAddresses();
@@ -49,9 +50,16 @@ namespace Monopoly.App
             SeatsPanel.Children.Clear();
             foreach (var seat in lobby.Seats)
             {
-                string role = seat.IsHost ? "хост" : seat.IsReady ? "готов" : "не готов";
+                string role = seat.IsHost ? "хост" : seat.IsBot ? "бот" : seat.IsReady ? "готов" : "не готов";
                 string me = seat.SeatId == client.SeatId ? " (вы)" : "";
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 4) };
+                if (isHost && seat.IsBot)
+                {
+                    int seatId = seat.SeatId;
+                    var remove = new Button { Content = "✕", FontSize = 12, MinHeight = 24, Padding = new Thickness(8, 0, 8, 0), Margin = new Thickness(0, 0, 10, 0), ToolTip = "Убрать бота" };
+                    remove.Click += async (_, _) => StatusText.Text = await client.RemoveBotAsync(seatId) ?? "";
+                    row.Children.Add(remove);
+                }
                 row.Children.Add(new Ellipse
                 {
                     Width = 20,
@@ -210,6 +218,11 @@ namespace Monopoly.App
                 StatusText.Text = error;
                 StartButton.IsEnabled = state?.StartBlockedReason is null;
             }
+        }
+
+        private async void AddBot_Click(object sender, RoutedEventArgs e)
+        {
+            StatusText.Text = await client.AddBotAsync() ?? "";
         }
 
         private async void Leave_Click(object sender, RoutedEventArgs e)

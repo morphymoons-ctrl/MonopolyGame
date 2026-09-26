@@ -15,10 +15,15 @@ namespace Monopoly.Core
         private readonly IRandomSource random;
         private readonly GameOptions options;
         private readonly List<GameEvent> history = new();
+        private readonly List<GameAction> actions = new();
 
         public GameState State { get; }
         // Все события с начала партии.
         public IReadOnlyList<GameEvent> History => history;
+        // Все выполненные действия по порядку. Вместе с зерном по ним партию можно восстановить (Replay).
+        public IReadOnlyList<GameAction> Actions => actions;
+        // Зерно генератора; null — генератор без зерна (тесты).
+        public int? Seed => (random as SeededRandom)?.Seed;
 
         // Новая партия. Без seed зерно выбирается случайно и попадает в событие GameStarted.
         public static Game Start(IReadOnlyList<string> playerNames, int? seed = null)
@@ -166,6 +171,7 @@ namespace Monopoly.Core
 
             Continue(events);
             history.AddRange(events);
+            actions.Add(action);
             return ActionResult.Ok(events);
         }
 

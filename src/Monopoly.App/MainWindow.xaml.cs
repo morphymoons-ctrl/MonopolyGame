@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,6 +10,7 @@ namespace Monopoly.App
     public partial class MainWindow : Window
     {
         private readonly UserSettings settings = UserSettings.Load();
+        private readonly SaveStore saves = new();
         private GameHost? host;
         private GameClient? client;
         private LobbyState? lastLobby;
@@ -27,32 +28,51 @@ namespace Monopoly.App
         {
             lobbyScreen = null;
             gameScreen = null;
-            Screen.Content = new StartScreen(settings, CreateGameAsync, JoinGameAsync, message);
+            Screen.Content = new StartScreen(settings, saves, CreateGameAsync, JoinGameAsync, ResumeGameAsync, message);
         }
+
+        private GameHostOptions HostOptions => new() { Saves = saves };
 
         private async Task<string?> CreateGameAsync(string name)
         {
             try
             {
-                host = await GameHost.StartAsync();
+                host = await GameHost.StartAsync(HostOptions);
             }
             catch (IOException)
             {
-                return $"Порт {NetDefaults.Port} занят — похоже, игра уже создана на этом компьютере. " +
-                    "Чтобы зайти в неё второй копией, подключитесь к 127.0.0.1.";
+                return PortBusyMessage;
             }
-
-            var error = await ConnectAsync("127.0.0.1", name, host.HostToken);
-            if (error is not null)
-            {
-                await StopNetworkAsync();
-            }
-            return error;
+            return await ConnectOrStopAsync("127.0.0.1", name, host.HostToken);
         }
 
-        private async Task<string?> JoinGameAsync(string name, string address)
+        // Продолжение сохранённой партии: хост заходит на своё место, остальные — под своими именами.
+        private async Task<string?> ResumeGameAsync(SaveFile save)
         {
-            var error = await ConnectAsync(address, name, null);
+            try
+            {
+                host = await GameHost.ResumeAsync(save, HostOptions);
+            }
+            catch (IOException)
+            {
+                return PortBusyMessage;
+            }
+            catch (InvalidDataException ex)
+            {
+                return $"Не удалось открыть сохранение: {ex.Message}";
+            }
+            return await ConnectOrStopAsync("127.0.0.1", host.HostName ?? settings.Name, host.HostToken);
+        }
+
+        private Task<string?> JoinGameAsync(string name, string address) => ConnectOrStopAsync(address, name, null);
+
+        private static string PortBusyMessage =>
+            $"Порт {NetDefaults.Port} занят — похоже, игра уже создана на этом компьютере. " +
+            "Чтобы зайти в неё второй копией, подключитесь к 127.0.0.1.";
+
+        private async Task<string?> ConnectOrStopAsync(string address, string name, string? hostToken)
+        {
+            var error = await ConnectAsync(address, name, hostToken);
             if (error is not null)
             {
                 await StopNetworkAsync();
@@ -80,6 +100,8 @@ namespace Monopoly.App
             newClient.GameStarted += info => OnUi(newClient, () => OnGameStarted(info));
             newClient.GameUpdated += update => OnUi(newClient, () => gameScreen?.Apply(update));
             newClient.Notice += text => OnUi(newClient, () => gameScreen?.AddLog(text));
+            newClient.Reconnecting += () => OnUi(newClient, () => gameScreen?.ShowReconnecting(true));
+            newClient.Reconnected += () => OnUi(newClient, () => gameScreen?.ShowReconnecting(false));
             newClient.ConnectionLost += text => OnUi(newClient, () => OnConnectionLost(text));
 
             var error = await newClient.ConnectAsync(name, hostToken);
@@ -88,12 +110,16 @@ namespace Monopoly.App
                 return error;
             }
 
-            lobbyScreen = new LobbyScreen(newClient, hostToken is not null, LeaveAsync);
-            if (lastLobby is not null)
+            // В идущую партию (возвращение, продолжение) лобби не нужно — хост сразу пришлёт начало игры.
+            if (gameScreen is null)
             {
-                lobbyScreen.Show(lastLobby);
+                lobbyScreen = new LobbyScreen(newClient, hostToken is not null, LeaveAsync);
+                if (lastLobby is not null)
+                {
+                    lobbyScreen.Show(lastLobby);
+                }
+                Screen.Content = lobbyScreen;
             }
-            Screen.Content = lobbyScreen;
             return null;
         }
 
@@ -114,6 +140,7 @@ namespace Monopoly.App
             lobbyScreen?.Show(state);
         }
 
+        // Начало партии или возвращение в неё — экран строится заново по истории от хоста.
         private void OnGameStarted(GameStartInfo info)
         {
             lobbyScreen = null;
@@ -123,8 +150,9 @@ namespace Monopoly.App
 
         private async void OnConnectionLost(string text)
         {
+            bool inGame = gameScreen is not null;
             await StopNetworkAsync();
-            ShowStart(text);
+            ShowStart(inGame ? $"{text} Чтобы вернуться в партию, подключитесь к тому же хосту под тем же именем." : text);
         }
 
         private async Task LeaveAsync()

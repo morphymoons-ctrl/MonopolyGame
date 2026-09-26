@@ -2,7 +2,7 @@ using Monopoly.Core;
 
 namespace Monopoly.Net
 {
-    // Лобби на хосте: места, имена, цвета, готовность. Без сети — её делает GameHost.
+    // Места за столом на хосте: имена, цвета, готовность, подключение, боты. Без сети — её делает GameHost.
     // Методы возвращают текст ошибки для игрока или null, если всё получилось.
     public sealed class Lobby
     {
@@ -27,29 +27,31 @@ namespace Monopoly.Net
 
         public string? HostName => seats.FirstOrDefault(s => s.IsHost)?.Name;
 
-        public JoinResult Join(string connectionId, JoinRequest request)
+        public JoinResult Join(string connectionId, JoinRequest request, DateTime now)
         {
             if (request.Version != version)
                 return Fail($"Версии игры не совпадают: у хоста {version}, у вас {request.Version}. Нужна одна версия у всех.");
-            if (IsStarted)
-                return Fail("Игра уже началась.");
-            if (seats.Count >= GameRules.MaxPlayers)
-                return Fail($"Все {GameRules.MaxPlayers} мест заняты.");
 
             string name = (request.Name ?? "").Trim();
             if (name.Length == 0)
                 return Fail("Введите имя.");
+            if (IsStarted)
+                return Rejoin(connectionId, name);
+
+            if (seats.Count >= GameRules.MaxPlayers)
+                return Fail($"Все {GameRules.MaxPlayers} мест заняты.");
             if (name.Length > MaxNameLength)
                 return Fail($"Имя слишком длинное: не больше {MaxNameLength} символов.");
-            if (seats.Any(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)))
+            if (FindByName(name) is not null)
                 return Fail($"Имя «{name}» уже занято.");
 
             bool isHost = request.HostToken == hostToken;
             if (isHost && seats.Any(s => s.IsHost))
                 return Fail("Хост уже в лобби.");
 
-            var seat = new Seat(nextSeatId++, connectionId, name, FirstFreeColor(), isHost)
+            var seat = new Seat(nextSeatId++, name, FirstFreeColor(), isHost, isBot: false)
             {
+                ConnectionId = connectionId,
                 // Хосту готовность не нужна: он сам нажимает «Начать».
                 IsReady = isHost,
             };
@@ -57,16 +59,63 @@ namespace Monopoly.Net
             return new JoinResult(null, seat.SeatId);
         }
 
-        // Выход до старта освобождает место. После старта место остаётся (переподключение — этап 5).
-        public void Leave(string connectionId)
+        // Возвращение в идущую партию: под именем игрока, который сейчас не подключён.
+        private JoinResult Rejoin(string connectionId, string name)
+        {
+            var seat = FindByName(name);
+            if (seat is null || seat.IsBot)
+                return Fail("Игра уже началась. Вернуться можно только под своим именем из этой партии.");
+            if (seat.ConnectionId is not null)
+                return Fail($"Игрок «{seat.Name}» уже в игре.");
+
+            seat.ConnectionId = connectionId;
+            seat.DisconnectedAt = null;
+            seat.BotActive = false;
+            return new JoinResult(null, seat.SeatId);
+        }
+
+        // До старта выход освобождает место; после старта место ждёт возвращения.
+        public void Leave(string connectionId, DateTime now)
         {
             var seat = Find(connectionId);
             if (seat is null)
                 return;
             if (IsStarted)
+            {
                 seat.ConnectionId = null;
+                seat.DisconnectedAt = now;
+            }
             else
+            {
                 seats.Remove(seat);
+            }
+        }
+
+        public string? AddBot(string connectionId)
+        {
+            var error = RequireHostBeforeStart(connectionId);
+            if (error is not null)
+                return error;
+            if (seats.Count >= GameRules.MaxPlayers)
+                return $"Все {GameRules.MaxPlayers} мест заняты.";
+
+            int number = 1;
+            while (FindByName($"Бот {number}") is not null)
+                number++;
+            seats.Add(new Seat(nextSeatId++, $"Бот {number}", FirstFreeColor(), isHost: false, isBot: true) { IsReady = true });
+            return null;
+        }
+
+        public string? RemoveBot(string connectionId, int seatId)
+        {
+            var error = RequireHostBeforeStart(connectionId);
+            if (error is not null)
+                return error;
+            var seat = seats.FirstOrDefault(s => s.SeatId == seatId);
+            if (seat is null || !seat.IsBot)
+                return "Такого бота нет.";
+            seats.Remove(seat);
+            return null;
         }
 
         public string? SetReady(string connectionId, bool ready)
@@ -114,10 +163,63 @@ namespace Monopoly.Net
             return null;
         }
 
+        // Партия из сохранения: места те же, все люди пока не подключены.
+        public void Restore(IReadOnlyList<SavedSeat> saved, DateTime now)
+        {
+            seats.Clear();
+            for (int i = 0; i < saved.Count; i++)
+            {
+                seats.Add(new Seat(nextSeatId++, saved[i].Name, saved[i].ColorIndex, saved[i].IsHost, saved[i].IsBot)
+                {
+                    IsReady = true,
+                    PlayerId = i,
+                    DisconnectedAt = saved[i].IsBot ? null : now,
+                });
+            }
+            IsStarted = true;
+        }
+
+        // Отключившиеся дольше takeover передают место боту. Возвращает имена тех, за кого бот начал играть.
+        public IReadOnlyList<string> Tick(DateTime now, TimeSpan takeover)
+        {
+            var switched = new List<string>();
+            foreach (var seat in seats)
+            {
+                if (IsStarted && !seat.IsBot && !seat.BotActive && seat.ConnectionId is null
+                    && seat.DisconnectedAt is DateTime since && now - since >= takeover)
+                {
+                    seat.BotActive = true;
+                    switched.Add(seat.Name);
+                }
+            }
+            return switched;
+        }
+
+        public bool IsBotControlled(int playerId) =>
+            seats.FirstOrDefault(s => s.PlayerId == playerId) is { } seat && (seat.IsBot || seat.BotActive);
+
         public LobbyState GetState() => new(
-            seats.Select(s => new LobbySeat(s.SeatId, s.Name, s.ColorIndex, s.IsReady, s.IsHost)).ToList(),
+            seats.Select(s => new LobbySeat(s.SeatId, s.Name, s.ColorIndex, s.IsReady, s.IsHost, s.IsBot)).ToList(),
             GameRules.MaxPlayers,
             StartBlockedReason());
+
+        public IReadOnlyList<SeatStatus> SeatStatuses(DateTime now, TimeSpan takeover) =>
+            seats.Where(s => s.PlayerId is not null).Select(s =>
+            {
+                if (s.IsBot || s.BotActive)
+                    return new SeatStatus(s.PlayerId!.Value, SeatConnection.Bot, null);
+                if (s.ConnectionId is not null)
+                    return new SeatStatus(s.PlayerId!.Value, SeatConnection.Online, null);
+                var left = s.DisconnectedAt is DateTime since ? takeover - (now - since) : TimeSpan.Zero;
+                return new SeatStatus(s.PlayerId!.Value, SeatConnection.Offline, Math.Max(0, (int)Math.Ceiling(left.TotalSeconds)));
+            }).ToList();
+
+        // Места для сохранения — в порядке Id игроков.
+        public IReadOnlyList<SavedSeat> SavedSeats() =>
+            seats.Where(s => s.PlayerId is not null)
+                .OrderBy(s => s.PlayerId)
+                .Select(s => new SavedSeat(s.Name, s.ColorIndex, s.IsHost, s.IsBot))
+                .ToList();
 
         // Подключённые игроки: адресаты рассылки.
         public IEnumerable<(string ConnectionId, int? PlayerId)> Connections() =>
@@ -142,30 +244,46 @@ namespace Monopoly.Net
             return null;
         }
 
+        private string? RequireHostBeforeStart(string connectionId)
+        {
+            if (Find(connectionId) is not { IsHost: true })
+                return "Это может только хост.";
+            return IsStarted ? "Игра уже началась." : null;
+        }
+
         private int FirstFreeColor() =>
             Enumerable.Range(0, ColorCount).First(c => seats.All(s => s.ColorIndex != c));
 
         private Seat? Find(string connectionId) => seats.FirstOrDefault(s => s.ConnectionId == connectionId);
+
+        private Seat? FindByName(string name) =>
+            seats.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
 
         private static JoinResult Fail(string error) => new(error, -1);
 
         private sealed class Seat
         {
             public int SeatId { get; }
-            public string? ConnectionId { get; set; }
             public string Name { get; }
-            public int ColorIndex { get; set; }
             public bool IsHost { get; }
+            // Бот, добавленный хостом в лобби.
+            public bool IsBot { get; }
+            public int ColorIndex { get; set; }
             public bool IsReady { get; set; }
             public int? PlayerId { get; set; }
+            // null — не подключён (бот или отключившийся игрок).
+            public string? ConnectionId { get; set; }
+            public DateTime? DisconnectedAt { get; set; }
+            // За отключившегося играет бот.
+            public bool BotActive { get; set; }
 
-            public Seat(int seatId, string connectionId, string name, int colorIndex, bool isHost)
+            public Seat(int seatId, string name, int colorIndex, bool isHost, bool isBot)
             {
                 SeatId = seatId;
-                ConnectionId = connectionId;
                 Name = name;
                 ColorIndex = colorIndex;
                 IsHost = isHost;
+                IsBot = isBot;
             }
         }
     }

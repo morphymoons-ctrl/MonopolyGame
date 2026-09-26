@@ -17,6 +17,8 @@
                     <TextBlock Text="Лобби" Style="{StaticResource Title}" FontSize="38"/>
                     <TextBlock Name="SeatsTitle" Style="{StaticResource Muted}" Margin="0,2,0,14"/>
                     <StackPanel Name="SeatsPanel"/>
+                    <Button Name="AddBotButton" Content="+  Добавить бота" HorizontalAlignment="Left" FontSize="15" MinHeight="34" Padding="14,4"
+                            Margin="0,8,0,0" Click="AddBot_Click"/>
 
                     <TextBlock Text="Цвет вашей фишки" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
                     <WrapPanel Name="ColorsPanel"/>

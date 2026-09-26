@@ -7,23 +7,24 @@ namespace Monopoly.Tests
     {
         private const string Token = "host-token";
         private const string Version = "1.2.3";
+        private static readonly DateTime T0 = new(2026, 9, 26, 12, 0, 0, DateTimeKind.Utc);
 
         private static Lobby CreateLobbyWithHost()
         {
             var lobby = new Lobby(Token, Version);
-            lobby.Join("host", new JoinRequest("Хост", Version, Token));
+            lobby.Join("host", new JoinRequest("Хост", Version, Token), T0);
             return lobby;
         }
 
         private static JoinResult Join(Lobby lobby, string connection, string name) =>
-            lobby.Join(connection, new JoinRequest(name, Version));
+            lobby.Join(connection, new JoinRequest(name, Version), T0);
 
         [Fact]
         public void Join_WithOtherVersion_IsRejected()
         {
             var lobby = CreateLobbyWithHost();
 
-            var result = lobby.Join("c1", new JoinRequest("Аня", "1.2.4"));
+            var result = lobby.Join("c1", new JoinRequest("Аня", "1.2.4"), T0);
 
             Assert.Equal("Версии игры не совпадают: у хоста 1.2.3, у вас 1.2.4. Нужна одна версия у всех.", result.Error);
             Assert.Equal(1, lobby.PlayerCount);
@@ -64,7 +65,7 @@ namespace Monopoly.Tests
 
             Assert.True(seats[0].IsHost);
             Assert.False(seats[1].IsHost);
-            Assert.Equal("Хост уже в лобби.", lobby.Join("c2", new JoinRequest("Второй", Version, Token)).Error);
+            Assert.Equal("Хост уже в лобби.", lobby.Join("c2", new JoinRequest("Второй", Version, Token), T0).Error);
         }
 
         [Fact]
@@ -138,7 +139,7 @@ namespace Monopoly.Tests
             Assert.Equal(new[] { "Хост", "Аня" }, names);
             Assert.Equal(1, lobby.FindPlayerId("c1"));
             Assert.Equal(4, lobby.ColorByPlayerId()[1]);
-            Assert.Equal("Игра уже началась.", Join(lobby, "c2", "Опоздавший").Error);
+            Assert.Equal("Игра уже началась. Вернуться можно только под своим именем из этой партии.", Join(lobby, "c2", "Опоздавший").Error);
         }
 
         [Fact]
@@ -147,7 +148,7 @@ namespace Monopoly.Tests
             var lobby = CreateLobbyWithHost();
             Join(lobby, "c1", "Аня");
 
-            lobby.Leave("c1");
+            lobby.Leave("c1", T0);
 
             Assert.Equal(1, lobby.PlayerCount);
             Assert.Null(Join(lobby, "c2", "Аня").Error);
@@ -161,10 +162,112 @@ namespace Monopoly.Tests
             lobby.SetReady("c1", true);
             lobby.Start("host", out _);
 
-            lobby.Leave("c1");
+            lobby.Leave("c1", T0);
 
             Assert.Equal(2, lobby.PlayerCount);
             Assert.Equal(new[] { "host" }, lobby.Connections().Select(c => c.ConnectionId));
+        }
+
+        // --- Этап 5: возвращение, боты, сохранение ---
+
+        private static Lobby StartedWithAnya()
+        {
+            var lobby = CreateLobbyWithHost();
+            Join(lobby, "c1", "Аня");
+            lobby.SetReady("c1", true);
+            lobby.Start("host", out _);
+            return lobby;
+        }
+
+        [Fact]
+        public void Rejoin_ByName_ReturnsToSameSeat()
+        {
+            var lobby = StartedWithAnya();
+            lobby.Leave("c1", T0);
+
+            var result = lobby.Join("c9", new JoinRequest("аня", Version), T0.AddSeconds(30));
+
+            Assert.Null(result.Error);
+            Assert.Equal(1, lobby.FindPlayerId("c9"));
+            Assert.Equal(SeatConnection.Online, lobby.SeatStatuses(T0, TimeSpan.FromMinutes(2))[1].Connection);
+        }
+
+        [Fact]
+        public void Rejoin_WhileOnline_IsRejected()
+        {
+            var lobby = StartedWithAnya();
+
+            Assert.Equal("Игрок «Аня» уже в игре.", Join(lobby, "c9", "Аня").Error);
+        }
+
+        [Fact]
+        public void Offline_TwoMinutes_BotTakesOver_UntilReturn()
+        {
+            var lobby = StartedWithAnya();
+            var takeover = TimeSpan.FromMinutes(2);
+            lobby.Leave("c1", T0);
+
+            Assert.Empty(lobby.Tick(T0.AddSeconds(119), takeover));
+            Assert.Equal(new SeatStatus(1, SeatConnection.Offline, 1), lobby.SeatStatuses(T0.AddSeconds(119), takeover)[1]);
+            Assert.False(lobby.IsBotControlled(1));
+
+            Assert.Equal(new[] { "Аня" }, lobby.Tick(T0.AddSeconds(120), takeover));
+            Assert.True(lobby.IsBotControlled(1));
+            Assert.Equal(SeatConnection.Bot, lobby.SeatStatuses(T0.AddSeconds(120), takeover)[1].Connection);
+
+            Join(lobby, "c9", "Аня");
+            Assert.False(lobby.IsBotControlled(1));
+        }
+
+        [Fact]
+        public void Bots_AddedByHost_AreReady_AndRemovable()
+        {
+            var lobby = CreateLobbyWithHost();
+            Join(lobby, "c1", "Аня");
+
+            Assert.Equal("Это может только хост.", lobby.AddBot("c1"));
+            Assert.Null(lobby.AddBot("host"));
+            Assert.Null(lobby.AddBot("host"));
+
+            var bots = lobby.GetState().Seats.Where(s => s.IsBot).ToList();
+            Assert.Equal(new[] { "Бот 1", "Бот 2" }, bots.Select(b => b.Name));
+            Assert.All(bots, b => Assert.True(b.IsReady));
+
+            Assert.Null(lobby.RemoveBot("host", bots[0].SeatId));
+            Assert.Equal("Такого бота нет.", lobby.RemoveBot("host", 999));
+            Assert.Equal(3, lobby.PlayerCount);
+        }
+
+        [Fact]
+        public void BotSeat_IsBotControlled_AndCannotBeTakenByName()
+        {
+            var lobby = CreateLobbyWithHost();
+            lobby.AddBot("host");
+            lobby.Start("host", out _);
+
+            Assert.True(lobby.IsBotControlled(1));
+            Assert.Equal("Игра уже началась. Вернуться можно только под своим именем из этой партии.", Join(lobby, "c1", "Бот 1").Error);
+        }
+
+        [Fact]
+        public void Restore_FromSave_WaitsForEveryone()
+        {
+            var lobby = new Lobby(Token, Version);
+            lobby.Restore(new[]
+            {
+                new SavedSeat("Хост", 3, true, false),
+                new SavedSeat("Аня", 1, false, false),
+                new SavedSeat("Бот 1", 0, false, true),
+            }, T0);
+
+            Assert.True(lobby.IsStarted);
+            Assert.Equal("Хост", lobby.HostName);
+            Assert.Equal(new[] { SeatConnection.Offline, SeatConnection.Offline, SeatConnection.Bot },
+                lobby.SeatStatuses(T0, TimeSpan.FromMinutes(2)).Select(s => s.Connection));
+
+            Assert.Null(lobby.Join("h", new JoinRequest("Хост", Version, Token), T0).Error);
+            Assert.Equal(0, lobby.FindPlayerId("h"));
+            Assert.Equal(new SavedSeat("Аня", 1, false, false), lobby.SavedSeats()[1]);
         }
     }
 }

@@ -40,6 +40,11 @@ namespace Monopoly.App
         // Клетка, выбранная щелчком; её данные и кнопки показывает карточка компании.
         public int? SelectedCell { get; private set; }
 
+        // Подключение игроков и кого ждёт игра — из последнего обновления хоста.
+        private IReadOnlyList<SeatStatus> seats = Array.Empty<SeatStatus>();
+        private DateTime seatsReceived = DateTime.UtcNow;
+        private IReadOnlyList<int> awaited = Array.Empty<int>();
+
         public event Action<int>? CellClicked;
 
         public GameManager(ListBox log, Canvas canvas, Canvas tokenLayer, StackPanel players, GameStartInfo info)
@@ -100,6 +105,35 @@ namespace Monopoly.App
             Snapshot = update.Snapshot;
             DrawBoard();
             LayoutTokens(animationMs: 200);
+        }
+
+        // Возвращение в партию: вся история — сразу в журнал, без анимации.
+        public void LoadHistory(GameUpdate update)
+        {
+            Snapshot = update.Snapshot;
+            foreach (var e in update.Events)
+            {
+                AddLog(EventText.Describe(e, update.Snapshot));
+            }
+            DrawBoard();
+            LayoutTokens(animationMs: 0);
+        }
+
+        public void SetStatus(IReadOnlyList<SeatStatus>? seatStatuses, IReadOnlyList<int>? awaitedIds)
+        {
+            seats = seatStatuses ?? Array.Empty<SeatStatus>();
+            seatsReceived = DateTime.UtcNow;
+            awaited = awaitedIds ?? Array.Empty<int>();
+            DrawPlayersPanel();
+        }
+
+        // Раз в секунду — чтобы шёл отсчёт до передачи места боту.
+        public void RefreshPlayers()
+        {
+            if (seats.Any(s => s.Connection == SeatConnection.Offline))
+            {
+                DrawPlayersPanel();
+            }
         }
 
         public void Select(int cellIndex)
@@ -401,6 +435,22 @@ namespace Monopoly.App
                 if (player.IsBankrupt)
                 {
                     notes.Add("выбыл");
+                }
+                else if (seats.FirstOrDefault(s => s.PlayerId == player.Id) is { } seat)
+                {
+                    if (seat.Connection == SeatConnection.Bot)
+                    {
+                        notes.Add("играет бот");
+                    }
+                    else if (seat.Connection == SeatConnection.Offline)
+                    {
+                        int left = Math.Max(0, (seat.SecondsToBot ?? 0) - (int)(DateTime.UtcNow - seatsReceived).TotalSeconds);
+                        notes.Add($"не в сети · бот через {left / 60}:{left % 60:00}");
+                    }
+                }
+                if (!isCurrent && awaited.Contains(player.Id) && Snapshot.WinnerId is null)
+                {
+                    notes.Add("ждём ответа");
                 }
                 if (player.IsInJail)
                 {

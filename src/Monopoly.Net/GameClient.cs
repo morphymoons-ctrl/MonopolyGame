@@ -6,10 +6,13 @@ using Monopoly.Core;
 namespace Monopoly.Net
 {
     // Подключение игрока к хосту. У хоста его собственный клиент подключается к 127.0.0.1.
+    // При обрыве связи клиент сам переподключается и возвращается на своё место.
     // События приходят из потоков сети — интерфейс сам переносит их в свой поток.
     public sealed class GameClient : IAsyncDisposable
     {
         private readonly HubConnection connection;
+        private string name = "";
+        private string? hostToken;
         private bool disposing;
 
         public string Address { get; }
@@ -19,16 +22,20 @@ namespace Monopoly.Net
         public event Action<GameStartInfo>? GameStarted;
         public event Action<GameUpdate>? GameUpdated;
         public event Action<string>? Notice;
-        // Связь с хостом потеряна (не по нашей воле).
+        // Связь пропала, клиент пробует вернуться.
+        public event Action? Reconnecting;
+        public event Action? Reconnected;
+        // Связь с хостом потеряна окончательно (не по нашей воле).
         public event Action<string>? ConnectionLost;
 
         // Подписываться на события нужно до ConnectAsync: первые сообщения приходят сразу после входа.
-        public GameClient(string address)
+        public GameClient(string address, TimeSpan? reconnectFor = null)
         {
             Address = address.Trim();
             var (host, port) = ParseAddress(Address);
             connection = new HubConnectionBuilder()
                 .WithUrl($"http://{host}:{port}{NetDefaults.HubPath}")
+                .WithAutomaticReconnect(new RetryPolicy(reconnectFor ?? NetDefaults.BotTakeover))
                 .AddJsonProtocol(options => ProtocolJson.Configure(options.PayloadSerializerOptions))
                 .Build();
 
@@ -36,7 +43,25 @@ namespace Monopoly.Net
             connection.On<GameStartInfo>(ClientMethods.GameStart, info => GameStarted?.Invoke(info));
             connection.On<GameUpdate>(ClientMethods.Update, update => GameUpdated?.Invoke(update));
             connection.On<string>(ClientMethods.Notice, text => Notice?.Invoke(text));
-            connection.Closed += error =>
+            connection.Reconnecting += _ =>
+            {
+                Reconnecting?.Invoke();
+                return Task.CompletedTask;
+            };
+            // Новое соединение хост не знает — входим заново под тем же именем.
+            connection.Reconnected += async _ =>
+            {
+                var error = await JoinAsync(CancellationToken.None);
+                if (error is null)
+                {
+                    Reconnected?.Invoke();
+                    return;
+                }
+                disposing = true;
+                ConnectionLost?.Invoke(error);
+                await connection.StopAsync();
+            };
+            connection.Closed += _ =>
             {
                 if (!disposing)
                     ConnectionLost?.Invoke("Связь с хостом потеряна: хост вышел из игры или пропала сеть.");
@@ -44,9 +69,11 @@ namespace Monopoly.Net
             };
         }
 
-        // Подключается и входит в лобби. Возвращает текст ошибки или null.
-        public async Task<string?> ConnectAsync(string name, string? hostToken = null, CancellationToken cancellationToken = default)
+        // Подключается и входит в лобби (или возвращается в идущую партию). Возвращает текст ошибки или null.
+        public async Task<string?> ConnectAsync(string playerName, string? token = null, CancellationToken cancellationToken = default)
         {
+            name = playerName;
+            hostToken = token;
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(8));
             try
@@ -60,6 +87,17 @@ namespace Monopoly.Net
                 return $"Не удалось подключиться к {Address}. Проверьте адрес, что игра создана, и брандмауэр на компьютере хоста.";
             }
 
+            var error = await JoinAsync(cancellationToken);
+            if (error is not null)
+            {
+                disposing = true;
+                await connection.StopAsync(CancellationToken.None);
+            }
+            return error;
+        }
+
+        private async Task<string?> JoinAsync(CancellationToken cancellationToken)
+        {
             JoinResult result;
             try
             {
@@ -68,21 +106,20 @@ namespace Monopoly.Net
             }
             catch (Exception ex) when (ex is InvalidOperationException or HubException)
             {
-                return "Связь с хостом оборвалась при входе в лобби.";
+                return "Связь с хостом оборвалась при входе.";
             }
-            if (result.Error is not null)
-            {
-                disposing = true;
-                await connection.StopAsync(CancellationToken.None);
-                return result.Error;
-            }
-            SeatId = result.SeatId;
-            return null;
+            if (result.Error is null)
+                SeatId = result.SeatId;
+            return result.Error;
         }
 
         public Task<string?> SetReadyAsync(bool ready) => InvokeAsync("SetReady", ready);
 
         public Task<string?> SetColorAsync(int colorIndex) => InvokeAsync("SetColor", colorIndex);
+
+        public Task<string?> AddBotAsync() => InvokeAsync("AddBot");
+
+        public Task<string?> RemoveBotAsync(int seatId) => InvokeAsync("RemoveBot", seatId);
 
         public Task<string?> StartGameAsync() => InvokeAsync("StartGame");
 
@@ -117,6 +154,20 @@ namespace Monopoly.Net
         {
             disposing = true;
             await connection.DisposeAsync();
+        }
+
+        // Переподключение: попытка каждые 2 секунды, пока место ждёт игрока.
+        private sealed class RetryPolicy : IRetryPolicy
+        {
+            private readonly TimeSpan limit;
+
+            public RetryPolicy(TimeSpan limit)
+            {
+                this.limit = limit;
+            }
+
+            public TimeSpan? NextRetryDelay(RetryContext context) =>
+                context.ElapsedTime < limit ? TimeSpan.FromSeconds(context.PreviousRetryCount == 0 ? 0 : 2) : null;
         }
     }
 }
