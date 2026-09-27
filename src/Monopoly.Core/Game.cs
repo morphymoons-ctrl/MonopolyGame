@@ -8,6 +8,8 @@ namespace Monopoly.Core
         public bool ShuffleChanceDeck { get; init; } = true;
         // Дубли реже: выпавший дубль иногда перебрасывается (§3). Тесты с заданными кубиками это выключают.
         public bool ReduceDoubles { get; init; } = true;
+        // Тематика доски (§15): названия клеток; правила от неё не зависят.
+        public BoardTheme Theme { get; init; } = BoardTheme.Business;
     }
 
     // Движок: принимает действия игроков, проверяет их по правилам и меняет состояние.
@@ -28,9 +30,9 @@ namespace Monopoly.Core
         public int? Seed => (random as SeededRandom)?.Seed;
 
         // Новая партия. Без seed зерно выбирается случайно и попадает в событие GameStarted.
-        public static Game Start(IReadOnlyList<string> playerNames, int? seed = null)
+        public static Game Start(IReadOnlyList<string> playerNames, int? seed = null, BoardTheme theme = BoardTheme.Business)
         {
-            return new Game(playerNames, new SeededRandom(seed ?? Random.Shared.Next()));
+            return new Game(playerNames, new SeededRandom(seed ?? Random.Shared.Next()), new GameOptions { Theme = theme });
         }
 
         public Game(IReadOnlyList<string> playerNames, IRandomSource random, GameOptions? options = null)
@@ -48,7 +50,7 @@ namespace Monopoly.Core
             if (this.options.ShuffleTurnOrder)
                 Shuffle(players);
 
-            State = new GameState(Board.CreateDefault(), players);
+            State = new GameState(Board.Create(this.options.Theme), players) { Theme = this.options.Theme };
             State.ChanceDeck.AddRange(Enum.GetValues<ChanceCard>());
             if (this.options.ShuffleChanceDeck)
                 Shuffle(State.ChanceDeck);
@@ -247,7 +249,7 @@ namespace Monopoly.Core
                 case TurnPhase.Debt:
                     var debtor = State.FindPlayer(State.Debts[0].DebtorId)!;
                     return debtor == player
-                        ? "Спершу закрийте борг: продайте філії або закладіть компанії."
+                        ? $"Спершу закрийте борг: продайте {State.Terms.Branches} або закладіть компанії."
                         : $"Чекаємо, поки {debtor.Name} закриє борг.";
                 case TurnPhase.Auction:
                     return "Зараз триває аукціон.";

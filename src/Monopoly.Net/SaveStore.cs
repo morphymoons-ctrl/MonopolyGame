@@ -15,7 +15,9 @@ namespace Monopoly.Net
         DateTime SavedAtUtc,
         bool Finished,
         // Сколько шла партия до сохранения — для часов длительности партии.
-        int PlayedSeconds = 0)
+        int PlayedSeconds = 0,
+        // Доска партии (§15); у сохранений без неё — основная.
+        BoardTheme Theme = BoardTheme.Business)
     {
         public string? HostName => Seats.FirstOrDefault(s => s.IsHost)?.Name;
     }

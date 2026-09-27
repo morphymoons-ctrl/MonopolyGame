@@ -38,6 +38,8 @@ namespace Monopoly.App
 
         public GameScreen(GameClient client, GameStartInfo info, UserSettings settings, Func<Task> leave)
         {
+            // Доска партии (§15) — до всего остального: поле, журнал и тексты берут названия с неё.
+            EventText.UseTheme(info.Theme);
             InitializeComponent();
             this.client = client;
             this.leave = leave;
@@ -189,7 +191,7 @@ namespace Monopoly.App
                     return ($"Перемога: {Name(s.WinnerId!.Value)}!", "Партію закінчено. Вийдіть у меню, щоб зібрати нову.", (Brush)FindResource("AccentBrush"));
                 case TurnPhase.Debt when s.Debt!.DebtorId == MyId:
                     return ("Бракує грошей",
-                        $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Натисніть на свою компанію на полі, щоб продати філії або закласти її. Борг спишеться сам, щойно вистачить грошей.",
+                        $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Натисніть на свою компанію на полі, щоб продати {EventText.Terms.Branches} або закласти її. Борг спишеться сам, щойно вистачить грошей.",
                         danger);
                 case TurnPhase.Debt:
                     return ($"{Name(s.Debt!.DebtorId)} шукає гроші", $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Чекаємо.", danger);
@@ -218,21 +220,21 @@ namespace Monopoly.App
             if (!myTurn)
             {
                 var current = s.FindPlayer(s.CurrentPlayerId)!;
-                return ($"Ходить {current.Name}", current.IsInJail ? "Сидить у пєтушатні — наступний хід пропустить." : "", null);
+                return ($"Ходить {current.Name}", current.IsInJail ? $"Сидить {EventText.Words.InJail} — наступний хід пропустить." : "", null);
             }
             if (me?.IsInJail == true && s.Phase == TurnPhase.Manage)
             {
-                return ("Ви у пєтушатні", "Наступний хід ви пропустите. Можна будувати філії, закладати компанії й пропонувати обмін, потім — завершити хід.", null);
+                return ($"Ви {EventText.Words.InJail}", $"Наступний хід ви пропустите. Можна будувати {EventText.Terms.Branches}, закладати компанії й пропонувати обмін, потім — завершити хід.", null);
             }
             if (s.Phase == TurnPhase.AwaitingRoll)
             {
                 return s.LastRoll is null
-                    ? ("Ваш хід", "Киньте кубики. До кидка можна будувати філії, закладати компанії та пропонувати обмін.", null)
+                    ? ("Ваш хід", $"Киньте кубики. До кидка можна будувати {EventText.Terms.Branches}, закладати компанії та пропонувати обмін.", null)
                     : ("Дубль! Кидайте ще раз", "", null);
             }
             return s.CasinoAvailable
-                ? ("Казино", $"Ставка {EventText.CasinoRange}: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3. Можна не грати — просто завершіть хід.", PlayerPalette.Make("#E0569B"))
-                : ("Ваш хід", "Можна будувати філії, закладати компанії та пропонувати обмін. Потім завершіть хід.", null);
+                ? (EventText.Cells[16].Name, $"Ставка {EventText.CasinoRange}: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3. Можна не грати — просто завершіть хід.", PlayerPalette.Make("#E0569B"))
+                : ("Ваш хід", $"Можна будувати {EventText.Terms.Branches}, закладати компанії та пропонувати обмін. Потім завершіть хід.", null);
         }
 
         // --- Кнопки действий ---
@@ -343,9 +345,9 @@ namespace Monopoly.App
                     (string Label, string Style)? button = action switch
                     {
                         BuildBranch b when b.CellIndex == index => (state?.Level == GameRules.HeadOfficeLevel - 1
-                            ? $"Головний офіс · {GameManager.Format(cell.BranchCost)}"
-                            : $"Філія · {GameManager.Format(cell.BranchCost)}", "PrimaryButton"),
-                        SellBranch s when s.CellIndex == index => ($"Продати філію · +{GameManager.Format(cell.BranchSaleValue)}", "SecondaryButton"),
+                            ? $"{GameTerms.Capital(EventText.Terms.Office)} · {GameManager.Format(cell.BranchCost)}"
+                            : $"{GameTerms.Capital(EventText.Terms.Branch)} · {GameManager.Format(cell.BranchCost)}", "PrimaryButton"),
+                        SellBranch s when s.CellIndex == index => ($"Продати {EventText.Terms.BranchAccusative} · +{GameManager.Format(cell.BranchSaleValue)}", "SecondaryButton"),
                         MortgageCompany m when m.CellIndex == index => ($"Закласти · +{GameManager.Format(cell.MortgageValue)}", "SecondaryButton"),
                         RedeemCompany r when r.CellIndex == index => ($"Викупити · {GameManager.Format(cell.RedeemCost)}", "PrimaryButton"),
                         _ => null,
@@ -368,14 +370,15 @@ namespace Monopoly.App
             int active = -1;
             var owner = state?.OwnerId;
             var group = Enumerable.Range(0, EventText.Cells.Count).Where(i => EventText.Cells[i].Type == cell.Type).ToList();
-            int ownedInGroup = owner is null ? 0 : group.Count(i => Snapshot?.Cells[i].OwnerId == owner);
+            // Работающие (незаложенные) компании владельца в группе — от них аренда (§5).
+            int ownedInGroup = owner is int ownerId ? GameRules.ActiveInGroup(EventText.Cells, cell.Type, ownerId) : 0;
 
             switch (cell.Type)
             {
                 case CellType.GasStation:
                     for (int count = 1; count < GameRules.GasStationRent.Count; count++)
                     {
-                        rows.Add(($"{count} АЗС у власника", GameManager.Format(GameRules.GasStationRent[count])));
+                        rows.Add(($"{count} {EventText.Words.StationShort} у власника", GameManager.Format(GameRules.GasStationRent[count])));
                     }
                     active = ownedInGroup - 1;
                     break;
@@ -388,7 +391,8 @@ namespace Monopoly.App
                     int rent = GameRules.BaseRent(cell);
                     rows.Add(("Оренда", GameManager.Format(rent)));
                     rows.Add(("Уся група", GameManager.Format(rent * GameRules.MonopolyMultiplier)));
-                    string[] names = { "", "1 філія", "2 філії", "3 філії", "4 філії", "Головний офіс" };
+                    var terms = EventText.Terms;
+                    string[] names = { "", $"1 {terms.Branch}", $"2 {terms.Branches}", $"3 {terms.Branches}", $"4 {terms.Branches}", GameTerms.Capital(terms.Office) };
                     for (int level = 1; level <= GameRules.HeadOfficeLevel; level++)
                     {
                         rows.Add((names[level], GameManager.Format(rent * GameRules.LevelMultipliers[level])));
@@ -421,7 +425,7 @@ namespace Monopoly.App
 
             RentTable.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             string costs = cell.IsBuildable
-                ? $"Філія {GameManager.Format(cell.BranchCost)} (продаж {GameManager.Format(cell.BranchSaleValue)}) · застава {GameManager.Format(cell.MortgageValue)} · викуп {GameManager.Format(cell.RedeemCost)}"
+                ? $"{GameTerms.Capital(EventText.Terms.Branch)} {GameManager.Format(cell.BranchCost)} (продаж {GameManager.Format(cell.BranchSaleValue)}) · застава {GameManager.Format(cell.MortgageValue)} · викуп {GameManager.Format(cell.RedeemCost)}"
                 : $"Застава {GameManager.Format(cell.MortgageValue)} · викуп {GameManager.Format(cell.RedeemCost)}";
             var footer = new TextBlock { Text = costs, FontSize = 15, Foreground = (Brush)FindResource("MutedTextBrush"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
             Grid.SetRow(footer, rows.Count);
@@ -432,10 +436,10 @@ namespace Monopoly.App
         private static string DescribeSpecial(CellType type) => type switch
         {
             CellType.Start => $"Прохід або потрапляння — +{GameManager.Format(GameRules.StartBonus)}.",
-            CellType.Jail => "Пропуск наступного ходу — як у «Зачілься». Сюди ж ведуть три дублі поспіль і картка «Шансу». Картка «Вийти з пєтушатні» рятує від пропуску сама.",
+            CellType.Jail => $"Пропуск наступного ходу — як «{EventText.Cells[17].Name}». Сюди ж ведуть три дублі поспіль і картка «{EventText.Cells[24].Name}». Картка «{EventText.Words.JailCard}» рятує від пропуску сама.",
             CellType.Casino => $"Ставка {EventText.CasinoRange} одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
             CellType.Rest => "Пропуск наступного ходу.",
-            CellType.Chance => "Картка з колоди «Шансу»: гроші, переміщення, пєтушатня або картка, що рятує від неї.",
+            CellType.Chance => $"Картка з колоди «{EventText.Cells[24].Name}»: гроші, переміщення, пропуск ходу або картка, що рятує від нього.",
             _ => "",
         };
 

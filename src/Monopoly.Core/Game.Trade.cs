@@ -33,7 +33,7 @@ namespace Monopoly.Core
             if (terms.Money > owner.Balance)
                 return $"Стільки грошей {whose} немає: {GameRules.Money(owner.Balance)}.";
             if (terms.JailCards > owner.JailCards)
-                return $"Стільки карток «Вийти з пєтушатні» {whose} немає.";
+                return $"Стільки карток звільнення {whose} немає.";
             if (terms.Cells.Distinct().Count() != terms.Cells.Count)
                 return "Компанію вказано двічі.";
             foreach (int index in terms.Cells)
@@ -44,7 +44,7 @@ namespace Monopoly.Core
                 if (cell.OwnerId != owner.Id)
                     return $"«{cell.Name}» {whose} немає.";
                 if (State.GroupOf(cell).Any(c => c.Level > 0))
-                    return $"«{cell.Name}» не можна обміняти: у групі є філії.";
+                    return $"«{cell.Name}» не можна обміняти: у групі є {State.Terms.Branches}.";
             }
             return null;
         }

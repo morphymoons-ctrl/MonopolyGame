@@ -257,6 +257,46 @@ namespace Monopoly.Tests
             Directory.Delete(store.Directory, recursive: true);
         }
 
+        // Тематика доски (§15): хост выбирает в лобби, гость видит, партия и сохранение — на выбранной доске.
+        [Fact]
+        public async Task Theme_ChosenInLobby_ReachesGameAndSave()
+        {
+            var store = new SaveStore(Path.Combine(Path.GetTempPath(), "monopoly-tests", Guid.NewGuid().ToString("N")));
+            int port = FreePort();
+            await using (var host = await GameHost.StartAsync(new GameHostOptions { Port = port, EnableDiscovery = false, Saves = store }))
+            {
+                await using var hostPlayer = new Inbox($"127.0.0.1:{port}");
+                await using var guest = new Inbox($"127.0.0.1:{port}");
+                Assert.Null(await hostPlayer.Client.ConnectAsync("Хост", host.HostToken));
+                Assert.Null(await guest.Client.ConnectAsync("Гість"));
+                await guest.WaitLobbyAsync(s => s.Seats.Count == 2);
+
+                Assert.Equal("Це може лише хост.", await guest.Client.SetThemeAsync(BoardTheme.Military));
+                Assert.Null(await hostPlayer.Client.SetThemeAsync(BoardTheme.Military));
+                await guest.WaitLobbyAsync(s => s.Theme == BoardTheme.Military);
+
+                Assert.Null(await guest.Client.SetReadyAsync(true));
+                Assert.Null(await hostPlayer.Client.StartGameAsync());
+                var info = await guest.Starts.Reader.ReadAsync().AsTask().WaitAsync(Timeout);
+                var first = await guest.NextUpdateAsync();
+                Assert.Equal(BoardTheme.Military, info.Theme);
+                Assert.Equal(BoardTheme.Military, first.Snapshot.Theme);
+            }
+
+            var save = Assert.Single(store.ListUnfinished());
+            Assert.Equal(BoardTheme.Military, save.Theme);
+
+            int port2 = FreePort();
+            await using var resumed = await GameHost.ResumeAsync(save, new GameHostOptions { Port = port2, EnableDiscovery = false, Saves = store });
+            await using var hostAgain = new Inbox($"127.0.0.1:{port2}");
+            Assert.Null(await hostAgain.Client.ConnectAsync(resumed.HostName!, resumed.HostToken));
+            var again = await hostAgain.Starts.Reader.ReadAsync().AsTask().WaitAsync(Timeout);
+            Assert.Equal(BoardTheme.Military, again.Theme);
+
+            await resumed.DisposeAsync();
+            Directory.Delete(store.Directory, recursive: true);
+        }
+
         private static int FreePort()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);

@@ -36,13 +36,47 @@ namespace Monopoly.Tests
         }
 
         [Fact]
-        public void Monopoly_DoublesRent_EvenWithMortgagedCompany()
+        public void Monopoly_DoublesRent()
+        {
+            var game = Create(1, 2);
+            game.Give(1, Atb, Varus, Silpo);
+
+            Assert.Equal(33_600, RentPaidBy(game, game.Do(new RollDice(0))));
+        }
+
+        // Заложенная компания не усиливает остальные (§5): группа с заложенной — без ×2.
+        [Fact]
+        public void Monopoly_WithMortgagedCompany_NoDouble()
         {
             var game = Create(1, 2);
             game.Give(1, Atb, Varus, Silpo);
             game.State.Board[Atb].IsMortgaged = true;
 
-            Assert.Equal(33_600, RentPaidBy(game, game.Do(new RollDice(0))));
+            Assert.Equal(16_800, RentPaidBy(game, game.Do(new RollDice(0))));
+        }
+
+        // Три АЗС, две из них заложены — аренда как за одну.
+        [Fact]
+        public void GasStations_MortgagedNotCounted()
+        {
+            var game = Create(1, 3);
+            game.Give(1, Wog, Okko, Upg);
+            game.State.Board[Okko].IsMortgaged = true;
+            game.State.Board[Upg].IsMortgaged = true;
+
+            Assert.Equal(50_000, RentPaidBy(game, game.Do(new RollDice(0))));
+        }
+
+        // Вторая логистика заложена — ×4 000, а не ×10 000.
+        [Fact]
+        public void Logistics_MortgagedNotCounted()
+        {
+            var game = Create(1, 3);
+            game.P(0).Position = Massage;
+            game.Give(1, NovaPoshta, Ukrposhta);
+            game.State.Board[Ukrposhta].IsMortgaged = true;
+
+            Assert.Equal(16_000, RentPaidBy(game, game.Do(new RollDice(0))));
         }
 
         [Theory]
@@ -74,10 +108,10 @@ namespace Monopoly.Tests
         }
 
         [Theory]
-        [InlineData(new[] { Wog }, 25_000)]
-        [InlineData(new[] { Wog, Okko }, 50_000)]
-        [InlineData(new[] { Wog, Okko, Upg }, 100_000)]
-        [InlineData(new[] { Wog, Okko, Upg, Ukrnafta }, 200_000)]
+        [InlineData(new[] { Wog }, 50_000)]
+        [InlineData(new[] { Wog, Okko }, 75_000)]
+        [InlineData(new[] { Wog, Okko, Upg }, 150_000)]
+        [InlineData(new[] { Wog, Okko, Upg, Ukrnafta }, 250_000)]
         public void GasStations_DependOnCount(int[] owned, int rent)
         {
             var game = Create(1, 3);

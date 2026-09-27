@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Monopoly.Core;
 using Monopoly.Net;
 
 namespace Monopoly.App
@@ -97,6 +98,8 @@ namespace Monopoly.App
                 ColorsPanel.Children.Add(button);
             }
 
+            ShowTheme(lobby.Theme);
+
             updatingReady = true;
             ReadyBox.IsChecked = mine?.IsReady == true;
             updatingReady = false;
@@ -105,6 +108,38 @@ namespace Monopoly.App
             StartHint.Text = isHost
                 ? lobby.StartBlockedReason ?? "Усі готові — можна починати."
                 : "";
+        }
+
+        // Хост выбирает доску «фишками», остальные видят название выбранной.
+        private void ShowTheme(BoardTheme selected)
+        {
+            ThemesPanel.Children.Clear();
+            ThemesPanel.Visibility = isHost ? Visibility.Visible : Visibility.Collapsed;
+            ThemeText.Visibility = isHost ? Visibility.Collapsed : Visibility.Visible;
+            ThemeText.Text = EventText.ThemeName(selected);
+            if (!isHost)
+            {
+                return;
+            }
+            foreach (var theme in Enum.GetValues<BoardTheme>())
+            {
+                var chip = new RadioButton
+                {
+                    Content = EventText.ThemeName(theme),
+                    GroupName = "BoardTheme",
+                    Style = (Style)FindResource("Chip"),
+                    IsChecked = theme == selected,
+                    FontSize = 16,
+                };
+                chip.Checked += async (_, _) =>
+                {
+                    if (theme != state?.Theme)
+                    {
+                        StatusText.Text = await client.SetThemeAsync(theme) ?? "";
+                    }
+                };
+                ThemesPanel.Children.Add(chip);
+            }
         }
 
         private void ShowHostAddresses()

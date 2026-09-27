@@ -41,8 +41,8 @@ namespace Monopoly.Core
         public const int MonopolyMultiplier = 2;
         // Логистика: сумма кубиков ×4 000 за одну компанию, ×10 000 за обе.
         public const int LogisticsSingle = 4_000, LogisticsBoth = 10_000;
-        // Аренда АЗС по числу станций у владельца (0–4).
-        public static readonly IReadOnlyList<int> GasStationRent = new[] { 0, 25_000, 50_000, 100_000, 200_000 };
+        // Аренда АЗС по числу незаложенных станций у владельца (0–4).
+        public static readonly IReadOnlyList<int> GasStationRent = new[] { 0, 50_000, 75_000, 150_000, 250_000 };
 
         private static readonly CultureInfo Ukrainian = CultureInfo.GetCultureInfo("uk-UA");
 
@@ -64,8 +64,9 @@ namespace Monopoly.Core
             if (cell.OwnerId is not int owner || cell.IsMortgaged)
                 return 0;
 
+            // Заложенные компании не усиливают остальные: считаются только работающие (§5).
             var group = board.Where(c => c.Type == cell.Type).ToList();
-            int owned = group.Count(c => c.OwnerId == owner);
+            int owned = ActiveInGroup(board, cell.Type, owner);
 
             switch (cell.Type)
             {
@@ -81,7 +82,11 @@ namespace Monopoly.Core
             return owned == group.Count ? baseRent * MonopolyMultiplier : baseRent;
         }
 
-        // Все компании группы у одного владельца (заложенные тоже считаются).
+        // Сколько компаний группы у владельца приносят доход — незаложенных. От этого числа — аренда АЗС, логистики и ×2 группы.
+        public static int ActiveInGroup(IReadOnlyList<BoardCell> board, CellType type, int ownerId) =>
+            board.Count(c => c.Type == type && c.OwnerId == ownerId && !c.IsMortgaged);
+
+        // Все компании группы у одного владельца (заложенные тоже считаются) — нужно для постройки филиалов.
         public static bool IsMonopoly(IReadOnlyList<BoardCell> board, CellType type, int ownerId) =>
             board.Where(c => c.Type == type).All(c => c.OwnerId == ownerId);
     }

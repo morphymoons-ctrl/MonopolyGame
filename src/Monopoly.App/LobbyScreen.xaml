@@ -25,6 +25,11 @@
                     <TextBlock Text="Колір вашої фішки" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
                     <WrapPanel Name="ColorsPanel"/>
 
+                    <!-- Доска (RULES.md, §15): хост выбирает, остальные видят выбор. -->
+                    <TextBlock Text="Дошка" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
+                    <WrapPanel Name="ThemesPanel"/>
+                    <TextBlock Name="ThemeText" FontWeight="SemiBold" FontSize="18" Visibility="Collapsed"/>
+
                     <CheckBox Name="ReadyBox" Content="Я готовий до гри" FontSize="19" Margin="0,20,0,0" VerticalContentAlignment="Center"
                               Checked="Ready_Changed" Unchecked="Ready_Changed"/>
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -175,7 +175,7 @@ namespace Monopoly.App
                     var content = new StackPanel { Orientation = Orientation.Horizontal };
                     content.Children.Add(new Border { Width = 6, Height = 22, CornerRadius = new CornerRadius(3), Background = GroupPalette.Get(cell.Type), Margin = new Thickness(0, 0, 10, 0) });
                     content.Children.Add(new TextBlock { Text = cell.Name, FontSize = 19 });
-                    string note = state.IsMortgaged ? "закладена" : state.Level > 0 ? "є філії" : "";
+                    string note = state.IsMortgaged ? "закладена" : state.Level > 0 ? $"є {EventText.Terms.Branches}" : "";
                     if (note.Length > 0)
                         content.Children.Add(new TextBlock { Text = "  · " + note, FontSize = 16, Foreground = (Brush)Application.Current.Resources["MutedTextBrush"], VerticalAlignment = VerticalAlignment.Center });
                     cells.Children.Add(new CheckBox { Content = content, Tag = i });
@@ -186,7 +186,7 @@ namespace Monopoly.App
                 var player = snapshot.FindPlayer(playerId)!;
                 money.Text = "0";
                 jailCards.Text = "0";
-                jailLabel.Text = $"Картки «Вийти з пєтушатні» (є: {player.JailCards})";
+                jailLabel.Text = $"Картки «{EventText.Words.JailCard}» (є: {player.JailCards})";
                 bool hasCards = player.JailCards > 0;
                 jailLabel.Visibility = hasCards ? Visibility.Visible : Visibility.Collapsed;
                 jailCards.Visibility = hasCards ? Visibility.Visible : Visibility.Collapsed;

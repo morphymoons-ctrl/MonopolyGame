@@ -20,7 +20,11 @@ namespace Monopoly.Admin
     // Правил здесь нет: панель отправляет действия администратора, хост проверяет их движком.
     public partial class MainWindow : Window
     {
-        private static readonly IReadOnlyList<BoardCell> Board = Monopoly.Core.Board.CreateDefault();
+        // Доска партии (RULES.md, §15): названия клеток и слова («філія» / «підрозділ») — с неё.
+        private BoardTheme theme = BoardTheme.Business;
+        private IReadOnlyList<BoardCell> Cells { get; set; } = Board.CreateDefault();
+        private GameTerms Terms => GameTerms.For(theme);
+        private ThemeWords Words => ThemeWords.For(theme);
 
         private readonly ECDsa? key;
         private readonly DispatcherTimer searchTimer = new() { Interval = TimeSpan.FromSeconds(5) };
@@ -96,6 +100,13 @@ namespace Monopoly.Admin
                     : $"інша версія гри: {game.Version} · {game.Address}",
                 FontSize = 13,
                 Foreground = (Brush)FindResource("MutedTextBrush"),
+            });
+            text.Children.Add(new TextBlock
+            {
+                Text = ThemeWords.ThemeName(game.Theme),
+                FontSize = 13,
+                Foreground = (Brush)FindResource("MutedTextBrush"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
             });
 
             var button = new Button
@@ -195,17 +206,25 @@ namespace Monopoly.Admin
 
             if (snapshot is null)
             {
-                GameSubtitle.Text = "Лобі: гра ще не почалася. Змінювати можна після старту.";
+                GameSubtitle.Text = $"Лобі · дошка «{ThemeWords.ThemeName(newView.Lobby.Theme)}»: гра ще не почалася. Змінювати можна після старту.";
                 RenderLobby(newView.Lobby);
                 return;
             }
 
+            // Доска партии — до строк: названия клеток берутся с неё.
+            if (theme != snapshot.Theme || builtFor == "")
+            {
+                theme = snapshot.Theme;
+                Cells = Board.Create(theme);
+            }
+
             var current = snapshot.FindPlayer(snapshot.CurrentPlayerId);
+            string board = $"дошка «{ThemeWords.ThemeName(theme)}»";
             GameSubtitle.Text = snapshot.WinnerId is int winner
                 ? $"Партію закінчено: переміг {snapshot.FindPlayer(winner)?.Name}. Змінювати вже нічого не можна."
-                : $"Іде гра · ходить {current?.Name} · зміни тихі, таймер ходу від них не скидається.";
+                : $"Іде гра · {board} · ходить {current?.Name} · зміни тихі, таймер ходу від них не скидається.";
 
-            string layout = $"{newView.GameId}|{string.Join(",", snapshot.Players.Select(p => p.Id))}";
+            string layout = $"{newView.GameId}|{theme}|{string.Join(",", snapshot.Players.Select(p => p.Id))}";
             if (builtFor != layout)
                 Build(snapshot, layout);
 
@@ -255,9 +274,9 @@ namespace Monopoly.Admin
             // Владелец: банк или любой игрок (выбывшему движок откажет).
             var owners = new List<(string Name, int? Id)> { ("Банк", null) };
             owners.AddRange(snapshot.Players.Select(p => (p.Name, (int?)p.Id)));
-            for (int i = 0; i < Board.Count; i++)
+            for (int i = 0; i < Cells.Count; i++)
             {
-                if (!Board[i].IsPurchasable)
+                if (!Cells[i].IsPurchasable)
                     continue;
                 var row = new CompanyRow(this, i, owners);
                 companyRows.Add(row);
@@ -365,7 +384,7 @@ namespace Monopoly.Admin
                 jail.Margin = new Thickness(16, 0, 0, 0);
                 jail.Click += async (_, _) =>
                     await window.RunAsync(new AdminSetJail(Id, !inJail),
-                        inJail ? $"{window.PlayerName(Id)} виходить із пєтушатні." : $"{window.PlayerName(Id)} — у пєтушатні.");
+                        inJail ? $"{window.PlayerName(Id)} виходить {window.Words.FromJail}." : $"{window.PlayerName(Id)} — {window.Words.InJail}.");
                 AutomationProperties.SetAutomationId(balance, $"Balance{id}");
                 AutomationProperties.SetAutomationId(setBalance, $"SetBalance{id}");
                 AutomationProperties.SetAutomationId(jail, $"Jail{id}");
@@ -406,8 +425,10 @@ namespace Monopoly.Admin
                     if (snapshot.CurrentPlayerId == player.Id)
                         parts.Add("ходить зараз");
                     if (player.IsInJail)
-                        parts.Add("у пєтушатні");
-                    parts.Add($"на «{Board[player.Position].Name}»");
+                        parts.Add(window.Words.InJail);
+                    if (player.IsResting)
+                        parts.Add(window.Words.RestNote);
+                    parts.Add($"на «{window.Cells[player.Position].Name}»");
                     parts.Add(view.Seats?.FirstOrDefault(s => s.PlayerId == player.Id)?.Connection switch
                     {
                         SeatConnection.Offline => "відключився",
@@ -424,7 +445,7 @@ namespace Monopoly.Admin
 
                 bool active = !player.IsBankrupt && snapshot.WinnerId is null;
                 balance.IsEnabled = setBalance.IsEnabled = jail.IsEnabled = active;
-                jail.Content = player.IsInJail ? "Випустити з пєтушатні" : "Посадити в пєтушатню";
+                jail.Content = player.IsInJail ? $"Випустити {window.Words.FromJail}" : $"Посадити {window.Words.IntoJail}";
             }
         }
 
@@ -448,7 +469,7 @@ namespace Monopoly.Admin
                 this.window = window;
                 this.owners = owners;
                 Index = index;
-                var cell = Board[index];
+                var cell = window.Cells[index];
                 info.Foreground = (Brush)window.FindResource("MutedTextBrush");
 
                 owner = window.SmallButton("");
@@ -497,7 +518,7 @@ namespace Monopoly.Admin
                     window.ShowStatus("Ціна — це число гривень, наприклад 200 000.", false);
                     return;
                 }
-                await window.RunAsync(new AdminSetPrice(Index, amount), $"Ціна «{Board[Index].Name}»: {GameRules.Money(amount)}.");
+                await window.RunAsync(new AdminSetPrice(Index, amount), $"Ціна «{window.Cells[Index].Name}»: {GameRules.Money(amount)}.");
                 Keyboard.ClearFocus();
             }
 
@@ -506,9 +527,9 @@ namespace Monopoly.Admin
                 currentOwner = cell.OwnerId;
                 var parts = new List<string> { $"ціна {GameRules.Money(cell.Price)}" };
                 if (cell.Level == GameRules.HeadOfficeLevel)
-                    parts.Add("головний офіс");
+                    parts.Add(window.Terms.Office);
                 else if (cell.Level > 0)
-                    parts.Add($"філій: {cell.Level}");
+                    parts.Add($"{window.Terms.BranchesGenitive}: {cell.Level}");
                 if (cell.IsMortgaged)
                     parts.Add("закладена");
                 info.Text = string.Join(" · ", parts);

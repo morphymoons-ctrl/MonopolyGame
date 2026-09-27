@@ -39,15 +39,22 @@ namespace Monopoly.App
             Loaded += async (_, _) => await SearchAsync();
         }
 
-        // Плашка «Доступне оновлення», если новая версия уже скачана.
+        // Плашка обновления: пока качается — прогресс, скачано — кнопка «Оновити».
         public void ShowUpdate(Updater source)
         {
             updater = source;
-            if (source.ReadyVersion is not string version)
+            if (source.FoundVersion is not string version)
             {
                 return;
             }
-            UpdateTitle.Text = $"Доступне оновлення — версія {version}";
+            bool ready = source.ReadyVersion is not null;
+            UpdateTitle.Text = ready
+                ? $"Доступне оновлення — версія {version}"
+                : $"Завантажуємо оновлення {version}… {source.Progress}%";
+            UpdateHint.Text = ready
+                ? "Гра перезапуститься. Якщо не зараз — оновиться сама, коли ви її закриєте."
+                : "Можна грати далі — оновлення качається у фоні.";
+            UpdateButton.IsEnabled = ready;
             UpdateBanner.Visibility = Visibility.Visible;
         }
 
@@ -227,6 +234,10 @@ namespace Monopoly.App
                 if (game.InProgress)
                 {
                     text += " · гра триває";
+                }
+                if (game.Theme != Monopoly.Core.BoardTheme.Business)
+                {
+                    text += $" · {EventText.ThemeName(game.Theme)}";
                 }
                 if (game.Version != NetDefaults.GameVersion)
                 {

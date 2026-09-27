@@ -225,7 +225,7 @@ namespace Monopoly.App
                 }
                 else
                 {
-                    AddText(GroupPalette.Icon(cell.Type) ?? "", r.X, r.Y + r.Height * 0.12, r.Width, u * 0.34, FontWeights.Bold, text, GameFonts.Icons);
+                    AddText(GroupPalette.Icon(cell.Type, EventText.Theme) ?? "", r.X, r.Y + r.Height * 0.12, r.Width, u * 0.34, FontWeights.Bold, text, GameFonts.Icons);
                     AddText(cell.Name, r.X, r.Y + r.Height * 0.52, r.Width, u * 0.17, FontWeights.Bold, text);
                 }
 
@@ -279,7 +279,7 @@ namespace Monopoly.App
         {
             var (bar, c) = CompanyLayout(index, r);
             Place(new Rectangle { Width = bar.Width, Height = bar.Height, Fill = GroupPalette.Get(cell.Type), IsHitTestVisible = false }, bar.X, bar.Y);
-            if (GroupPalette.Icon(cell.Type) is { } icon)
+            if (GroupPalette.Icon(cell.Type, EventText.Theme) is { } icon)
             {
                 double iconSize = u * 0.16;
                 AddText(icon, bar.X, bar.Y + (bar.Height - iconSize * 1.35) / 2, bar.Width, iconSize, FontWeights.Bold, GroupPalette.IconColor(cell.Type), GameFonts.Icons);
@@ -295,7 +295,7 @@ namespace Monopoly.App
             double boxHeight = 2 * half;
             double boxTop = centerY - half;
             double detail = boxTop + boxHeight + gap;
-            if (Logos.For(index) is { } logo)
+            if (Logos.For(index, EventText.Theme) is { } logo)
             {
                 var (width, height) = LogoSize(logo, boxWidth, boxHeight, u * u * 0.4);
                 var image = new Image
@@ -312,7 +312,30 @@ namespace Monopoly.App
             }
             else
             {
-                AddText(cell.Name, c.X + 2, boxTop + (boxHeight - u * 0.2) / 2, c.Width - 4, u * 0.16, FontWeights.Bold, text);
+                // Логотипа нет (военная доска, §15) — название по центру рамки, с переносом по словам.
+                // Не влезает — шрифт уменьшается, пока текст не поместится.
+                var name = new TextBlock
+                {
+                    Text = cell.Name,
+                    Width = boxWidth,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = text,
+                    IsHitTestVisible = false,
+                };
+                // Слово не должно рваться посередине: самое длинное слово тоже должно влезать в ширину.
+                var longestWord = new TextBlock { Text = cell.Name.Split(' ').OrderByDescending(w => w.Length).First(), FontWeight = FontWeights.Bold };
+                for (double size = u * 0.17; ; size -= u * 0.01)
+                {
+                    name.FontSize = longestWord.FontSize = size;
+                    name.Measure(new Size(boxWidth, double.PositiveInfinity));
+                    longestWord.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    bool fits = name.DesiredSize.Height <= boxHeight && longestWord.DesiredSize.Width <= boxWidth;
+                    if (fits || size <= u * 0.1)
+                        break;
+                }
+                Place(name, c.X + (c.Width - boxWidth) / 2, boxTop + Math.Max(0, (boxHeight - name.DesiredSize.Height) / 2));
             }
             if (state?.IsMortgaged == true)
             {
@@ -356,7 +379,7 @@ namespace Monopoly.App
                     Margin = new Thickness(0, 0, u * 0.05, 0),
                     VerticalAlignment = VerticalAlignment.Center,
                     Background = PlayerPalette.Make("#C62828"),
-                    Child = new TextBlock { Text = "ОФІС", Foreground = Brushes.White, FontSize = u * 0.1, FontWeight = FontWeights.Bold }
+                    Child = new TextBlock { Text = EventText.Terms.OfficeTag, Foreground = Brushes.White, FontSize = u * 0.1, FontWeight = FontWeights.Bold }
                 });
             }
             else
@@ -615,11 +638,11 @@ namespace Monopoly.App
                 }
                 if (player.IsInJail)
                 {
-                    notes.Add("у пєтушатні");
+                    notes.Add(EventText.Words.InJail);
                 }
                 if (player.IsResting)
                 {
-                    notes.Add("чілить");
+                    notes.Add(EventText.Words.RestNote);
                 }
                 int companies = Snapshot.Cells.Count(c => c.OwnerId == player.Id);
                 if (companies > 0)
@@ -628,7 +651,7 @@ namespace Monopoly.App
                 }
                 if (player.JailCards > 0)
                 {
-                    notes.Add($"карток «Вийти з пєтушатні»: {player.JailCards}");
+                    notes.Add($"карток «{EventText.Words.JailCard}»: {player.JailCards}");
                 }
 
                 var grid = new Grid();

@@ -16,11 +16,13 @@ namespace Monopoly.Net
 
     public sealed record LobbySeat(int SeatId, string Name, int ColorIndex, bool IsReady, bool IsHost, bool IsBot);
 
-    // StartBlockedReason — почему хост пока не может начать; null — можно начинать.
-    public sealed record LobbyState(IReadOnlyList<LobbySeat> Seats, int MaxPlayers, string? StartBlockedReason);
+    // StartBlockedReason — почему хост пока не может начать; null — можно начинать. Theme — выбранная хостом доска (§15).
+    public sealed record LobbyState(IReadOnlyList<LobbySeat> Seats, int MaxPlayers, string? StartBlockedReason,
+        BoardTheme Theme = BoardTheme.Business);
 
-    // Отправляется каждому игроку при старте и при возвращении в партию: кто он и какого цвета фишки у всех.
-    public sealed record GameStartInfo(int MyPlayerId, IReadOnlyDictionary<int, int> ColorByPlayerId);
+    // Отправляется каждому игроку при старте и при возвращении в партию: кто он, какого цвета фишки у всех и какая доска.
+    public sealed record GameStartInfo(int MyPlayerId, IReadOnlyDictionary<int, int> ColorByPlayerId,
+        BoardTheme Theme = BoardTheme.Business);
 
     public enum SeatConnection { Online, Offline, Bot }
 
@@ -53,7 +55,8 @@ namespace Monopoly.Net
         int Players,
         int MaxPlayers,
         bool InProgress,
-        string Address = "");
+        string Address = "",
+        BoardTheme Theme = BoardTheme.Business);
 
     // --- Администратор (RULES.md, §14) ---
 

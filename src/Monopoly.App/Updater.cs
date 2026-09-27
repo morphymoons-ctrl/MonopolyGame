@@ -17,10 +17,15 @@ namespace Monopoly.App
         private VelopackAsset? downloaded;
         private Task? running;
 
-        // Версия, которая скачана и ждёт перезапуска; null — обновлений нет (или ещё не скачано).
+        // Найденная новая версия; null — обновлений нет (или ещё не проверили).
+        public string? FoundVersion { get; private set; }
+        // Сколько скачано, 0–100.
+        public int Progress { get; private set; }
+        // Версия, которая скачана и ждёт перезапуска; null — ещё не скачана.
         public string? ReadyVersion { get; private set; }
 
-        public event Action? Ready;
+        // Нашлась новая версия, скачивание продвинулось или закончилось — стартовый экран обновляет плашку.
+        public event Action? Changed;
 
         // Один раз за запуск игры; повторные вызовы ждут ту же проверку.
         public Task CheckAsync() => running ??= CheckCoreAsync();
@@ -38,12 +43,19 @@ namespace Monopoly.App
                 {
                     return;
                 }
-                await manager.DownloadUpdatesAsync(update);
+                // Плашку показываем сразу, ещё до скачивания, — иначе игрок не знает, что идёт обновление.
+                FoundVersion = update.TargetFullRelease.Version.ToString();
+                Changed?.Invoke();
+                await manager.DownloadUpdatesAsync(update, percent =>
+                {
+                    Progress = percent;
+                    Changed?.Invoke();
+                });
                 downloaded = update.TargetFullRelease;
                 // Если игрок не нажмёт «Оновити», новая версия встанет сама, когда он закроет игру.
                 manager.WaitExitThenApplyUpdates(downloaded, silent: true, restart: false);
-                ReadyVersion = downloaded.Version.ToString();
-                Ready?.Invoke();
+                ReadyVersion = FoundVersion;
+                Changed?.Invoke();
             }
             catch (Exception)
             {

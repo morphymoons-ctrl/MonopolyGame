@@ -4,9 +4,10 @@ namespace Monopoly.Core
     public partial class Game
     {
         // Восстанавливает партию: те же имена, зерно и действия дают то же состояние.
-        public static Game Replay(IReadOnlyList<string> playerNames, int seed, IEnumerable<GameAction> actions)
+        public static Game Replay(IReadOnlyList<string> playerNames, int seed, IEnumerable<GameAction> actions,
+            BoardTheme theme = BoardTheme.Business)
         {
-            var game = Start(playerNames, seed);
+            var game = Start(playerNames, seed, theme);
             foreach (var action in actions)
             {
                 var result = action is AdminAction admin ? game.ExecuteAdmin(admin) : game.Execute(action);

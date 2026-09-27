@@ -57,6 +57,10 @@ namespace Monopoly.Core
     public class GameState
     {
         public IReadOnlyList<BoardCell> Board { get; }
+        // Тематика доски (§15) — только названия, правила те же.
+        public BoardTheme Theme { get; init; } = BoardTheme.Business;
+        // Слова для построек в текстах движка: «філія» или «підрозділ».
+        public GameTerms Terms => GameTerms.For(Theme);
         // Игроки в порядке хода, включая выбывших.
         public IReadOnlyList<Player> Players { get; }
         public int CurrentPlayerIndex { get; internal set; }
@@ -116,6 +120,7 @@ namespace Monopoly.Core
             Debts.FirstOrDefault(),
             Trade,
             CasinoAvailable,
-            WinnerId);
+            WinnerId,
+            Theme);
     }
 }

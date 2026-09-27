@@ -76,7 +76,7 @@ namespace Monopoly.Core
                     if (State.PendingPurchase == owner.CellIndex || State.Auction?.CellIndex == owner.CellIndex)
                         return $"«{cell.Name}» зараз продається — зачекайте, поки гравці вирішать.";
                     if (State.GroupOf(cell).Any(c => c.Level > 0))
-                        return $"У групі «{cell.Name}» є філії — спершу власник має їх продати.";
+                        return $"У групі «{cell.Name}» є {State.Terms.Branches} — спершу власник має їх продати.";
                     return null;
                 }
 
@@ -87,7 +87,9 @@ namespace Monopoly.Core
                         return error;
                     var player = State.FindPlayer(jail.TargetId)!;
                     if (player.IsInJail == jail.InJail)
-                        return jail.InJail ? $"{player.Name} вже в пєтушатні." : $"{player.Name} не в пєтушатні.";
+                        return jail.InJail
+                            ? $"{player.Name} вже сидить («{State.Board[GameRules.JailCell].Name}»)."
+                            : $"{player.Name} і так не сидить («{State.Board[GameRules.JailCell].Name}»).";
                     return null;
                 }
 

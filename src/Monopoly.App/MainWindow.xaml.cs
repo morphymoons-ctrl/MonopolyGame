@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,7 +23,7 @@ namespace Monopoly.App
             InitializeComponent();
             Closing += (_, _) => StopNetworkOnClose();
             // Скачанная версия предлагается на стартовом экране — посреди партии не мешаем.
-            updater.Ready += () => Dispatcher.InvokeAsync(() => (Screen.Content as StartScreen)?.ShowUpdate(updater));
+            updater.Changed += () => Dispatcher.InvokeAsync(() => (Screen.Content as StartScreen)?.ShowUpdate(updater));
             ShowStart(null);
             _ = updater.CheckAsync();
         }
@@ -37,7 +37,12 @@ namespace Monopoly.App
             Screen.Content = start;
         }
 
-        private GameHostOptions HostOptions => new() { Saves = saves };
+        // MONOPOLY_DEV_PORT — хост на другом порту: проверить игру на своём ПК так, чтобы друзья в сети её не нашли.
+        private GameHostOptions HostOptions => new()
+        {
+            Saves = saves,
+            Port = int.TryParse(Environment.GetEnvironmentVariable("MONOPOLY_DEV_PORT"), out int port) ? port : NetDefaults.Port,
+        };
 
         private async Task<string?> CreateGameAsync(string name)
         {
@@ -49,7 +54,7 @@ namespace Monopoly.App
             {
                 return PortBusyMessage;
             }
-            return await ConnectOrStopAsync("127.0.0.1", name, host.HostToken);
+            return await ConnectOrStopAsync($"127.0.0.1:{host.Port}", name, host.HostToken);
         }
 
         // Продолжение сохранённой партии: хост заходит на своё место, остальные — под своими именами.
@@ -67,7 +72,7 @@ namespace Monopoly.App
             {
                 return $"Не вдалося відкрити збереження: {ex.Message}";
             }
-            return await ConnectOrStopAsync("127.0.0.1", host.HostName ?? settings.Name, host.HostToken);
+            return await ConnectOrStopAsync($"127.0.0.1:{host.Port}", host.HostName ?? settings.Name, host.HostToken);
         }
 
         private Task<string?> JoinGameAsync(string name, string address) => ConnectOrStopAsync(address, name, null);

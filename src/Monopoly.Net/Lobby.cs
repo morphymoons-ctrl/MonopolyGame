@@ -16,6 +16,8 @@ namespace Monopoly.Net
         private int nextSeatId;
 
         public bool IsStarted { get; private set; }
+        // Тематика доски (RULES.md, §15): выбирает хост до старта.
+        public BoardTheme Theme { get; private set; } = BoardTheme.Business;
 
         public Lobby(string hostToken, string version)
         {
@@ -118,6 +120,17 @@ namespace Monopoly.Net
             return null;
         }
 
+        public string? SetTheme(string connectionId, BoardTheme theme)
+        {
+            var error = RequireHostBeforeStart(connectionId);
+            if (error is not null)
+                return error;
+            if (!Enum.IsDefined(theme))
+                return "Такої дошки немає.";
+            Theme = theme;
+            return null;
+        }
+
         public string? SetReady(string connectionId, bool ready)
         {
             var seat = Find(connectionId);
@@ -163,9 +176,10 @@ namespace Monopoly.Net
             return null;
         }
 
-        // Партия из сохранения: места те же, все люди пока не подключены.
-        public void Restore(IReadOnlyList<SavedSeat> saved, DateTime now)
+        // Партия из сохранения: места и доска те же, все люди пока не подключены.
+        public void Restore(IReadOnlyList<SavedSeat> saved, DateTime now, BoardTheme theme = BoardTheme.Business)
         {
+            Theme = theme;
             seats.Clear();
             for (int i = 0; i < saved.Count; i++)
             {
@@ -201,7 +215,8 @@ namespace Monopoly.Net
         public LobbyState GetState() => new(
             seats.Select(s => new LobbySeat(s.SeatId, s.Name, s.ColorIndex, s.IsReady, s.IsHost, s.IsBot)).ToList(),
             GameRules.MaxPlayers,
-            StartBlockedReason());
+            StartBlockedReason(),
+            Theme);
 
         public IReadOnlyList<SeatStatus> SeatStatuses(DateTime now, TimeSpan takeover) =>
             seats.Where(s => s.PlayerId is not null).Select(s =>

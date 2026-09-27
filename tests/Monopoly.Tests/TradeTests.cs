@@ -91,7 +91,7 @@ namespace Monopoly.Tests
                 game.Error(new ProposeTrade(0, 1, TradeTerms.Empty, Terms(cells: Azovstal))));
             Assert.Equal($"Стільки грошей у вас немає: {M(1_500_000)}.",
                 game.Error(new ProposeTrade(0, 1, Terms(money: 5_000_000), TradeTerms.Empty)));
-            Assert.Equal("Стільки карток «Вийти з пєтушатні» у вас немає.",
+            Assert.Equal("Стільки карток звільнення у вас немає.",
                 game.Error(new ProposeTrade(0, 1, Terms(jailCards: 1), TradeTerms.Empty)));
         }
 

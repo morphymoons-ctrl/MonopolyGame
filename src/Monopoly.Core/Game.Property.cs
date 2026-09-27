@@ -25,16 +25,16 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             var group = State.GroupOf(cell).ToList();
             if (!cell.IsBuildable)
-                return "На АЗС і логістиці філії не будуються.";
+                return $"На «{cell.Name}» {State.Terms.Branches} не будуються.";
             if (!GameRules.IsMonopoly(State.Board, cell.Type, player.Id))
-                return "Філії будуються, лише коли у вас уся група.";
+                return $"{GameTerms.Capital(State.Terms.Branches)} будуються, лише коли у вас уся група.";
             if (group.Any(c => c.IsMortgaged))
                 return "У групі є закладена компанія — спершу викупіть її.";
             if (cell.Level == GameRules.HeadOfficeLevel)
-                return "Тут уже головний офіс.";
+                return $"Тут уже {State.Terms.Office}.";
             if (cell.Level > group.Min(c => c.Level))
                 return "Будуйте рівномірно: спершу на інших компаніях групи.";
-            return player.Balance < cell.BranchCost ? $"Не вистачає грошей: філія коштує {GameRules.Money(cell.BranchCost)}." : null;
+            return player.Balance < cell.BranchCost ? $"Не вистачає грошей: {State.Terms.Branch} коштує {GameRules.Money(cell.BranchCost)}." : null;
         }
 
         private string? ValidateSell(Player player, int cellIndex)
@@ -45,7 +45,7 @@ namespace Monopoly.Core
 
             var cell = State.Board[cellIndex];
             if (cell.Level == 0)
-                return "Тут немає філій.";
+                return $"Тут немає {State.Terms.BranchesGenitive}.";
             return cell.Level < State.GroupOf(cell).Max(c => c.Level)
                 ? "Продавайте рівномірно: спершу з інших компаній групи."
                 : null;
@@ -60,7 +60,7 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             if (cell.IsMortgaged)
                 return "Компанію вже закладено.";
-            return State.GroupOf(cell).Any(c => c.Level > 0) ? "Спершу продайте філії в цій групі." : null;
+            return State.GroupOf(cell).Any(c => c.Level > 0) ? $"Спершу продайте {State.Terms.Branches} в цій групі." : null;
         }
 
         private string? ValidateRedeem(Player player, int cellIndex)

@@ -20,8 +20,7 @@
                             Margin="14,0,0,0" MinWidth="130" Click="Update_Click"/>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Name="UpdateTitle" FontWeight="Bold" FontSize="18"/>
-                        <TextBlock Text="Гра перезапуститься. Якщо не зараз — оновиться сама, коли ви її закриєте."
-                                   Style="{StaticResource Muted}" FontSize="14"/>
+                        <TextBlock Name="UpdateHint" Style="{StaticResource Muted}" FontSize="14"/>
                     </StackPanel>
                 </DockPanel>
             </Border>

@@ -70,7 +70,7 @@ namespace Monopoly.Tests
             var game = Create(3, 5);
             game.Give(0, Wog, Okko, Upg, Ukrnafta);
 
-            Assert.Equal("На АЗС і логістиці філії не будуються.", game.Error(new BuildBranch(0, Wog)));
+            Assert.Equal("На «MOG» філії не будуються.", game.Error(new BuildBranch(0, Wog)));
         }
 
         [Fact]

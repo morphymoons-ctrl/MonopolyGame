@@ -19,6 +19,7 @@
     <!-- Тема и цвета — общие с игрой. -->
     <Page Include="..\Monopoly.App\Theme.xaml" Link="Theme.xaml" />
     <Compile Include="..\Monopoly.App\PlayerPalette.cs" Link="PlayerPalette.cs" />
+    <Compile Include="..\Monopoly.App\ThemeWords.cs" Link="ThemeWords.cs" />
   </ItemGroup>
 
 </Project>

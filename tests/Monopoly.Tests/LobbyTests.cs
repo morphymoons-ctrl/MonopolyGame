@@ -30,6 +30,35 @@ namespace Monopoly.Tests
             Assert.Equal(1, lobby.PlayerCount);
         }
 
+        // Тематика доски (RULES.md, §15): выбирает только хост и только до старта.
+        [Fact]
+        public void Theme_ChosenByHostBeforeStart()
+        {
+            var lobby = CreateLobbyWithHost();
+            Join(lobby, "c1", "Аня");
+
+            Assert.Equal(BoardTheme.Business, lobby.GetState().Theme);
+            Assert.Equal("Це може лише хост.", lobby.SetTheme("c1", BoardTheme.Military));
+            Assert.Null(lobby.SetTheme("host", BoardTheme.Military));
+            Assert.Equal(BoardTheme.Military, lobby.GetState().Theme);
+            Assert.Equal("Такої дошки немає.", lobby.SetTheme("host", (BoardTheme)42));
+
+            lobby.SetReady("c1", true);
+            Assert.Null(lobby.Start("host", out _));
+            Assert.Equal("Гра вже почалася.", lobby.SetTheme("host", BoardTheme.Business));
+            Assert.Equal(BoardTheme.Military, lobby.Theme);
+        }
+
+        [Fact]
+        public void Restore_KeepsTheme()
+        {
+            var lobby = new Lobby(Token, Version);
+
+            lobby.Restore(new[] { new SavedSeat("Хост", 0, true, false), new SavedSeat("Аня", 1, false, false) }, T0, BoardTheme.Military);
+
+            Assert.Equal(BoardTheme.Military, lobby.Theme);
+        }
+
         [Fact]
         public void Lobby_HoldsUpToFivePlayers()
         {

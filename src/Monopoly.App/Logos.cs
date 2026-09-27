@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Monopoly.Core;
 
 namespace Monopoly.App
 {
@@ -21,8 +22,11 @@ namespace Monopoly.App
 
         private static readonly Dictionary<int, ImageSource?> Cache = new();
 
-        public static ImageSource? For(int cellIndex)
+        // Логотипы есть только у основной доски; на военной (§15) на клетках — названия.
+        public static ImageSource? For(int cellIndex, BoardTheme theme)
         {
+            if (theme != BoardTheme.Business)
+                return null;
             if (Cache.TryGetValue(cellIndex, out var cached))
             {
                 return cached;

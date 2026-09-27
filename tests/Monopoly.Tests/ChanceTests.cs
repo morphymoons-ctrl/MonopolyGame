@@ -108,7 +108,7 @@ namespace Monopoly.Tests
             var result = game.Do(new RollDice(0));
 
             Assert.Equal(Ukrnafta, game.P(0).Position);
-            Assert.Contains(new RentPaid(0, 1, Ukrnafta, 50_000), result.Events);
+            Assert.Contains(new RentPaid(0, 1, Ukrnafta, 100_000), result.Events);
         }
 
         [Fact]
