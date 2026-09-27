@@ -25,9 +25,7 @@
     <Color x:Key="BoardInnerColor">#EFE8D8</Color>
     <Color x:Key="BoardOuterColor">#FFFDF6</Color>
     <SolidColorBrush x:Key="CompanyTextBrush" Color="#1E2126"/>
-    <SolidColorBrush x:Key="CompanyMutedBrush" Color="#4A4F57"/>
-    <SolidColorBrush x:Key="CompanyMortgagedBrush" Color="#CFCABD"/>
-    <LinearGradientBrush x:Key="BoardCenterBrush" StartPoint="0,0" EndPoint="1,1">
+    <SolidColorBrush x:Key="CompanyMutedBrush" Color="#4A4F57"/>    <LinearGradientBrush x:Key="BoardCenterBrush" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="#3B3E44" Offset="0"/>
         <GradientStop Color="#2E3035" Offset="1"/>
     </LinearGradientBrush>

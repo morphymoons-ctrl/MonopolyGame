@@ -9,7 +9,10 @@ namespace Monopoly.Core
 
     public sealed record TurnStarted(int PlayerId) : GameEvent;
 
-    public sealed record TurnSkipped(int PlayerId) : GameEvent;
+    // Пропуск хода: после «Зачілься» или пєтушатні (§6, §7).
+    public enum SkipReason { Rest, Jail }
+
+    public sealed record TurnSkipped(int PlayerId, SkipReason Reason = SkipReason.Rest) : GameEvent;
 
     public sealed record GameOver(int WinnerId) : GameEvent;
 
@@ -31,17 +34,15 @@ namespace Monopoly.Core
     // Игрок попал на «Отдых» и пропустит следующий ход.
     public sealed record RestStarted(int PlayerId) : GameEvent;
 
-    // --- Тюрьма ---
+    // --- Пєтушатня (§6): попал — пропускаешь следующий ход ---
 
-    public enum JailReason { ThreeDoubles, Card }
-
-    public enum JailExit { Double, Bail, Card, ForcedBail }
+    // Landed — встал на клетку 8 после броска.
+    public enum JailReason { ThreeDoubles, Card, Landed }
 
     public sealed record SentToJail(int PlayerId, JailReason Reason) : GameEvent;
 
-    public sealed record JailRollFailed(int PlayerId, int Attempt) : GameEvent;
-
-    public sealed record LeftJail(int PlayerId, JailExit How) : GameEvent;
+    // Сработала карточка «Вийти з пєтушатні»: ход не пропускается.
+    public sealed record JailCardUsed(int PlayerId) : GameEvent;
 
     // --- Покупка и аукцион ---
 

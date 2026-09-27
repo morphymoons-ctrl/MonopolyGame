@@ -136,7 +136,9 @@ namespace Monopoly.Tests
         [Fact]
         public void Double_GivesAnotherRoll()
         {
-            var game = Create(4, 4, 1, 2);
+            // 3 + 3 → своя «Завод Стасика», потом 1 + 2 → «ТОТ».
+            var game = Create(3, 3, 1, 2);
+            game.Give(0, Stasik);
 
             var first = game.Do(new RollDice(0));
 
@@ -145,7 +147,46 @@ namespace Monopoly.Tests
             Assert.Equal("Випав дубль — киньте кубики ще раз.", game.Error(new EndTurn(0)));
 
             game.Do(new RollDice(0));
-            Assert.Equal(Jail + 3, game.P(0).Position);
+            Assert.Equal(Tet, game.P(0).Position);
+        }
+
+        // Дубли реже (§3): выпавший дубль перебрасывается, если число генератора меньше DoubleRerollPercent.
+        private static Game WithRareDoubles(params int[] randomValues) =>
+            new(new[] { "Аня", "Богдан" }, new ScriptedRandom(randomValues), Fixed with { ReduceDoubles = true });
+
+        [Fact]
+        public void Double_SometimesRerolled()
+        {
+            // 2 + 2, число 10 < 50 — переброс: 1 + 2.
+            var game = WithRareDoubles(2, 2, 10, 1, 2);
+
+            var result = game.Do(new RollDice(0));
+
+            Assert.Equal(new DiceRolled(0, 1, 2), result.Events.OfType<DiceRolled>().Single());
+            Assert.Equal(Silpo, game.P(0).Position);
+        }
+
+        [Fact]
+        public void Double_KeptWhenNotRerolled()
+        {
+            // 2 + 2, число 70 ≥ 50 — дубль остаётся.
+            var game = WithRareDoubles(2, 2, 70);
+
+            var result = game.Do(new RollDice(0));
+
+            Assert.Equal(new DiceRolled(0, 2, 2), result.Events.OfType<DiceRolled>().Single());
+            Assert.Equal(Wog, game.P(0).Position);
+        }
+
+        [Fact]
+        public void NotDouble_NoExtraRandom()
+        {
+            // Лишнего числа нет: если бы движок его запросил, ScriptedRandom бросил бы исключение.
+            var game = WithRareDoubles(1, 2);
+
+            game.Do(new RollDice(0));
+
+            Assert.Equal(Silpo, game.P(0).Position);
         }
 
         [Fact]
@@ -317,9 +358,10 @@ namespace Monopoly.Tests
         [Fact]
         public void Rest_SkipsNextTurn()
         {
-            // Аня: 12 → 17 «Отдых». Богдан ходит дважды подряд.
-            var game = Create(2, 3, 3, 5, 3, 5);
+            // Аня: 12 → 17 «Отдых». Богдан ходит дважды подряд — по своим компаниям: 0 → 3 → 7.
+            var game = Create(2, 3, 1, 2, 1, 3);
             game.P(0).Position = Okko;
+            game.Give(1, Silpo, Azovstal);
 
             var landing = game.Do(new RollDice(0));
             Assert.Contains(new RestStarted(0), landing.Events);
@@ -334,18 +376,6 @@ namespace Monopoly.Tests
             game.Do(new RollDice(1));
             game.Do(new EndTurn(1));
             Assert.Same(game.P(0), game.State.CurrentPlayer);
-        }
-
-        [Fact]
-        public void JailCell_IsJustVisiting()
-        {
-            var game = Create(3, 5);
-
-            game.Do(new RollDice(0));
-
-            Assert.Equal(Jail, game.P(0).Position);
-            Assert.False(game.P(0).IsInJail);
-            Assert.Equal(TurnPhase.Manage, game.State.Phase);
         }
 
         private static IEnumerable<Type> Kinds(IEnumerable<GameAction> actions) => actions.Select(a => a.GetType());

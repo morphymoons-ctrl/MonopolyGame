@@ -31,8 +31,6 @@ namespace Monopoly.Core
                         ? new BuyProperty(playerId)
                         : new DeclinePurchase(playerId);
                 case TurnPhase.AwaitingRoll:
-                    if (me.IsInJail && game.CanExecute(new UseJailCard(playerId)))
-                        return new UseJailCard(playerId);
                     return Improve(game, me) ?? new RollDice(playerId);
                 case TurnPhase.Manage:
                     return Improve(game, me) ?? new EndTurn(playerId);

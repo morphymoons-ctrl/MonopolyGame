@@ -1,24 +1,16 @@
-using Monopoly.Core;
+﻿using Monopoly.Core;
 using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
 {
-    // Дубли и тюрьма (RULES.md, §3, §6).
+    // Дубли и пєтушатня (RULES.md, §3, §6): попал — пропускаешь следующий ход.
     public class JailTests
     {
-        private static Game InJail(params int[] dice)
-        {
-            var game = Create(dice);
-            game.P(0).Position = Jail;
-            game.P(0).IsInJail = true;
-            return game;
-        }
-
         [Fact]
-        public void ThreeDoubles_SendToJailWithoutThirdMove()
+        public void ThreeDoubles_SendToJail_AndSkipNextTurn()
         {
-            // Все компании — у Ани, чтобы дубли не останавливались на покупке.
-            var game = Create(1, 1, 2, 2, 3, 3);
+            // Все компании — у Ани, чтобы дубли не останавливались на покупке. Богдан потом кидает 1 + 2.
+            var game = Create(1, 1, 2, 2, 3, 3, 1, 2);
             game.Give(0, Enumerable.Range(0, Board.CellCount).Where(i => game.State.Board[i].IsPurchasable).ToArray());
 
             game.Do(new RollDice(0));
@@ -30,96 +22,80 @@ namespace Monopoly.Tests
             Assert.Contains(new SentToJail(0, JailReason.ThreeDoubles), third.Events);
             Assert.DoesNotContain(third.Events, e => e is PlayerMoved);
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
-        }
 
-        [Fact]
-        public void PayBail_ThenNormalRoll()
-        {
-            var game = InJail(1, 2);
+            game.Do(new EndTurn(0));
+            game.Do(new RollDice(1));
+            var skip = game.Do(new EndTurn(1));
 
-            var result = game.Do(new PayBail(0));
-
+            Assert.Contains(new TurnSkipped(0, SkipReason.Jail), skip.Events);
+            Assert.Equal(1, game.State.CurrentPlayer.Id);
             Assert.False(game.P(0).IsInJail);
-            Assert.Equal(GameRules.StartingBalance - 50_000, game.P(0).Balance);
-            Assert.Contains(new LeftJail(0, JailExit.Bail), result.Events);
-            game.Do(new RollDice(0));
-            Assert.Equal(Jail + 3, game.P(0).Position);
         }
 
         [Fact]
-        public void JailCard_FreesAndReturnsToDiscard()
+        public void LandingOnJail_SkipsNextTurn()
         {
-            var game = InJail();
+            // Аня: 3 + 5 → клетка 8. Богдан: 1 + 2 → «Сільпо» Ани, платит аренду.
+            var game = Create(3, 5, 1, 2);
+            game.Give(0, Silpo);
+
+            var landing = game.Do(new RollDice(0));
+
+            Assert.Contains(new SentToJail(0, JailReason.Landed), landing.Events);
+            Assert.True(game.P(0).IsInJail);
+            game.Do(new EndTurn(0));
+            game.Do(new RollDice(1));
+            var skip = game.Do(new EndTurn(1));
+
+            Assert.Contains(new TurnSkipped(0, SkipReason.Jail), skip.Events);
+            Assert.Equal(new TurnStarted(1), skip.Events[^1]);
+        }
+
+        [Fact]
+        public void LandingWithDouble_NoMoreRolls()
+        {
+            var game = Create(2, 2);
+            game.P(0).Position = Wog;
+
+            var result = game.Do(new RollDice(0));
+
+            Assert.Equal(Jail, game.P(0).Position);
+            Assert.DoesNotContain(result.Events, e => e is RollAgain);
+            Assert.Equal(TurnPhase.Manage, game.State.Phase);
+        }
+
+        [Fact]
+        public void JailCard_CancelsSkip_AndReturnsToDiscard()
+        {
+            var game = Create(3, 5, 1, 2);
+            game.Give(0, Silpo);
             game.P(0).JailCards = 1;
-            game.State.ChanceDeck.Remove(ChanceCard.GetOutOfJail);
 
-            game.Do(new UseJailCard(0));
+            var landing = game.Do(new RollDice(0));
 
+            Assert.Contains(new JailCardUsed(0), landing.Events);
             Assert.False(game.P(0).IsInJail);
             Assert.Equal(0, game.P(0).JailCards);
             Assert.Contains(ChanceCard.GetOutOfJail, game.State.ChanceDiscard);
+
+            game.Do(new EndTurn(0));
+            game.Do(new RollDice(1));
+            var next = game.Do(new EndTurn(1));
+            Assert.DoesNotContain(next.Events, e => e is TurnSkipped);
+            Assert.Equal(0, game.State.CurrentPlayer.Id);
         }
 
         [Fact]
-        public void JailCard_WithoutCard_IsRejected()
+        public void JailCard_WithDouble_KeepsExtraRoll()
         {
-            var game = InJail();
-
-            Assert.Equal("У вас немає картки «Вийти з пєтушатні».", game.Error(new UseJailCard(0)));
-        }
-
-        [Fact]
-        public void PayBail_NotInJail_IsRejected()
-        {
-            var game = Create();
-
-            Assert.Equal("Ви не у пєтушатні.", game.Error(new PayBail(0)));
-        }
-
-        [Fact]
-        public void DoubleInJail_FreesAndMoves_WithoutExtraRoll()
-        {
-            var game = InJail(2, 2);
+            var game = Create(2, 2);
+            game.P(0).Position = Wog;
+            game.P(0).JailCards = 1;
 
             var result = game.Do(new RollDice(0));
 
-            Assert.False(game.P(0).IsInJail);
-            Assert.Equal(Okko, game.P(0).Position);
-            Assert.Contains(new LeftJail(0, JailExit.Double), result.Events);
-            Assert.DoesNotContain(result.Events, e => e is RollAgain);
-            game.Do(new BuyProperty(0));
-            Assert.Equal(TurnPhase.Manage, game.State.Phase);
-        }
-
-        [Fact]
-        public void FailedAttempt_StaysInJail()
-        {
-            var game = InJail(1, 2);
-
-            var result = game.Do(new RollDice(0));
-
-            Assert.True(game.P(0).IsInJail);
-            Assert.Equal(Jail, game.P(0).Position);
-            Assert.Equal(1, game.P(0).JailTurns);
-            Assert.Contains(new JailRollFailed(0, 1), result.Events);
-            Assert.Equal(TurnPhase.Manage, game.State.Phase);
-            // Залог платят до броска; после неудачной попытки ход только заканчивается.
-            Assert.Equal("Кубики в цьому ході вже кинуто.", game.Error(new PayBail(0)));
-        }
-
-        [Fact]
-        public void ThirdFailedAttempt_ForcesBailAndMoves()
-        {
-            var game = InJail(1, 2);
-            game.P(0).JailTurns = 2;
-
-            var result = game.Do(new RollDice(0));
-
-            Assert.False(game.P(0).IsInJail);
-            Assert.Equal(Jail + 3, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance - 50_000, game.P(0).Balance);
-            Assert.Contains(new LeftJail(0, JailExit.ForcedBail), result.Events);
-            Assert.Contains(new PaidToBank(0, 50_000), result.Events);
+            Assert.Contains(new RollAgain(0), result.Events);
+            Assert.Equal(TurnPhase.AwaitingRoll, game.State.Phase);
         }
 
         [Fact]
@@ -132,11 +108,11 @@ namespace Monopoly.Tests
 
             game.Do(new RollDice(0));
 
-            Assert.Equal(GameRules.StartingBalance + 14_000, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 16_800, game.P(1).Balance);
         }
     }
 
-    // Казино (RULES.md, §8).
+        // Казино (RULES.md, §8).
     public class CasinoTests
     {
         // Аня: 12 → 16 «Казино», дальше число для исхода.

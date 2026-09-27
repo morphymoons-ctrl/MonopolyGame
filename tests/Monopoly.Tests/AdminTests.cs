@@ -1,4 +1,4 @@
-using Monopoly.Core;
+﻿using Monopoly.Core;
 using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
@@ -63,7 +63,7 @@ namespace Monopoly.Tests
             game.Do(new BuyProperty(0));
 
             Assert.Equal(GameRules.StartingBalance - 500_000, game.P(0).Balance);
-            Assert.Equal(50_000, GameRules.Rent(game.State.Board, Silpo, 0));
+            Assert.Equal(60_000, GameRules.Rent(game.State.Board, Silpo, 0));
             Assert.Equal(250_000, game.State.Board[Silpo].MortgageValue);
             Assert.Equal(500_000, game.State.ToSnapshot().Cells[Silpo].Price);
         }

@@ -54,10 +54,11 @@ namespace Monopoly.App
 
         public async Task RollAsync(int final, int phase)
         {
-            for (int frame = 0; frame < 8; frame++)
+            // Грани меняются всё медленнее — кубик «докатывается»: около секунды на бросок.
+            for (int frame = 0; frame < 9; frame++)
             {
                 Show((frame * 5 + phase) % 6 + 1);
-                await Task.Delay(55);
+                await Task.Delay(60 + frame * 11);
             }
             Show(final);
         }

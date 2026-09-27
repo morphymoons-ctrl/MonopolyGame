@@ -6,6 +6,8 @@ namespace Monopoly.Core
         public bool ShuffleTurnOrder { get; init; } = true;
         // Колода «Шанса» перемешивается в начале и при каждом новом круге колоды (§9).
         public bool ShuffleChanceDeck { get; init; } = true;
+        // Дубли реже: выпавший дубль иногда перебрасывается (§3). Тесты с заданными кубиками это выключают.
+        public bool ReduceDoubles { get; init; } = true;
     }
 
     // Движок: принимает действия игроков, проверяет их по правилам и меняет состояние.
@@ -65,8 +67,6 @@ namespace Monopoly.Core
                 new RollDice(playerId),
                 new BuyProperty(playerId),
                 new DeclinePurchase(playerId),
-                new PayBail(playerId),
-                new UseJailCard(playerId),
                 new EndTurn(playerId),
                 new PassAuction(playerId),
                 new AcceptTrade(playerId),
@@ -121,16 +121,6 @@ namespace Monopoly.Core
                     break;
                 case EndTurn:
                     PassTurn(events);
-                    break;
-                case PayBail:
-                    player.Balance -= GameRules.BailAmount;
-                    ReleaseFromJail(player, JailExit.Bail, events);
-                    events.Add(new PaidToBank(player.Id, GameRules.BailAmount));
-                    break;
-                case UseJailCard:
-                    player.JailCards--;
-                    State.ChanceDiscard.Add(ChanceCard.GetOutOfJail);
-                    ReleaseFromJail(player, JailExit.Card, events);
                     break;
                 case PlayCasino casino:
                     PlayCasinoBet(player, casino.Bet, events);
@@ -218,10 +208,6 @@ namespace Monopoly.Core
                 BuyProperty => ValidateBuy(player),
                 DeclinePurchase => NothingToBuy(player) ?? RequireTurn(player, TurnPhase.BuyDecision),
                 EndTurn => RequireTurn(player, TurnPhase.Manage),
-                PayBail => ValidateJailExit(player)
-                    ?? (player.Balance < GameRules.BailAmount ? $"Не вистачає грошей на заставу: потрібно {GameRules.Money(GameRules.BailAmount)}." : null),
-                UseJailCard => ValidateJailExit(player)
-                    ?? (player.JailCards == 0 ? "У вас немає картки «Вийти з пєтушатні»." : null),
                 PlayCasino casino => ValidateCasino(player, casino.Bet),
                 PlaceBid bid => ValidateBid(player, bid.Amount),
                 PassAuction => ValidatePass(player),
@@ -297,9 +283,6 @@ namespace Monopoly.Core
                 : null;
         }
 
-        private string? ValidateJailExit(Player player) =>
-            RequireTurn(player, TurnPhase.AwaitingRoll) ?? (player.IsInJail ? null : "Ви не у пєтушатні.");
-
         private string? ValidateCasino(Player player, int bet)
         {
             var error = RequireTurn(player, TurnPhase.AwaitingRoll, TurnPhase.Manage);
@@ -316,16 +299,10 @@ namespace Monopoly.Core
 
         private void Roll(Player player, List<GameEvent> events)
         {
-            var roll = new DiceRoll(random.Next(1, 7), random.Next(1, 7));
+            var roll = ThrowDice();
             State.LastRoll = roll;
             State.CasinoAvailable = false;
             events.Add(new DiceRolled(player.Id, roll.Die1, roll.Die2));
-
-            if (player.IsInJail)
-            {
-                RollInJail(player, roll, events);
-                return;
-            }
 
             if (roll.IsDouble && ++State.DoublesInRow == GameRules.DoublesToJail)
             {
@@ -336,7 +313,7 @@ namespace Monopoly.Core
             MoveForward(player, roll.Total, events);
             ResolveCell(player, events);
 
-            // Дубль — ещё один бросок, если игрок не попал в тюрьму и не выбыл.
+            // Дубль — ещё один бросок, если игрок не попал в пєтушатню и не выбыл.
             if (roll.IsDouble && !player.IsInJail && !player.IsBankrupt)
             {
                 State.Stage = TurnPhase.AwaitingRoll;
@@ -348,29 +325,13 @@ namespace Monopoly.Core
             }
         }
 
-        // В тюрьме: дубль — выход без повторного броска; третья неудача — обязательный залог (§6).
-        private void RollInJail(Player player, DiceRoll roll, List<GameEvent> events)
+        // Два кубика. Выпавший дубль с вероятностью DoubleRerollPercent перебрасывается один раз — дубли реже (§3).
+        private DiceRoll ThrowDice()
         {
-            State.Stage = TurnPhase.Manage;
-            if (roll.IsDouble)
-            {
-                ReleaseFromJail(player, JailExit.Double, events);
-            }
-            else if (++player.JailTurns < GameRules.MaxJailAttempts)
-            {
-                events.Add(new JailRollFailed(player.Id, player.JailTurns));
-                return;
-            }
-            else
-            {
-                ReleaseFromJail(player, JailExit.ForcedBail, events);
-                Charge(player, null, GameRules.BailAmount, events);
-                if (player.IsBankrupt)
-                    return;
-            }
-
-            MoveForward(player, roll.Total, events);
-            ResolveCell(player, events);
+            var roll = new DiceRoll(random.Next(1, 7), random.Next(1, 7));
+            if (options.ReduceDoubles && roll.IsDouble && random.Next(0, 100) < GameRules.DoubleRerollPercent)
+                roll = new DiceRoll(random.Next(1, 7), random.Next(1, 7));
+            return roll;
         }
 
         private void MoveForward(Player player, int steps, List<GameEvent> events)
@@ -439,7 +400,11 @@ namespace Monopoly.Core
                 case CellType.Chance:
                     DrawChance(player, events);
                     break;
-                // «Старт» — бонус уже начислен при движении; «Тюрьма» — просто в гостях (§6).
+                case CellType.Jail:
+                    events.Add(new SentToJail(player.Id, JailReason.Landed));
+                    Imprison(player, events);
+                    break;
+                // «Старт» — бонус уже начислен при движении.
             }
         }
 
@@ -459,41 +424,49 @@ namespace Monopoly.Core
             State.LastRoll = null;
             State.DoublesInRow = 0;
 
-            // Выбывших пропускаем молча, отдыхающих — с событием.
-            // Цикл конечен: каждый пропуск снимает отметку отдыха, а активный игрок есть всегда.
+            // Выбывших пропускаем молча, отдыхающих и сидящих в пєтушатні — с событием (§6, §7).
+            // Цикл конечен: каждый пропуск снимает отметку, а активный игрок есть всегда.
             while (true)
             {
                 State.CurrentPlayerIndex = (State.CurrentPlayerIndex + 1) % State.Players.Count;
                 var next = State.CurrentPlayer;
                 if (next.IsBankrupt)
                     continue;
-                if (!next.IsResting)
+                if (!next.IsResting && !next.IsInJail)
                     break;
+                var reason = next.IsInJail ? SkipReason.Jail : SkipReason.Rest;
                 next.IsResting = false;
-                events.Add(new TurnSkipped(next.Id));
+                next.IsInJail = false;
+                events.Add(new TurnSkipped(next.Id, reason));
             }
 
             State.Stage = TurnPhase.AwaitingRoll;
             events.Add(new TurnStarted(State.CurrentPlayer.Id));
         }
 
-        // --- Тюрьма ---
+        // --- Пєтушатня (§6) ---
 
+        // Три дубля или карточка «Шанса»: фишка на клетку 8, бросков в этом ходу больше нет.
         private void SendToJail(Player player, JailReason reason, List<GameEvent> events)
         {
             player.Position = GameRules.JailCell;
-            player.IsInJail = true;
-            player.JailTurns = 0;
             State.DoublesInRow = 0;
             State.Stage = TurnPhase.Manage;
             events.Add(new SentToJail(player.Id, reason));
+            Imprison(player, events);
         }
 
-        private static void ReleaseFromJail(Player player, JailExit how, List<GameEvent> events)
+        // Следующий ход будет пропущен — если нет карточки «Вийти з пєтушатні»: тогда она срабатывает сама.
+        private void Imprison(Player player, List<GameEvent> events)
         {
-            player.IsInJail = false;
-            player.JailTurns = 0;
-            events.Add(new LeftJail(player.Id, how));
+            if (player.JailCards > 0)
+            {
+                player.JailCards--;
+                State.ChanceDiscard.Add(ChanceCard.GetOutOfJail);
+                events.Add(new JailCardUsed(player.Id));
+                return;
+            }
+            player.IsInJail = true;
         }
 
         // --- Казино ---

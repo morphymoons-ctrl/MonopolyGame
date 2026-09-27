@@ -7,7 +7,7 @@ namespace Monopoly.Tests
     {
         private static readonly string[] Names = { "Аня", "Богдан", "Вика", "Гриша", "Даша" };
 
-        public static readonly GameOptions Fixed = new() { ShuffleTurnOrder = false, ShuffleChanceDeck = false };
+        public static readonly GameOptions Fixed = new() { ShuffleTurnOrder = false, ShuffleChanceDeck = false, ReduceDoubles = false };
 
         // Номера клеток из RULES.md, §2.
         public const int Atb = 1, Varus = 2, Silpo = 3, Wog = 4;

@@ -63,8 +63,8 @@ namespace Monopoly.Core
             }
         }
 
-        // Банкротство: филиалы продаются банку за полцены, деньги и имущество — кредитору,
-        // а при долге банку компании возвращаются банку свободными.
+        // Банкротство (§12): филиалы продаются банку за полцены, компании возвращаются банку свободными —
+        // их снова можно купить. Деньги и карточки — кредитору; при долге банку — банку и в колоду.
         private void GoBankrupt(Player player, int? creditorId, List<GameEvent> events)
         {
             var creditor = creditorId is int id ? State.FindPlayer(id) : null;
@@ -75,15 +75,8 @@ namespace Monopoly.Core
             {
                 player.Balance += cell.Level * cell.BranchSaleValue;
                 cell.Level = 0;
-                if (creditor is not null)
-                {
-                    cell.OwnerId = creditor.Id;
-                }
-                else
-                {
-                    cell.OwnerId = null;
-                    cell.IsMortgaged = false;
-                }
+                cell.OwnerId = null;
+                cell.IsMortgaged = false;
             }
 
             if (creditor is not null)

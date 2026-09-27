@@ -218,11 +218,11 @@ namespace Monopoly.App
             if (!myTurn)
             {
                 var current = s.FindPlayer(s.CurrentPlayerId)!;
-                return ($"Ходить {current.Name}", current.IsInJail ? "Сидить у пєтушатні." : "", null);
+                return ($"Ходить {current.Name}", current.IsInJail ? "Сидить у пєтушатні — наступний хід пропустить." : "", null);
             }
-            if (s.Phase == TurnPhase.AwaitingRoll && me?.IsInJail == true)
+            if (me?.IsInJail == true && s.Phase == TurnPhase.Manage)
             {
-                return ("Ви у пєтушатні", $"Заплатіть заставу {GameManager.Format(GameRules.BailAmount)}, використайте картку або киньте кубики — потрібен дубль.", null);
+                return ("Ви у пєтушатні", "Наступний хід ви пропустите. Можна будувати філії, закладати компанії й пропонувати обмін, потім — завершити хід.", null);
             }
             if (s.Phase == TurnPhase.AwaitingRoll)
             {
@@ -432,10 +432,10 @@ namespace Monopoly.App
         private static string DescribeSpecial(CellType type) => type switch
         {
             CellType.Start => $"Прохід або потрапляння — +{GameManager.Format(GameRules.StartBonus)}.",
-            CellType.Jail => $"Тут просто в гостях. До пєтушатні потрапляють за карткою «Шансу» або за три дублі поспіль. Застава — {GameManager.Format(GameRules.BailAmount)}.",
+            CellType.Jail => "Пропуск наступного ходу — як у «Зачілься». Сюди ж ведуть три дублі поспіль і картка «Шансу». Картка «Вийти з пєтушатні» рятує від пропуску сама.",
             CellType.Casino => $"Ставка {EventText.CasinoRange} одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
             CellType.Rest => "Пропуск наступного ходу.",
-            CellType.Chance => "Картка з колоди «Шансу»: гроші, переміщення, пєтушатня або вихід з неї.",
+            CellType.Chance => "Картка з колоди «Шансу»: гроші, переміщення, пєтушатня або картка, що рятує від неї.",
             _ => "",
         };
 

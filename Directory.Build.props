@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
 
   <!-- Общие настройки для всех проектов решения. -->
   <PropertyGroup>
@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <!-- Версия игры; при подключении клиент сверяет её с версией хоста. -->
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
   </PropertyGroup>
 
 </Project>

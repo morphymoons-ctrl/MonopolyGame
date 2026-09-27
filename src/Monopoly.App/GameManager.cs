@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -76,8 +76,8 @@ namespace Monopoly.App
         {
             // Имена нужны для журнала уже на первых событиях.
             Snapshot ??= update.Snapshot;
-            // Цены могли поменяться (администратор, §14) — поле клиента берёт их у хоста.
-            update.Snapshot.ApplyPrices(board);
+            // Цены (администратор, §14), владельцы и филиалы — в поле клиента: по ним считается аренда на клетках.
+            update.Snapshot.ApplyTo(board);
             bool coin = false;
             foreach (var e in update.Events)
             {
@@ -93,7 +93,7 @@ namespace Monopoly.App
                         break;
                     case SentToJail j:
                         shownPositions[j.PlayerId] = GameRules.JailCell;
-                        PlaceToken(j.PlayerId, GameRules.JailCell, 0, 250);
+                        PlaceToken(j.PlayerId, GameRules.JailCell, 0, 1, 250);
                         await Task.Delay(250);
                         break;
                     case PassedStart or ReceivedFromBank or PropertyBought or AuctionWon or RentPaid or PaidToPlayer or DebtPaid:
@@ -121,7 +121,7 @@ namespace Monopoly.App
         public void LoadHistory(GameUpdate update)
         {
             Snapshot = update.Snapshot;
-            update.Snapshot.ApplyPrices(board);
+            update.Snapshot.ApplyTo(board);
             foreach (var e in update.Events)
             {
                 AddLog(EventText.Describe(e, update.Snapshot));
@@ -214,7 +214,7 @@ namespace Monopoly.App
                     Height = r.Height,
                     Stroke = line,
                     StrokeThickness = 1,
-                    Fill = state?.IsMortgaged == true ? (Brush)Application.Current.Resources["CompanyMortgagedBrush"] : cell.IsPurchasable ? CompanyBackground(i) : SpecialBackground(cell.Type)
+                    Fill = cell.IsPurchasable ? CompanyBackground(i, state) : SpecialBackground(cell.Type)
                 }, r.X, r.Y);
 
                 if (cell.IsPurchasable)
@@ -316,11 +316,17 @@ namespace Monopoly.App
             }
             if (state?.IsMortgaged == true)
             {
-                AddText("ЗАСТАВА", c.X, detail, c.Width, u * 0.14, FontWeights.Black, (Brush)Application.Current.Resources["DangerBrush"]);
-            }
-            else if (state is { Level: > 0 })
-            {
-                DrawBranches(state.Level, c, detail, u);
+                // Тёмная плашка: надпись читается на фоне любого цвета владельца.
+                var mortgaged = new Border
+                {
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(u * 0.06, 0, u * 0.06, 0),
+                    Background = PlayerPalette.Make("#CC1E2126"),
+                    Child = new TextBlock { Text = "ЗАСТАВА", Foreground = Brushes.White, FontSize = u * 0.13, FontWeight = FontWeights.Black },
+                    IsHitTestVisible = false
+                };
+                mortgaged.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                Place(mortgaged, c.X + (c.Width - mortgaged.DesiredSize.Width) / 2, detail);
             }
             else if (state?.OwnerId is null)
             {
@@ -328,61 +334,96 @@ namespace Monopoly.App
                 FillMoney(price, cell.Price);
                 Place(price, c.X, detail);
             }
-
-            if (state?.OwnerId is int owner)
+            else
             {
-                Place(new Rectangle { Width = c.Width - 2, Height = u * 0.1, Fill = PlayerColor(owner), IsHitTestVisible = false },
-                    c.X + 1, r.Bottom - u * 0.1 - 1);
+                DrawRent(cell, index, state.Level, c, detail, u, text);
             }
+
+            // Владельца показывает цвет фона клетки (CompanyBackground).
         }
 
-        // Филиалы — зелёные домики, головной офис — красное здание.
-        private void DrawBranches(int level, Rect r, double top, double u)
+        // Купленная компания: аренда, которую заплатит вставший на клетку, — коротко («252к»), чтобы не путать с ценой покупки.
+        // Перед ней — филиалы (зелёные квадратики) или головной офис. У логистики аренда зависит от кубиков.
+        private void DrawRent(BoardCell cell, int index, int level, Rect c, double top, double u, Brush text)
         {
+            var line = new StackPanel { Orientation = Orientation.Horizontal, IsHitTestVisible = false };
             if (level == GameRules.HeadOfficeLevel)
             {
-                var office = new Border
+                line.Children.Add(new Border
                 {
-                    Width = u * 0.6,
-                    Height = u * 0.2,
                     CornerRadius = new CornerRadius(3),
+                    Padding = new Thickness(u * 0.04, 0, u * 0.04, 0),
+                    Margin = new Thickness(0, 0, u * 0.05, 0),
+                    VerticalAlignment = VerticalAlignment.Center,
                     Background = PlayerPalette.Make("#C62828"),
-                    Child = new TextBlock { Text = "ОФІС", Foreground = Brushes.White, FontSize = u * 0.12, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
-                    IsHitTestVisible = false
-                };
-                Place(office, r.X + (r.Width - u * 0.6) / 2, top);
-                return;
+                    Child = new TextBlock { Text = "ОФІС", Foreground = Brushes.White, FontSize = u * 0.1, FontWeight = FontWeights.Bold }
+                });
             }
-            double house = u * 0.16, gap = u * 0.05;
-            double start = r.X + (r.Width - level * house - (level - 1) * gap) / 2;
-            for (int k = 0; k < level; k++)
+            else
             {
-                Place(new Rectangle
+                for (int k = 0; k < level; k++)
                 {
-                    Width = house,
-                    Height = house,
-                    RadiusX = 2,
-                    RadiusY = 2,
-                    Fill = PlayerPalette.Make("#2E9E5B"),
-                    Stroke = Brushes.White,
-                    StrokeThickness = 1,
-                    IsHitTestVisible = false
-                }, start + k * (house + gap), top + u * 0.02);
+                    line.Children.Add(new Rectangle
+                    {
+                        Width = u * 0.1,
+                        Height = u * 0.1,
+                        RadiusX = 2,
+                        RadiusY = 2,
+                        Fill = PlayerPalette.Make("#2E9E5B"),
+                        Stroke = Brushes.White,
+                        StrokeThickness = 1,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 0, k == level - 1 ? u * 0.05 : u * 0.02, 0)
+                    });
+                }
             }
+
+            // Та же формула, что у движка при оплате (поле клиента обновлено из снимка — GameSnapshot.ApplyTo).
+            string rent = cell.Type == CellType.Logistics
+                ? $"кубики ×{GameRules.ShortMoney(GameRules.Rent(board, index, 1))}"
+                : GameRules.ShortMoney(GameRules.Rent(board, index, 0));
+            line.Children.Add(new TextBlock
+            {
+                Text = rent,
+                FontSize = u * 0.16,
+                FontFamily = GameFonts.Money,
+                FontWeight = FontWeights.Bold,
+                Foreground = text,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            line.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Place(line, c.X + (c.Width - line.DesiredSize.Width) / 2, top);
         }
 
         // Фон клетки компании: градиент от центра поля к внешнему краю — в ту же сторону, где полоса группы.
-        private Brush CompanyBackground(int i)
+        // Свободная — слоновая кость; купленная — цвет владельца, смешанный с фоном, чтобы логотипы читались;
+        // заложенная — тот же цвет, но бледнее.
+        private Brush CompanyBackground(int i, CellSnapshot? state)
         {
             int side = topCount - 1;
             var (from, to) = i < side ? (new Point(0.5, 1), new Point(0.5, 0))      // верхний ряд: наружу — вверх
                 : i < 2 * side ? (new Point(0, 0.5), new Point(1, 0.5))             // правый столбец: вправо
                 : i < 3 * side ? (new Point(0.5, 0), new Point(0.5, 1))             // нижний ряд: вниз
                 : (new Point(1, 0.5), new Point(0, 0.5));                           // левый столбец: влево
-            var brush = new LinearGradientBrush((Color)Application.Current.Resources["BoardInnerColor"],
-                (Color)Application.Current.Resources["BoardOuterColor"], from, to);
+            var inner = (Color)Application.Current.Resources["BoardInnerColor"];
+            var outer = (Color)Application.Current.Resources["BoardOuterColor"];
+            if (state?.OwnerId is int owner && PlayerColor(owner) is SolidColorBrush ownerBrush)
+            {
+                // Доля цвета владельца: у центра поля насыщеннее, к краю светлее.
+                double strength = state.IsMortgaged ? 0.3 : 0.7;
+                inner = Mix(inner, ownerBrush.Color, strength);
+                outer = Mix(outer, ownerBrush.Color, strength * 0.75);
+            }
+            var brush = new LinearGradientBrush(inner, outer, from, to);
             brush.Freeze();
             return brush;
+        }
+
+        private static Color Mix(Color a, Color b, double t)
+        {
+            byte Channel(byte x, byte y) => (byte)Math.Round(x + (y - x) * t);
+            return Color.FromRgb(Channel(a.R, b.R), Channel(a.G, b.G), Channel(a.B, b.B));
         }
 
         // Размер логотипа в рамке: все логотипы получают примерно одинаковую площадь, чтобы квадратные
@@ -440,15 +481,15 @@ namespace Monopoly.App
         {
             if (!tokens.TryGetValue(playerId, out var token))
             {
-                double d = Unit * 0.22;
+                double d = TokenSize;
                 token = new Ellipse
                 {
                     Width = d,
                     Height = d,
                     Fill = PlayerColor(playerId),
                     Stroke = Brushes.White,
-                    StrokeThickness = 2.5,
-                    Effect = new DropShadowEffect { BlurRadius = 6, ShadowDepth = 2, Opacity = 0.5 }
+                    StrokeThickness = 3,
+                    Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 2, Opacity = 0.6 }
                 };
                 tokens[playerId] = token;
                 tokenCanvas.Children.Add(token);
@@ -459,15 +500,19 @@ namespace Monopoly.App
             return token;
         }
 
-        // slot — место фишки на клетке, чтобы несколько фишек стояли рядом.
-        private void PlaceToken(int playerId, int cell, int slot, int animationMs)
+        // Крупные фишки — чтобы их было видно на поле издалека.
+        private double TokenSize => Unit * 0.34;
+
+        // slot из count — место фишки на клетке: несколько фишек стоят в ряд, а если не помещаются — заходят друг на друга.
+        private void PlaceToken(int playerId, int cell, int slot, int count, int animationMs)
         {
-            double u = Unit;
+            double u = Unit, d = TokenSize, pad = u * 0.05;
             bool company = board[cell].IsPurchasable;
             var r = company ? CompanyLayout(cell, CellRect(cell)).Content : CellRect(cell);
-            double x = r.X + u * 0.06 + slot * u * 0.24;
-            // На компании низ занят ценой — фишки стоят вверху клетки, над логотипом.
-            double y = company ? r.Y + u * 0.05 : r.Bottom - u * 0.3;
+            double step = count <= 1 ? 0 : Math.Min(d + u * 0.03, (r.Width - 2 * pad - d) / (count - 1));
+            double x = r.X + pad + slot * step;
+            // На компании низ занят ценой — фишки стоят вверху клетки, поверх логотипа.
+            double y = company ? r.Y + pad : r.Bottom - d - u * 0.08;
             var token = Token(playerId);
             if (animationMs <= 0)
             {
@@ -491,11 +536,11 @@ namespace Monopoly.App
             int backward = (from - to + n) % n;
             bool back = forward > 12 && backward <= ChanceCards.TrainStepsBack;
             int steps = back ? backward : forward;
-            int stepMs = steps <= 12 ? 130 : Math.Max(45, 1500 / Math.Max(1, steps));
+            int stepMs = steps <= 12 ? 220 : Math.Max(80, 2400 / Math.Max(1, steps));
             for (int s = 1; s <= steps; s++)
             {
                 int cell = ((from + (back ? -s : s)) % n + n) % n;
-                PlaceToken(playerId, cell, 0, (int)(stepMs * 0.85));
+                PlaceToken(playerId, cell, 0, 1, (int)(stepMs * 0.85));
                 await Task.Delay(stepMs);
             }
             shownPositions[playerId] = to;
@@ -518,12 +563,15 @@ namespace Monopoly.App
             }
             foreach (var group in Snapshot.Players.Where(p => !p.IsBankrupt).GroupBy(p => p.Position))
             {
-                int slot = 0;
+                int slot = 0, count = group.Count();
                 foreach (var player in group)
                 {
                     var token = Token(player.Id);
-                    token.StrokeThickness = player.Id == Snapshot.CurrentPlayerId ? 4 : 2.5;
-                    PlaceToken(player.Id, group.Key, slot++, animationMs);
+                    bool current = player.Id == Snapshot.CurrentPlayerId;
+                    token.StrokeThickness = current ? 5 : 3;
+                    // Фишка того, кто ходит, — поверх остальных, если они заходят друг на друга.
+                    Panel.SetZIndex(token, current ? 1 : 0);
+                    PlaceToken(player.Id, group.Key, slot++, count, animationMs);
                 }
             }
         }

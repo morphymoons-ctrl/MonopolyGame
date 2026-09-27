@@ -1,4 +1,4 @@
-using Monopoly.Core;
+﻿using Monopoly.Core;
 using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
@@ -16,15 +16,15 @@ namespace Monopoly.Tests
         private static int Level(Game game, int cell) => game.State.Board[cell].Level;
 
         [Fact]
-        public void Build_BeforeRoll_CostsHalfPrice()
+        public void Build_BeforeRoll_CostsGroupBranchPrice()
         {
             var game = WithSupermarkets();
 
             var result = game.Do(new BuildBranch(0, Silpo));
 
             Assert.Equal(1, Level(game, Silpo));
-            Assert.Equal(GameRules.StartingBalance - 70_000, game.P(0).Balance);
-            Assert.Contains(new BranchBuilt(0, Silpo, 1, 70_000), result.Events);
+            Assert.Equal(GameRules.StartingBalance - 100_000, game.P(0).Balance);
+            Assert.Contains(new BranchBuilt(0, Silpo, 1, 100_000), result.Events);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace Monopoly.Tests
 
             var result = game.Do(new BuildBranch(0, Silpo));
 
-            Assert.Contains(new BranchBuilt(0, Silpo, 5, 70_000), result.Events);
+            Assert.Contains(new BranchBuilt(0, Silpo, 5, 100_000), result.Events);
             game.Do(new BuildBranch(0, Atb));
             game.Do(new BuildBranch(0, Varus));
             Assert.Equal("Тут уже головний офіс.", game.Error(new BuildBranch(0, Silpo)));
@@ -86,9 +86,9 @@ namespace Monopoly.Tests
         public void Build_NeedsMoney()
         {
             var game = WithSupermarkets();
-            game.P(0).Balance = 60_000;
+            game.P(0).Balance = 90_000;
 
-            Assert.Equal($"Не вистачає грошей: філія коштує {M(70_000)}.", game.Error(new BuildBranch(0, Silpo)));
+            Assert.Equal($"Не вистачає грошей: філія коштує {M(100_000)}.", game.Error(new BuildBranch(0, Silpo)));
         }
 
         [Fact]
@@ -112,8 +112,8 @@ namespace Monopoly.Tests
             var result = game.Do(new SellBranch(0, Silpo));
 
             Assert.Equal(1, Level(game, Silpo));
-            Assert.Equal(GameRules.StartingBalance + 35_000, game.P(0).Balance);
-            Assert.Contains(new BranchSold(0, Silpo, 1, 35_000), result.Events);
+            Assert.Equal(GameRules.StartingBalance + 50_000, game.P(0).Balance);
+            Assert.Contains(new BranchSold(0, Silpo, 1, 50_000), result.Events);
         }
 
         [Fact]

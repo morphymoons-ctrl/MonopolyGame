@@ -29,7 +29,9 @@ namespace Monopoly.App
                 // Зерно генератора игрокам не показываем: оно хранится в сохранении и нужно только для отладки.
                 GameStarted g => $"Партію розпочато. Порядок ходів: {string.Join(", ", g.TurnOrder.Select(Name))}.",
                 TurnStarted t => $"Ходить {Name(t.PlayerId)}.",
-                TurnSkipped s => $"{Name(s.PlayerId)} пропускає хід («Зачілься»).",
+                TurnSkipped s => s.Reason == SkipReason.Jail
+                    ? $"{Name(s.PlayerId)} сидить у пєтушатні й пропускає хід."
+                    : $"{Name(s.PlayerId)} пропускає хід («Зачілься»).",
                 GameOver g => $"Гру закінчено! Перемога: {Name(g.WinnerId)}.",
 
                 DiceRolled d => $"{Name(d.PlayerId)} кидає кубики: {d.Die1} + {d.Die2} = {d.Total}" + (d.IsDouble ? " — дубль!" : "."),
@@ -38,17 +40,13 @@ namespace Monopoly.App
                 PassedStart p => $"{Name(p.PlayerId)} проходить «Старт»: +{GameRules.Money(p.Amount)}.",
                 RestStarted r => $"{Name(r.PlayerId)} чілить і пропустить наступний хід.",
 
-                SentToJail j => j.Reason == JailReason.ThreeDoubles
-                    ? $"Три дублі поспіль — {Name(j.PlayerId)} вирушає до пєтушатні."
-                    : $"{Name(j.PlayerId)} вирушає до пєтушатні.",
-                JailRollFailed f => $"{Name(f.PlayerId)} не викидає дубль і лишається у пєтушатні (спроба {f.Attempt} з {GameRules.MaxJailAttempts}).",
-                LeftJail l => l.How switch
+                SentToJail j => j.Reason switch
                 {
-                    JailExit.Double => $"{Name(l.PlayerId)} викидає дубль і виходить з пєтушатні.",
-                    JailExit.Bail => $"{Name(l.PlayerId)} платить заставу й виходить з пєтушатні.",
-                    JailExit.Card => $"{Name(l.PlayerId)} виходить з пєтушатні за карткою.",
-                    _ => $"Третя спроба — {Name(l.PlayerId)} мусить заплатити заставу й виходить з пєтушатні.",
+                    JailReason.ThreeDoubles => $"Три дублі поспіль — {Name(j.PlayerId)} вирушає до пєтушатні.",
+                    JailReason.Landed => $"{Name(j.PlayerId)} потрапляє в пєтушатню.",
+                    _ => $"{Name(j.PlayerId)} вирушає до пєтушатні.",
                 },
+                JailCardUsed c => $"{Name(c.PlayerId)} показує картку «Вийти з пєтушатні» — хід не пропускає.",
 
                 PurchaseOffered p => $"«{Cell(p.CellIndex)}» вільна — можна купити за {GameRules.Money(p.Price)}.",
                 PropertyBought b => $"{Name(b.PlayerId)} купує «{Cell(b.CellIndex)}» за {GameRules.Money(b.Price)}.",
@@ -66,7 +64,7 @@ namespace Monopoly.App
                 PaidToPlayer p => $"{Name(p.FromId)} платить {GameRules.Money(p.Amount)} гравцю {Name(p.ToId)}.",
                 DebtIncurred d => $"{Name(d.DebtorId)}: бракує готівки, борг {GameRules.Money(d.Amount)} {Creditor(d.CreditorId)}.",
                 DebtPaid d => $"{Name(d.DebtorId)} закриває борг {GameRules.Money(d.Amount)} {Creditor(d.CreditorId)}.",
-                PlayerBankrupt b => $"{Name(b.PlayerId)} — банкрут і вибуває з гри. Майно переходить {Creditor(b.CreditorId)}.",
+                PlayerBankrupt b => $"{Name(b.PlayerId)} — банкрут і вибуває з гри. Гроші переходять {Creditor(b.CreditorId)}, а компанії повертаються банку — їх знову можна купити.",
 
                 CasinoOffered c => $"{Name(c.PlayerId)} у казино: можна зробити ставку або пройти повз.",
                 CasinoPlayed c => c.Multiplier switch
@@ -125,7 +123,7 @@ namespace Monopoly.App
             ChanceCard.Taxi => "Таксі до найближчої АЗС. Якщо вона чужа — подвійна оренда.",
             ChanceCard.Train => "Поїздка Укрзалізницею: назад на 3 клітинки.",
             ChanceCard.GoToJail => "Вирушайте до пєтушатні.",
-            ChanceCard.GetOutOfJail => "Вийти з пєтушатні безкоштовно. Картку можна зберегти або віддати в обміні.",
+            ChanceCard.GetOutOfJail => "Вийти з пєтушатні безкоштовно. Спрацює сама, коли потрапите в пєтушатню, — хід не пропустите. Картку можна віддати в обміні.",
             _ => card.ToString(),
         };
 
@@ -143,8 +141,6 @@ namespace Monopoly.App
             BuyProperty => snapshot.PendingPurchase is int cell ? $"Купити за {GameRules.Money(Cells[cell].Price)}" : "Купити",
             DeclinePurchase => "Не купувати (аукціон)",
             EndTurn => "Завершити хід",
-            PayBail => $"Застава {GameRules.Money(GameRules.BailAmount)}",
-            UseJailCard => "Картка «Вийти з пєтушатні»",
             PlayCasino c => $"Казино: ставка {GameRules.Money(c.Bet)}",
             PassAuction => "Пас",
             AcceptTrade => "Прийняти обмін",

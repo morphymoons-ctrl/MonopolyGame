@@ -109,14 +109,14 @@ namespace Monopoly.Core
 
         private void SetJail(Player player, bool inJail)
         {
+            // Карточка при этом не тратится: посадил администратор — пропуск хода будет.
             player.IsInJail = inJail;
-            player.JailTurns = 0;
             if (!inJail)
                 return;
 
             player.Position = GameRules.JailCell;
-            // Как при обычном попадании: если он сейчас ходит и уже бросал (дубль), бросков больше нет.
-            if (player == State.CurrentPlayer && State.LastRoll is not null)
+            // Как при обычном попадании: если он сейчас ходит, бросков в этом ходу больше нет.
+            if (player == State.CurrentPlayer)
             {
                 State.DoublesInRow = 0;
                 State.Stage = TurnPhase.Manage;

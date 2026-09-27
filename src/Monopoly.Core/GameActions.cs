@@ -15,11 +15,7 @@ namespace Monopoly.Core
 
     public sealed record EndTurn(int PlayerId) : GameAction(PlayerId);
 
-    // --- Тюрьма и казино ---
-
-    public sealed record PayBail(int PlayerId) : GameAction(PlayerId);
-
-    public sealed record UseJailCard(int PlayerId) : GameAction(PlayerId);
+    // --- Казино ---
 
     public sealed record PlayCasino(int PlayerId, int Bet) : GameAction(PlayerId);
 
