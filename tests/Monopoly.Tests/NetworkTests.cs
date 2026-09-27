@@ -7,7 +7,7 @@ using Monopoly.Net;
 namespace Monopoly.Tests
 {
     // Хост и клиенты по-настоящему соединяются через 127.0.0.1 — как несколько копий игры на одном ПК.
-    public class NetworkTests
+    public partial class NetworkTests
     {
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
 

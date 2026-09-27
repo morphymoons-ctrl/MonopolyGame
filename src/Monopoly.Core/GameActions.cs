@@ -55,4 +55,24 @@ namespace Monopoly.Core
     // --- Долги ---
 
     public sealed record DeclareBankruptcy(int PlayerId) : GameAction(PlayerId);
+
+    // --- Администратор (RULES.md, §14) ---
+
+    // Действия автора игры из Monopoly.Admin. Не от игрока: выполняются только через Game.ExecuteAdmin,
+    // обычный Execute их отклоняет. В список действий партии попадают — для сохранения и Replay.
+    public abstract record AdminAction() : GameAction(AdminId)
+    {
+        public const int AdminId = -1;
+    }
+
+    public sealed record AdminSetBalance(int TargetId, int Amount) : AdminAction;
+
+    // Цена свободной компании.
+    public sealed record AdminSetPrice(int CellIndex, int Price) : AdminAction;
+
+    // OwnerId null — вернуть компанию банку.
+    public sealed record AdminSetOwner(int CellIndex, int? OwnerId) : AdminAction;
+
+    // InJail true — посадить в пєтушатню, false — выпустить.
+    public sealed record AdminSetJail(int TargetId, bool InJail) : AdminAction;
 }

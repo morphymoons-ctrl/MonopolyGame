@@ -55,6 +55,23 @@ namespace Monopoly.Net
         bool InProgress,
         string Address = "");
 
+    // --- Администратор (RULES.md, §14) ---
+
+    // Ответ хоста на приветствие панели: какая это партия и одноразовое число для подписи.
+    public sealed record AdminChallenge(Guid GameId, string Version, byte[] Nonce);
+
+    // Команда: действие администратора текстом JSON (подписывается ровно этот текст), номер и подпись.
+    public sealed record AdminCommand(long Sequence, string ActionJson, byte[] Signature);
+
+    // Всё, что видит панель: лобби, а после старта — состояние партии и цвета игроков.
+    public sealed record AdminView(
+        Guid GameId,
+        string? HostName,
+        LobbyState Lobby,
+        GameSnapshot? Snapshot,
+        IReadOnlyDictionary<int, int> ColorByPlayerId,
+        IReadOnlyList<SeatStatus>? Seats);
+
     // Имена методов клиента, которые вызывает хост.
     internal static class ClientMethods
     {
@@ -62,5 +79,6 @@ namespace Monopoly.Net
         public const string GameStart = "GameStart";
         public const string Update = "Update";
         public const string Notice = "Notice";
+        public const string AdminView = "AdminView";
     }
 }

@@ -106,7 +106,7 @@ namespace Monopoly.Core
         public GameSnapshot ToSnapshot() => new(
             Players.Select(p => new PlayerSnapshot(p.Id, p.Name, p.Balance, p.Position, p.IsInJail, p.IsResting,
                 p.JailCards, p.IsBankrupt)).ToList(),
-            Board.Select(c => new CellSnapshot(c.OwnerId, c.Level, c.IsMortgaged)).ToList(),
+            Board.Select(c => new CellSnapshot(c.OwnerId, c.Level, c.IsMortgaged, c.Price)).ToList(),
             CurrentPlayer.Id,
             Phase,
             LastRoll,

@@ -113,6 +113,10 @@
                         <Button Grid.Row="2" Grid.Column="2" Content="Вийти в меню" FontSize="17" Click="Leave_Click"/>
                     </Grid>
                 </Grid>
+
+                <!-- Обмен — внутри игры, поверх поля (TradePanel). Щелчок по затемнению закрывает. -->
+                <Border Name="TradeOverlay" Background="{StaticResource OverlayDimBrush}" Visibility="Collapsed"
+                        MouseLeftButtonDown="TradeOverlay_MouseDown"/>
             </Grid>
         </Viewbox>
 

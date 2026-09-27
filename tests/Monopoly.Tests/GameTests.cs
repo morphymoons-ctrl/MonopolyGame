@@ -219,7 +219,7 @@ namespace Monopoly.Tests
             Assert.Equal(0, snapshot.CurrentPlayerId);
             Assert.Equal(TurnPhase.Manage, snapshot.Phase);
             Assert.Equal(new DiceRoll(1, 2), snapshot.LastRoll);
-            Assert.Equal(new CellSnapshot(0, 0, false), snapshot.Cells[Silpo]);
+            Assert.Equal(new CellSnapshot(0, 0, false, 140_000), snapshot.Cells[Silpo]);
             Assert.Equal(Board.CellCount, snapshot.Cells.Count);
             Assert.Equal(new PlayerSnapshot(0, "Аня", GameRules.StartingBalance - 140_000, Silpo, false, false, 0, false),
                 snapshot.FindPlayer(0));

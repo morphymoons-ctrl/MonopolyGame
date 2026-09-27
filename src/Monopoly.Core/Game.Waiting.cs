@@ -9,7 +9,7 @@ namespace Monopoly.Core
             var game = Start(playerNames, seed);
             foreach (var action in actions)
             {
-                var result = game.Execute(action);
+                var result = action is AdminAction admin ? game.ExecuteAdmin(admin) : game.Execute(action);
                 if (!result.Success)
                     throw new InvalidDataException($"Збереження не підходить до правил цієї версії: {result.Error}");
             }

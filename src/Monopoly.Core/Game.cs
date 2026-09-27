@@ -98,6 +98,9 @@ namespace Monopoly.Core
         public ActionResult Execute(GameAction action)
         {
             ArgumentNullException.ThrowIfNull(action);
+            // Игрок не может выдать своё действие за действие администратора.
+            if (action is AdminAction)
+                return ActionResult.Fail("Це дія адміністратора.");
 
             var error = Validate(action);
             if (error is not null)

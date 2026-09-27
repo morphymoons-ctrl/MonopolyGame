@@ -76,6 +76,8 @@ namespace Monopoly.App
         {
             // Имена нужны для журнала уже на первых событиях.
             Snapshot ??= update.Snapshot;
+            // Цены могли поменяться (администратор, §14) — поле клиента берёт их у хоста.
+            update.Snapshot.ApplyPrices(board);
             bool coin = false;
             foreach (var e in update.Events)
             {
@@ -119,6 +121,7 @@ namespace Monopoly.App
         public void LoadHistory(GameUpdate update)
         {
             Snapshot = update.Snapshot;
+            update.Snapshot.ApplyPrices(board);
             foreach (var e in update.Events)
             {
                 AddLog(EventText.Describe(e, update.Snapshot));
@@ -282,18 +285,19 @@ namespace Monopoly.App
                 AddText(icon, bar.X, bar.Y + (bar.Height - iconSize * 1.35) / 2, bar.Width, iconSize, FontWeights.Bold, GroupPalette.IconColor(cell.Type), GameFonts.Icons);
             }
 
-            // Рамка логотипа и цена под ней — одной группой по центру места над рядом фишек и полосой владельца.
-            // Рамка одинаковая у всех клеток ряда, поэтому цены стоят на одной линии.
-            double areaTop = c.Y + u * 0.04;
-            double areaBottom = r.Bottom - u * 0.32;
-            double priceHeight = u * 0.19, innerGap = u * 0.05;
-            double boxWidth = c.Width - u * 0.14;
-            double boxHeight = Math.Min(u * 0.6, areaBottom - areaTop - priceHeight - innerGap);
-            double boxTop = areaTop + (areaBottom - areaTop - boxHeight - innerGap - priceHeight) / 2;
-            double detail = boxTop + boxHeight + innerGap;
+            // Логотип — строго по центру клетки (без полосы группы), цена — сразу под ним, над полосой владельца.
+            // Рамка логотипа одинаковая у всех клеток ряда, поэтому цены стоят на одной линии.
+            double priceHeight = u * 0.18, gap = u * 0.02;
+            double priceLimit = r.Bottom - u * 0.1 - priceHeight;
+            double centerY = c.Y + c.Height / 2;
+            double half = Math.Min(u * 0.34, priceLimit - gap - centerY);
+            double boxWidth = c.Width - u * 0.12;
+            double boxHeight = 2 * half;
+            double boxTop = centerY - half;
+            double detail = boxTop + boxHeight + gap;
             if (Logos.For(index) is { } logo)
             {
-                var (width, height) = LogoSize(logo, boxWidth, boxHeight);
+                var (width, height) = LogoSize(logo, boxWidth, boxHeight, u * u * 0.4);
                 var image = new Image
                 {
                     Source = logo,
@@ -383,11 +387,10 @@ namespace Monopoly.App
 
         // Размер логотипа в рамке: все логотипы получают примерно одинаковую площадь, чтобы квадратные
         // не были огромными рядом с узкими широкими. Широкие упираются в ширину рамки, высокие — в высоту.
-        private static (double Width, double Height) LogoSize(ImageSource logo, double boxWidth, double boxHeight)
+        // area — одна на всё поле, чтобы логотипы везде были одного веса.
+        private static (double Width, double Height) LogoSize(ImageSource logo, double boxWidth, double boxHeight, double area)
         {
             double aspect = logo.Width / logo.Height;
-            // Половина рамки: рамки в рядах и столбцах почти равны по площади — логотипы по всему полю одного веса.
-            double area = boxWidth * boxHeight * 0.5;
             double width = Math.Sqrt(area * aspect), height = width / aspect;
             double scale = Math.Min(1, Math.Min(boxWidth / width, boxHeight / height));
             return (width * scale, height * scale);
@@ -460,9 +463,11 @@ namespace Monopoly.App
         private void PlaceToken(int playerId, int cell, int slot, int animationMs)
         {
             double u = Unit;
-            var r = board[cell].IsPurchasable ? CompanyLayout(cell, CellRect(cell)).Content : CellRect(cell);
+            bool company = board[cell].IsPurchasable;
+            var r = company ? CompanyLayout(cell, CellRect(cell)).Content : CellRect(cell);
             double x = r.X + u * 0.06 + slot * u * 0.24;
-            double y = r.Bottom - u * 0.3;
+            // На компании низ занят ценой — фишки стоят вверху клетки, над логотипом.
+            double y = company ? r.Y + u * 0.05 : r.Bottom - u * 0.3;
             var token = Token(playerId);
             if (animationMs <= 0)
             {

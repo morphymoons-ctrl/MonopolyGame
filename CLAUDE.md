@@ -18,6 +18,7 @@
 | `src/Monopoly.Core/` | Правила и состояние игры. **Никакого WPF и сети** — только чистый C#, чтобы движок можно было тестировать и запускать на хосте. |
 | `src/Monopoly.Net/` | Сеть: хост (ASP.NET Core + SignalR внутри приложения), клиент, лобби, поиск игр по UDP. Порт 7777. |
 | `src/Monopoly.App/` | WPF-клиент, собирается в `Monopoly.exe`. Показывает состояние и отправляет действия; правила здесь не пишем. |
+| `src/Monopoly.Admin/` | Панель администратора (`Monopoly.Admin.exe`, RULES.md §14) — **только для ПК автора, друзьям не раздаётся**. Команды подписываются секретным ключом из `%AppData%\Monopoly\admin.key` (зашифрован DPAPI, в репозиторий не попадает); открытый ключ — `AdminAuth.OwnerPublicKey`. |
 | `tests/Monopoly.Tests/` | Тесты xUnit для `Monopoly.Core` и `Monopoly.Net` (сетевые — через настоящий хост на 127.0.0.1). |
 | `Directory.Build.props` | Общие настройки и **версия игры** (`<Version>`). Клиенты разных версий не должны играть вместе. |
 
@@ -26,6 +27,7 @@
 - Сборка: `dotnet build MonopolyGame.sln`
 - Тесты: `dotnet test MonopolyGame.sln`
 - Запуск: `dotnet run --project src/Monopoly.App`
+- Панель администратора: `dotnet run --project src/Monopoly.Admin`
 - Сеть без друзей: запустить две копии, в первой «Создать игру», во второй подключиться к `127.0.0.1`.
 
 ## Правила работы

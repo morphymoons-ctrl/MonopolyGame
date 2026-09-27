@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Monopoly.Core;
 using Monopoly.Net;
@@ -440,16 +441,37 @@ namespace Monopoly.App
 
         // --- Нижние кнопки ---
 
-        private async void Trade_Click(object sender, RoutedEventArgs e)
+        private void Trade_Click(object sender, RoutedEventArgs e)
         {
             if (Snapshot is null)
             {
                 return;
             }
-            var window = new TradeWindow(Snapshot, MyId, gameManager.PlayerColor) { Owner = Window.GetWindow(this) };
-            if (window.ShowDialog() == true && window.Proposal is { } proposal)
+            var panel = new TradePanel(Snapshot, MyId, gameManager.PlayerColor);
+            panel.Finished += async proposal =>
             {
-                await SendAsync(proposal);
+                CloseTrade();
+                if (proposal is not null)
+                {
+                    await SendAsync(proposal);
+                }
+            };
+            TradeOverlay.Child = panel;
+            TradeOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void CloseTrade()
+        {
+            TradeOverlay.Child = null;
+            TradeOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        // Щелчок по затемнению вокруг карточки обмена — отмена.
+        private void TradeOverlay_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource == TradeOverlay)
+            {
+                CloseTrade();
             }
         }
 

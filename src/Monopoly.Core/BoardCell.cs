@@ -9,7 +9,8 @@ namespace Monopoly.Core
     {
         public string Name { get; }
         public CellType Type { get; }
-        public int Price { get; }
+        // Меняется только администратором (§14) — у свободной компании.
+        public int Price { get; internal set; }
         // Id владельца; null — компания у банка.
         public int? OwnerId { get; internal set; }
         // 0 — без филиалов, 1–4 — филиалы, 5 — головной офис.

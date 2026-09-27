@@ -1,4 +1,6 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
@@ -17,6 +19,8 @@ namespace Monopoly.Net
         public TimeSpan BotDelay { get; init; } = NetDefaults.BotDelay;
         // Куда сохранять партию после каждого действия; null — не сохранять.
         public SaveStore? Saves { get; init; }
+        // Открытый ключ администратора (§14). Тесты подставляют свой.
+        public string AdminPublicKey { get; init; } = AdminAuth.OwnerPublicKey;
     }
 
     // Сервер игры внутри приложения того, кто создал игру. Только он выполняет правила,
@@ -41,6 +45,9 @@ namespace Monopoly.Net
         private TimeSpan? finalDuration;
         // Описание для ответа на поиск; обновляется после каждой операции, читается из потока UDP.
         private volatile DiscoveredGame discoveryInfo;
+        // Подключения панели администратора: одноразовое число, вошла ли панель, номер последней команды.
+        private readonly Dictionary<string, AdminSession> admins = new();
+        private static readonly JsonSerializerOptions Json = ProtocolJson.CreateOptions();
 
         public int Port => options.Port;
         // Передаётся собственному клиенту хоста, чтобы лобби узнало хоста.
@@ -157,8 +164,70 @@ namespace Monopoly.Net
             return await ApplyAsync(action with { PlayerId = playerId });
         });
 
+        // --- Панель администратора (RULES.md, §14) ---
+
+        // Приветствие: новое одноразовое число. Случайность здесь криптографическая, к правилам игры не относится.
+        internal Task<AdminChallenge> AdminHelloAsync(string connectionId) => Locked(() =>
+        {
+            var nonce = RandomNumberGenerator.GetBytes(32);
+            admins[connectionId] = new AdminSession(nonce);
+            return Task.FromResult(new AdminChallenge(gameId, NetDefaults.GameVersion, nonce));
+        });
+
+        // Вход: подпись одноразового числа. Одна попытка на число — при ошибке нужно новое приветствие.
+        internal Task<string?> AdminLoginAsync(string connectionId, byte[] signature) => Locked(async () =>
+        {
+            if (!admins.TryGetValue(connectionId, out var session))
+                return "Немає доступу.";
+            if (!AdminAuth.Verify(options.AdminPublicKey, AdminAuth.LoginData(gameId, session.Nonce), signature))
+            {
+                admins.Remove(connectionId);
+                return "Немає доступу.";
+            }
+            session.LoggedIn = true;
+            await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.AdminView, MakeAdminView());
+            return (string?)null;
+        });
+
+        internal Task<string?> AdminExecuteAsync(string connectionId, AdminCommand command) => Locked(async () =>
+        {
+            if (!admins.TryGetValue(connectionId, out var session) || !session.LoggedIn)
+                return "Немає доступу.";
+            if (command.Sequence <= session.LastSequence)
+                return "Цю команду вже виконано.";
+            if (!AdminAuth.Verify(options.AdminPublicKey,
+                    AdminAuth.CommandData(gameId, session.Nonce, command.Sequence, command.ActionJson ?? ""), command.Signature))
+                return "Немає доступу.";
+            session.LastSequence = command.Sequence;
+
+            if (game is null)
+                return "Гра ще не почалася.";
+            AdminAction? action;
+            try
+            {
+                action = JsonSerializer.Deserialize<GameAction>(command.ActionJson!, Json) as AdminAction;
+            }
+            catch (JsonException)
+            {
+                action = null;
+            }
+            if (action is null)
+                return "Невідома дія.";
+
+            // Тихо и без сброса таймера хода: lastChange не трогаем.
+            var result = game.ExecuteAdmin(action);
+            if (!result.Success)
+                return result.Error;
+            if (game.State.Phase == TurnPhase.GameOver)
+                finalDuration ??= Played(Now);
+            Save();
+            await SendUpdateAsync(result.Events);
+            return null;
+        });
+
         internal Task DisconnectedAsync(string connectionId) => Locked(async () =>
         {
+            admins.Remove(connectionId);
             var name = lobby.FindName(connectionId);
             lobby.Leave(connectionId, Now);
             if (name is null)
@@ -271,7 +340,22 @@ namespace Monopoly.Net
             return error;
         });
 
-        private Task SendLobbyAsync() => SendToAllAsync(ClientMethods.Lobby, lobby.GetState());
+        private async Task SendLobbyAsync()
+        {
+            await SendToAllAsync(ClientMethods.Lobby, lobby.GetState());
+            await SendAdminViewAsync();
+        }
+
+        // Панели администратора — всё состояние после каждого изменения.
+        private async Task SendAdminViewAsync()
+        {
+            var connections = admins.Where(a => a.Value.LoggedIn).Select(a => a.Key).ToList();
+            if (connections.Count > 0)
+                await Hub.Clients.Clients(connections).SendAsync(ClientMethods.AdminView, MakeAdminView());
+        }
+
+        private AdminView MakeAdminView() => new(gameId, lobby.HostName, lobby.GetState(), game?.State.ToSnapshot(),
+            lobby.ColorByPlayerId(), game is null ? null : lobby.SeatStatuses(Now, options.BotTakeover));
 
         private async Task SendToAllAsync(string method, object message)
         {
@@ -286,6 +370,7 @@ namespace Monopoly.Net
                 return;
             foreach (var (connection, playerId) in lobby.Connections())
                 await Hub.Clients.Client(connection).SendAsync(ClientMethods.Update, MakeUpdate(events, playerId!.Value));
+            await SendAdminViewAsync();
         }
 
         private GameUpdate MakeUpdate(IReadOnlyList<GameEvent> events, int playerId, bool resync = false)
@@ -353,6 +438,24 @@ namespace Monopoly.Net
 
         public Task<string?> SendAction(ActionRequest request) => host.ExecuteAsync(Context.ConnectionId, request.Action);
 
+        public Task<AdminChallenge> AdminHello() => host.AdminHelloAsync(Context.ConnectionId);
+
+        public Task<string?> AdminLogin(byte[] signature) => host.AdminLoginAsync(Context.ConnectionId, signature);
+
+        public Task<string?> AdminExecute(AdminCommand command) => host.AdminExecuteAsync(Context.ConnectionId, command);
+
         public override Task OnDisconnectedAsync(Exception? exception) => host.DisconnectedAsync(Context.ConnectionId);
+    }
+
+    internal sealed class AdminSession
+    {
+        public byte[] Nonce { get; }
+        public bool LoggedIn { get; set; }
+        public long LastSequence { get; set; }
+
+        public AdminSession(byte[] nonce)
+        {
+            Nonce = nonce;
+        }
     }
 }

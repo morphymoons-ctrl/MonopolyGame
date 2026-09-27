@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Панель администратора (RULES.md, §14): только для ПК автора игры, друзьям не раздаётся.
+       Работает лишь с секретным ключом из %AppData%\Monopoly\admin.key. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Monopoly.Admin</AssemblyName>
+    <RootNamespace>Monopoly.Admin</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Monopoly.Core\Monopoly.Core.csproj" />
+    <ProjectReference Include="..\Monopoly.Net\Monopoly.Net.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Тема и цвета — общие с игрой. -->
+    <Page Include="..\Monopoly.App\Theme.xaml" Link="Theme.xaml" />
+    <Compile Include="..\Monopoly.App\PlayerPalette.cs" Link="PlayerPalette.cs" />
+  </ItemGroup>
+
+</Project>
