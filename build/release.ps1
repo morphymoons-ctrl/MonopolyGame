@@ -67,7 +67,7 @@ if (-not $DryRun) {
 }
 
 Run "Пакування (Velopack)" {
-    vpk pack --packId MonopolyGame --packVersion $version --packDir $publishDir --mainExe Monopoly.exe `
+    vpk pack --packId MonopolyGame --packVersion $version --packDir $publishDir --mainExe Monopoly.exe --runtime win-x64 `
         --packTitle "Монополія" --packAuthors "Denchik" -o $releasesDir
 }
 
