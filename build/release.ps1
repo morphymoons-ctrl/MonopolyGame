@@ -36,8 +36,12 @@ if (-not $DryRun) {
     $head = git -C $root rev-parse HEAD
     $remote = git -C $root rev-parse origin/main
     if ($head -ne $remote) { throw "Коміт не запушено на GitHub (HEAD $head, origin/main $remote). Спершу git push." }
-    gh release view "v$version" --repo $repoUrl 2>$null | Out-Null
-    if ($LASTEXITCODE -eq 0) { throw "Випуск v$version уже є. Підніміть <Version> у Directory.Build.props." }
+    # «release not found» приходит в поток ошибок — в PowerShell 5.1 со Stop это исключение, поэтому проверяем мягко.
+    $ErrorActionPreference = "Continue"
+    gh release view "v$version" --repo $repoUrl 2>&1 | Out-Null
+    $exists = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = "Stop"
+    if ($exists) { throw "Випуск v$version уже є. Підніміть <Version> у Directory.Build.props." }
     $token = gh auth token
     if (-not $token) { throw "Немає входу в GitHub CLI: gh auth login." }
 }
@@ -55,8 +59,11 @@ New-Item -ItemType Directory -Force $releasesDir | Out-Null
 if (-not $DryRun) {
     # Прошлый выпуск нужен, чтобы собрать дельту: друзья скачают только изменения, а не всю игру.
     Write-Host "==> Попередній випуск для дельти" -ForegroundColor Cyan
-    vpk download github --repoUrl $repoUrl --token $token -o $releasesDir
-    if ($LASTEXITCODE -ne 0) { Write-Host "Попереднього випуску немає — буде лише повний пакет." }
+    $ErrorActionPreference = "Continue"
+    vpk download github --repoUrl $repoUrl --token $token -o $releasesDir 2>&1 | Out-Host
+    $downloaded = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = "Stop"
+    if (-not $downloaded) { Write-Host "Попереднього випуску немає — буде лише повний пакет." }
 }
 
 Run "Пакування (Velopack)" {
