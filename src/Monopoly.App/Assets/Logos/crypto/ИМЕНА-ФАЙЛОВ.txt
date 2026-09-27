@@ -1,0 +1,32 @@
+Логотипы доски «Криптовалюти».
+Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Dogecoin                   dogecoin.png
+Shiba Inu                  shiba-inu.png
+Pepe                       pepe.png
+Ферма в гаражі             ferma-harazh.png
+Binance                    binance.png
+Coinbase                   coinbase.png
+WhiteBIT                   whitebit.png
+MetaMask                   metamask.png
+Trust Wallet               trust-wallet.png
+Ledger                     ledger.png
+Ферма в Техасі             ferma-tekhas.png
+Solana                     solana.png
+TON                        ton.png
+Cardano                    cardano.png
+Bored Ape                  bored-ape.png
+CryptoPunks                cryptopunks.png
+Pudgy Penguins             pudgy-penguins.png
+Ферма в Ісландії           ferma-islandiia.png
+USDT                       usdt.png
+USDC                       usdc.png
+Uniswap                    uniswap.png
+Aave                       aave.png
+PancakeSwap                pancakeswap.png
+Ферма в Казахстані         ferma-kazakhstan.png
+BNB                        bnb.png
+Ethereum                   ethereum.png
+Bitcoin                    bitcoin.png

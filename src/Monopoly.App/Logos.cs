@@ -8,11 +8,13 @@ using Monopoly.Core;
 
 namespace Monopoly.App
 {
-    // Логотипы компаний на клетках: Assets/Logos/*.png, вшиты в Monopoly.exe.
-    // Нет файла — на клетке остаётся название. Файлы названы по старым названиям клеток, номер клетки — индекс в списке.
+    // Логотипы компаний на клетках: Assets/Logos/<папка доски>/*.png, вшиты в Monopoly.exe.
+    // У каждой доски (RULES.md, §15) своя папка. Нет файла — на клетке остаётся название.
+    // Номер в списке — номер клетки; у углов и особых клеток логотипа нет (null).
     public static class Logos
     {
-        private static readonly string?[] Files =
+        // «Українські бізнеси»: файлы названы по старым названиям клеток.
+        private static readonly string?[] BusinessFiles =
         {
             null, "atb", "varus", "silpo", "wog", "arcelormittal", "stasik", "azovstal",
             null, "tet", "novyi-kanal", "intel", "okko", "puzata-hata", "pizza-day", "bulochna-1",
@@ -20,27 +22,68 @@ namespace Monopoly.App
             null, "pumb", "privatbank", "monobank", "ukrnafta", "allo", "citrus", "foxtrot",
         };
 
-        private static readonly Dictionary<int, ImageSource?> Cache = new();
+        // «Військова інфраструктура України»: латиницей по названиям клеток.
+        private static readonly string?[] MilitaryFiles =
+        {
+            null, "pikhota", "lehka-bronetekhnika", "tankovi-viiska", "ok-pivnich", "bronetankovyi-zavod", "zavod-boieprypasiv", "raketnyi-zavod",
+            null, "viiskovyi-zviazok", "reb", "rozvidka", "ok-skhid", "minometna-bataria", "haubychna-artyleriia", "rszv-himars",
+            null, null, "fpv-drony", "rozviduvalni-bpla", "udarni-bpla", "ok-pivden", "viiskova-zaliznytsia", "medychna-sluzhba",
+            null, "morska-pikhota", "katery", "morski-drony", "ok-zakhid", "zrk-buk", "iris-t", "patriot",
+        };
 
-        // Логотипы есть только у основной доски; на военной (§15) на клетках — названия.
+        // «Уряд України».
+        private static readonly string?[] GovernmentFiles =
+        {
+            null, "patrulna-politsiia", "natsionalna-politsiia", "natsgvardiia", "kpp-yahodyn", "sbu", "hur", "szru",
+            null, "nazk", "sap", "nabu", "kpp-chop", "pecherskyi-sud", "verkhovnyi-sud", "konstytutsiinyi-sud",
+            null, null, "podatkova", "mytnytsia", "beb", "kpp-krakovets", "naftohaz", "ukrenerho",
+            null, "diia", "rezerv-plus", "armiia-plus", "kpp-shehyni", "kabmin", "verkhovna-rada", "ofis-prezydenta",
+        };
+
+        // «Криптовалюти».
+        private static readonly string?[] CryptoFiles =
+        {
+            null, "dogecoin", "shiba-inu", "pepe", "ferma-harazh", "binance", "coinbase", "whitebit",
+            null, "metamask", "trust-wallet", "ledger", "ferma-tekhas", "solana", "ton", "cardano",
+            null, null, "bored-ape", "cryptopunks", "pudgy-penguins", "ferma-islandiia", "usdt", "usdc",
+            null, "uniswap", "aave", "pancakeswap", "ferma-kazakhstan", "bnb", "ethereum", "bitcoin",
+        };
+
+        // «Відеоігри».
+        private static readonly string?[] GamesFiles =
+        {
+            null, "brawl-stars", "clash-royale", "subway-surfers", "steam", "valorant", "call-of-duty", "cs2",
+            null, "stardew-valley", "terraria", "hollow-knight", "epic-games", "kozaky-3", "metro-exodus", "stalker-2",
+            null, null, "roblox", "garrys-mod", "minecraft", "playstation", "twitch", "youtube",
+            null, "pubg", "apex-legends", "fortnite", "xbox", "witcher-3", "gta-5", "dota-2",
+        };
+
+        private static readonly Dictionary<(BoardTheme, int), ImageSource?> Cache = new();
+
         public static ImageSource? For(int cellIndex, BoardTheme theme)
         {
-            if (theme != BoardTheme.Business)
-                return null;
-            if (Cache.TryGetValue(cellIndex, out var cached))
+            if (Cache.TryGetValue((theme, cellIndex), out var cached))
             {
                 return cached;
             }
-            var logo = cellIndex < Files.Length && Files[cellIndex] is { } file ? Load(file) : null;
-            Cache[cellIndex] = logo;
+            var (folder, files) = theme switch
+            {
+                BoardTheme.Military => ("military", MilitaryFiles),
+                BoardTheme.Government => ("government", GovernmentFiles),
+                BoardTheme.Crypto => ("crypto", CryptoFiles),
+                BoardTheme.Games => ("games", GamesFiles),
+                _ => ("business", BusinessFiles),
+            };
+            var logo = cellIndex < files.Length && files[cellIndex] is { } file ? Load(folder, file) : null;
+            Cache[(theme, cellIndex)] = logo;
             return logo;
         }
 
-        private static ImageSource? Load(string file)
+        private static ImageSource? Load(string folder, string file)
         {
             try
             {
-                var resource = Application.GetResourceStream(new Uri($"pack://application:,,,/Assets/Logos/{file}.png"));
+                var resource = Application.GetResourceStream(new Uri($"pack://application:,,,/Assets/Logos/{folder}/{file}.png"));
                 if (resource is null)
                 {
                     return null;

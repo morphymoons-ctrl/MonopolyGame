@@ -14,24 +14,48 @@ namespace Monopoly.App
         string RestSkipped,   // «… пропускає хід («Зачілься»)»
         string RestStarted,   // «… чілить і пропустить наступний хід»
         string RestNote,      // пометка у игрока: «чілить» / «у відпустці»
-        string CasinoOffered, // «… у казино» / «… сідає за карти в бліндажі»
-        string StationShort)  // группа с арендой по числу клеток: «2 АЗС у власника» / «2 ОК у власника»
+        string CasinoOffered) // «… у казино» / «… сідає за карти в бліндажі»
     {
         public static readonly ThemeWords Business = new(
             "у пєтушатні", "до пєтушатні", "в пєтушатню", "з пєтушатні", "Вийти з пєтушатні",
             "пропускає хід («Зачілься»)", "чілить і пропустить наступний хід", "чілить",
-            "у казино", "АЗС");
+            "у казино");
 
         public static readonly ThemeWords Military = new(
             "на гауптвахті", "на гауптвахту", "на гауптвахту", "з гауптвахти", "Амністія від командира",
             "у відпустці й пропускає хід", "їде у відпустку й пропустить наступний хід", "у відпустці",
-            "сідає за карти в бліндажі", "ОК");
+            "сідає за карти в бліндажі");
 
-        public static ThemeWords For(BoardTheme theme) => theme == BoardTheme.Military ? Military : Business;
+        public static readonly ThemeWords Government = new(
+            "у СІЗО", "до СІЗО", "у СІЗО", "із СІЗО", "Помилування від президента",
+            "у закордонному відрядженні й пропускає хід", "їде у закордонне відрядження й пропустить наступний хід", "у відрядженні",
+            "тисне кнопки в Раді");
+
+        public static readonly ThemeWords Crypto = new(
+            "під блокуванням", "під блокування", "під блокування", "з-під блокування", "Верифікація KYC",
+            "холдить і пропускає хід (HODL)", "іде в HODL і пропустить наступний хід", "холдить",
+            "відкриває позицію з плечем");
+
+        public static readonly ThemeWords Games = new(
+            "у бані", "у бан", "у бан", "з бану", "Розбан від модератора",
+            "в AFK і пропускає хід", "іде в AFK і пропустить наступний хід", "AFK",
+            "відкриває кейси в CS");
+
+        public static ThemeWords For(BoardTheme theme) => theme switch
+        {
+            BoardTheme.Military => Military,
+            BoardTheme.Government => Government,
+            BoardTheme.Crypto => Crypto,
+            BoardTheme.Games => Games,
+            _ => Business,
+        };
 
         public static string ThemeName(BoardTheme theme) => theme switch
         {
             BoardTheme.Military => "Військова інфраструктура України",
+            BoardTheme.Government => "Уряд України",
+            BoardTheme.Crypto => "Криптовалюти",
+            BoardTheme.Games => "Відеоігри",
             _ => "Українські бізнеси",
         };
     }

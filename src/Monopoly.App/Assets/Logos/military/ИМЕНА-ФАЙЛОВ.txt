@@ -1,0 +1,32 @@
+Логотипы доски «Військова інфраструктура України».
+Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Піхота                     pikhota.png
+Легка бронетехніка         lehka-bronetekhnika.png
+Танкові війська            tankovi-viiska.png
+ОК „Північ“                ok-pivnich.png
+Бронетанковий завод        bronetankovyi-zavod.png
+Завод боєприпасів          zavod-boieprypasiv.png
+Ракетний завод             raketnyi-zavod.png
+Військовий зв'язок         viiskovyi-zviazok.png
+РЕБ                        reb.png
+Розвідка                   rozvidka.png
+ОК „Схід“                  ok-skhid.png
+Мінометна батарея          minometna-bataria.png
+Гаубична артилерія         haubychna-artyleriia.png
+РСЗВ HIMARS                rszv-himars.png
+FPV-дрони                  fpv-drony.png
+Розвідувальні БПЛА         rozviduvalni-bpla.png
+Ударні БПЛА                udarni-bpla.png
+ОК „Південь“               ok-pivden.png
+Військова залізниця        viiskova-zaliznytsia.png
+Медична служба             medychna-sluzhba.png
+Морська піхота             morska-pikhota.png
+Катери                     katery.png
+Морські дрони              morski-drony.png
+ОК „Захід“                 ok-zakhid.png
+ЗРК „Бук“                  zrk-buk.png
+IRIS-T                     iris-t.png
+Patriot                    patriot.png

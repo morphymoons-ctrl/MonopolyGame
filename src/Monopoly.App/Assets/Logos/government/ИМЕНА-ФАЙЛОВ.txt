@@ -1,0 +1,32 @@
+Логотипы доски «Уряд України».
+Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Патрульна поліція          patrulna-politsiia.png
+Національна поліція        natsionalna-politsiia.png
+Національна гвардія        natsgvardiia.png
+КПП „Ягодин“               kpp-yahodyn.png
+СБУ                        sbu.png
+ГУР                        hur.png
+СЗРУ                       szru.png
+НАЗК                       nazk.png
+САП                        sap.png
+НАБУ                       nabu.png
+КПП „Чоп“                  kpp-chop.png
+Печерський суд             pecherskyi-sud.png
+Верховний Суд              verkhovnyi-sud.png
+Конституційний Суд         konstytutsiinyi-sud.png
+Податкова                  podatkova.png
+Митниця                    mytnytsia.png
+БЕБ                        beb.png
+КПП „Краковець“            kpp-krakovets.png
+Нафтогаз                   naftohaz.png
+Укренерго                  ukrenerho.png
+Дія                      diia.png
+Резерв+                  rezerv-plus.png
+Армія+                   armiia-plus.png
+КПП „Шегині“               kpp-shehyni.png
+Кабмін                     kabmin.png
+Верховна Рада              verkhovna-rada.png
+Офіс Президента            ofis-prezydenta.png

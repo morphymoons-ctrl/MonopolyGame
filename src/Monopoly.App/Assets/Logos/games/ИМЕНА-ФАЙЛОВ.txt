@@ -1,0 +1,32 @@
+Логотипы доски «Відеоігри».
+Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Brawl Stars                brawl-stars.png
+Clash Royale               clash-royale.png
+Subway Surfers             subway-surfers.png
+Steam                      steam.png
+Valorant                   valorant.png
+Call of Duty               call-of-duty.png
+Counter-Strike 2           cs2.png
+Stardew Valley             stardew-valley.png
+Terraria                   terraria.png
+Hollow Knight              hollow-knight.png
+Epic Games                 epic-games.png
+Козаки 3                   kozaky-3.png
+Metro Exodus               metro-exodus.png
+S.T.A.L.K.E.R. 2           stalker-2.png
+Roblox                     roblox.png
+Garry's Mod                garrys-mod.png
+Minecraft                  minecraft.png
+PlayStation                playstation.png
+Twitch                     twitch.png
+YouTube                    youtube.png
+PUBG                       pubg.png
+Apex Legends               apex-legends.png
+Fortnite                   fortnite.png
+Xbox                       xbox.png
+The Witcher 3              witcher-3.png
+GTA V                      gta-5.png
+Dota 2                     dota-2.png

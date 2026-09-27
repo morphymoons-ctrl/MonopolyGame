@@ -46,7 +46,7 @@ namespace Monopoly.App
                 GameStarted g => $"Партію розпочато. Порядок ходів: {string.Join(", ", g.TurnOrder.Select(Name))}.",
                 TurnStarted t => $"Ходить {Name(t.PlayerId)}.",
                 TurnSkipped s => s.Reason == SkipReason.Jail
-                    ? $"{Name(s.PlayerId)} сидить {words.InJail} й пропускає хід."
+                    ? $"{Name(s.PlayerId)} сидить {words.InJail} {And(words.InJail)} пропускає хід."
                     : $"{Name(s.PlayerId)} {words.RestSkipped}.",
                 GameOver g => $"Гру закінчено! Перемога: {Name(g.WinnerId)}.",
 
@@ -106,6 +106,10 @@ namespace Monopoly.App
             };
         }
 
+        // Союз «і» / «й» по правилу милозвучності: после гласной — «й» («у пєтушатні й»), после согласной — «і» («під блокуванням і»).
+        private static string And(string before) =>
+            before.Length > 0 && "аеєиіїоуюяАЕЄИІЇОУЮЯ".Contains(before[^1]) ? "й" : "і";
+
         public static string DescribeOffer(TradeOffer offer, GameSnapshot snapshot)
         {
             string Terms(TradeTerms terms)
@@ -121,7 +125,83 @@ namespace Monopoly.App
             return $"віддає {Terms(offer.Give)}, просить {Terms(offer.Take)}.";
         }
 
-        public static string CardText(ChanceCard card) => Theme == BoardTheme.Military ? MilitaryCardText(card) : BusinessCardText(card);
+        public static string CardText(ChanceCard card) => Theme switch
+        {
+            BoardTheme.Military => MilitaryCardText(card),
+            BoardTheme.Government => GovernmentCardText(card),
+            BoardTheme.Crypto => CryptoCardText(card),
+            BoardTheme.Games => GamesCardText(card),
+            _ => BusinessCardText(card),
+        };
+
+        // Карточки «Лутбокса» доски «Відеоігри»: те же действия, другие тексты (§15).
+        private static string GamesCardText(ChanceCard card) => card switch
+        {
+            ChanceCard.TaxRefund => $"Випав ніж із кейса — продали на ринку Steam: +{CardAmount(card)}.",
+            ChanceCard.ProjectBonus => $"Виграли кіберспортивний турнір: +{CardAmount(card)}.",
+            ChanceCard.DancerRefund => $"Донат від глядача на стрімі: +{CardAmount(card)}.",
+            ChanceCard.Cashback => $"Steam повернув гроші за гру: +{CardAmount(card)}.",
+            ChanceCard.Birthday => $"Ви затащили катку — кожен гравець кидає вам {GameRules.Money(ChanceCards.BirthdayGift)} на скін.",
+            ChanceCard.ParkingFine => $"Лаги на сервері, злили рейтинг: −{CardAmount(card)}.",
+            ChanceCard.Utilities => $"Нова відеокарта: −{CardAmount(card)}.",
+            ChanceCard.Streaming => $"Купили гру на старті, а вона вийшла сирою: −{CardAmount(card)}.",
+            ChanceCard.MassageFinish => $"Мама вимкнула роутер посеред катки: −{CardAmount(card)}.",
+            ChanceCard.Charity => $"Подарували гру кожному з друзів: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Рахунки за хостинг: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожен сервер і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за турнірну арену.",
+            ChanceCard.GoToStart => $"Вихід у головне меню: уперед до «{Cells[0].Name}».",
+            ChanceCard.NovaPoshta => $"Запросили на стрім: уперед до «{Cells[22].Name}».",
+            ChanceCard.Taxi => "До найближчої платформи. Якщо вона чужа — подвійна оренда.",
+            ChanceCard.Train => "Відкат сейву: назад на 3 клітинки.",
+            ChanceCard.GoToJail => "Античит спрацював: у бан!",
+            ChanceCard.GetOutOfJail => "Розбан від модератора. Спрацює сам, коли потрапите в бан, — хід не пропустите. Картку можна віддати в обміні.",
+            _ => card.ToString(),
+        };
+
+        // Карточки «Твіт Ілона» доски «Криптовалюти»: те же действия, другие тексты (§15).
+        private static string CryptoCardText(ChanceCard card) => card switch
+        {
+            ChanceCard.TaxRefund => $"Ілон твітнув про ваш коїн: +{CardAmount(card)}.",
+            ChanceCard.ProjectBonus => $"Прилетів аірдроп: +{CardAmount(card)}.",
+            ChanceCard.DancerRefund => $"Продали NFT з мавпою якомусь диваку: +{CardAmount(card)}.",
+            ChanceCard.Cashback => $"Стейкінг приніс відсотки: +{CardAmount(card)}.",
+            ChanceCard.Birthday => $"Ви запустили мемкоїн — кожен гравець купує на {GameRules.Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.ParkingFine => $"Комісія мережі Ethereum знову злетіла: −{CardAmount(card)}.",
+            ChanceCard.Utilities => $"Рахунок за світло від майнінг-ферми: −{CardAmount(card)}.",
+            ChanceCard.Streaming => $"Купили на хаях: −{CardAmount(card)}.",
+            ChanceCard.MassageFinish => $"Відправили USDT не в ту мережу: −{CardAmount(card)}.",
+            ChanceCard.Charity => $"Підписались на «сигнали» в Telegram: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Податкова дізналася про ваш крипто-дохід: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожну ноду і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за дата-центр.",
+            ChanceCard.GoToStart => $"Халвінг! Уперед до «{Cells[0].Name}».",
+            ChanceCard.NovaPoshta => $"Втеча в стейбли: уперед до «{Cells[22].Name}».",
+            ChanceCard.Taxi => "Терміново треба хешрейт: до найближчої майнінг-ферми. Якщо вона чужа — подвійна оренда.",
+            ChanceCard.Train => "Ринок пішов у корекцію: назад на 3 клітинки.",
+            ChanceCard.GoToJail => "Біржа заблокувала акаунт до з'ясування!",
+            ChanceCard.GetOutOfJail => "Верифікація KYC пройдена. Спрацює сама, коли акаунт заблокують, — хід не пропустите. Картку можна віддати в обміні.",
+            _ => card.ToString(),
+        };
+
+        // Карточки «Указу» доски «Уряд України»: те же действия, тексты — сатира на публичные мемы (§15).
+        private static string GovernmentCardText(ChanceCard card) => card switch
+        {
+            ChanceCard.TaxRefund => $"Нацкешбек повернувся з відсотками: +{CardAmount(card)}.",
+            ChanceCard.ProjectBonus => $"Премія за «Велике будівництво»: +{CardAmount(card)}.",
+            ChanceCard.DancerRefund => $"Вас покликали на телемарафон «Єдині новини» — гонорар: +{CardAmount(card)}.",
+            ChanceCard.Cashback => $"«Вовина тисяча», тільки з нулями: +{CardAmount(card)}.",
+            ChanceCard.Birthday => $"Єрмак сказав, що «все вирішено»: кожен гравець платить вам {GameRules.Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.ParkingFine => $"Кличко нагадав: «Не всі можуть дивитися в завтра». Ви не змогли — штраф −{CardAmount(card)}.",
+            ChanceCard.Utilities => $"Уряд знову переглянув тарифи: −{CardAmount(card)}.",
+            ChanceCard.Streaming => $"Підвищили військовий збір: −{CardAmount(card)}.",
+            ChanceCard.MassageFinish => $"Проспали вечірнє звернення президента: −{CardAmount(card)}.",
+            ChanceCard.Charity => $"Скидаємося на зйомки «Слуга народу 4»: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Перевірка НАБУ: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожен відділ і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за головне управління.",
+            ChanceCard.GoToStart => $"Термінове засідання на Банковій: уперед до «{Cells[0].Name}».",
+            ChanceCard.NovaPoshta => $"Позачергова нарада в енергетиці: уперед до «{Cells[22].Name}».",
+            ChanceCard.Taxi => "Поїхали «на лікування» за кордон: до найближчого КПП. Якщо він чужий — подвійна оренда.",
+            ChanceCard.Train => "Реформу знову відклали: назад на 3 клітинки.",
+            ChanceCard.GoToJail => "«Весна прийде — саджати будемо»: у СІЗО!",
+            ChanceCard.GetOutOfJail => "Помилування від президента. Спрацює саме, коли потрапите в СІЗО, — хід не пропустите. Картку можна віддати в обміні.",
+            _ => card.ToString(),
+        };
 
         // Карточки «Наказу» военной доски: те же действия, другие тексты (§15).
         private static string MilitaryCardText(ChanceCard card) => card switch
@@ -191,7 +271,56 @@ namespace Monopoly.App
             _ => action.GetType().Name,
         };
 
-        public static string GroupName(CellType type) => Theme == BoardTheme.Military ? MilitaryGroupName(type) : BusinessGroupName(type);
+        public static string GroupName(CellType type) => Theme switch
+        {
+            BoardTheme.Military => MilitaryGroupName(type),
+            BoardTheme.Government => GovernmentGroupName(type),
+            BoardTheme.Crypto => CryptoGroupName(type),
+            BoardTheme.Games => GamesGroupName(type),
+            _ => BusinessGroupName(type),
+        };
+
+        private static string GamesGroupName(CellType type) => type switch
+        {
+            CellType.Supermarket => "Мобільні ігри",
+            CellType.GasStation => "Платформи",
+            CellType.Factory => "Шутери",
+            CellType.TV => "Інді-ігри",
+            CellType.Food => "Українські хіти",
+            CellType.Nightlife => "Пісочниці",
+            CellType.Logistics => "Стрімінг",
+            CellType.Bank => "Королівські битви",
+            CellType.NetworkShop => "Легенди",
+            _ => "",
+        };
+
+        private static string CryptoGroupName(CellType type) => type switch
+        {
+            CellType.Supermarket => "Мемкоїни",
+            CellType.GasStation => "Майнінг-ферми",
+            CellType.Factory => "Біржі",
+            CellType.TV => "Гаманці",
+            CellType.Food => "Блокчейни",
+            CellType.Nightlife => "NFT-колекції",
+            CellType.Logistics => "Стейблкоїни",
+            CellType.Bank => "DeFi",
+            CellType.NetworkShop => "Королі ринку",
+            _ => "",
+        };
+
+        private static string GovernmentGroupName(CellType type) => type switch
+        {
+            CellType.Supermarket => "Правоохоронці",
+            CellType.GasStation => "Пункти пропуску",
+            CellType.Factory => "Спецслужби",
+            CellType.TV => "Антикорупційні органи",
+            CellType.Food => "Суди",
+            CellType.Nightlife => "Фіскальні служби",
+            CellType.Logistics => "Держкомпанії",
+            CellType.Bank => "Цифрові сервіси",
+            CellType.NetworkShop => "Вища влада",
+            _ => "",
+        };
 
         private static string MilitaryGroupName(CellType type) => type switch
         {

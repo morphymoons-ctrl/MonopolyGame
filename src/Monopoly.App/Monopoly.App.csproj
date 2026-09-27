@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Логотипы компаний на клетках (Logos.cs); вшиваются в Monopoly.exe. -->
-    <Resource Include="Assets\Logos\*.png" />
+    <!-- Логотипы компаний на клетках (Logos.cs), по папке на доску: business, military. Вшиваются в Monopoly.exe. -->
+    <Resource Include="Assets\Logos\**\*.png" />
   </ItemGroup>
 
   <ItemGroup>

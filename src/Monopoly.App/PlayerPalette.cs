@@ -72,8 +72,71 @@ namespace Monopoly.App
         };
 
         // Значок клетки: у особых — в центре, у компаний — в полосе группы. У военной доски (§15) — свои.
-        public static string? Icon(CellType type, BoardTheme theme = BoardTheme.Business) =>
-            theme == BoardTheme.Military ? MilitaryIcon(type) : BusinessIcon(type);
+        public static string? Icon(CellType type, BoardTheme theme = BoardTheme.Business) => theme switch
+        {
+            BoardTheme.Military => MilitaryIcon(type),
+            BoardTheme.Government => GovernmentIcon(type),
+            BoardTheme.Crypto => CryptoIcon(type),
+            BoardTheme.Games => GamesIcon(type),
+            _ => BusinessIcon(type),
+        };
+
+        private static string? GamesIcon(CellType type) => type switch
+        {
+            CellType.Start => "➜",
+            CellType.Jail => "🚫",
+            CellType.Casino => "🎰",
+            CellType.Rest => "💤",
+            CellType.Chance => "📦",
+            CellType.GasStation => "🕹",
+            CellType.Logistics => "📺",
+            CellType.Supermarket => "📱",
+            CellType.Factory => "🎯",
+            CellType.TV => "🎨",
+            CellType.Food => "☢",
+            CellType.Nightlife => "⛏",
+            CellType.Bank => "🪂",
+            CellType.NetworkShop => "🏆",
+            _ => null,
+        };
+
+        private static string? CryptoIcon(CellType type) => type switch
+        {
+            CellType.Start => "➜",
+            CellType.Jail => "🔒",
+            CellType.Casino => "📈",
+            CellType.Rest => "💎",
+            CellType.Chance => "🐦",
+            CellType.GasStation => "⛏",
+            CellType.Logistics => "$",
+            CellType.Supermarket => "🐕",
+            CellType.Factory => "💱",
+            CellType.TV => "🔑",
+            CellType.Food => "🔗",
+            CellType.Nightlife => "🖼",
+            CellType.Bank => "🦄",
+            CellType.NetworkShop => "👑",
+            _ => null,
+        };
+
+        private static string? GovernmentIcon(CellType type) => type switch
+        {
+            CellType.Start => "➜",
+            CellType.Jail => "⛓",
+            CellType.Casino => "✋",
+            CellType.Rest => "✈",
+            CellType.Chance => "📜",
+            CellType.GasStation => "⛔",
+            CellType.Logistics => "⚡",
+            CellType.Supermarket => "🚓",
+            CellType.Factory => "🕵",
+            CellType.TV => "🔍",
+            CellType.Food => "⚖",
+            CellType.Nightlife => "💰",
+            CellType.Bank => "📱",
+            CellType.NetworkShop => "🏛",
+            _ => null,
+        };
 
         private static string? MilitaryIcon(CellType type) => type switch
         {

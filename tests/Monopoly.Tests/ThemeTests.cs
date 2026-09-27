@@ -46,6 +46,55 @@ namespace Monopoly.Tests
         }
 
         [Fact]
+        public void GovernmentBoard_HasItsOwnNames()
+        {
+            var board = Board.Create(BoardTheme.Government);
+
+            Assert.Equal("Банкова", board[0].Name);
+            Assert.Equal("Лук'янівське СІЗО", board[Jail].Name);
+            Assert.Equal("Патрульна поліція", board[Atb].Name);
+            Assert.Equal("НАБУ", board[11].Name);
+            Assert.Equal("Офіс Президента", board[31].Name);
+        }
+
+        [Fact]
+        public void GovernmentBoard_UsesDepartmentTerms()
+        {
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Government });
+            game.Give(0, Atb, Varus);
+
+            Assert.Equal("Відділи будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        [Fact]
+        public void CryptoBoard_HasItsOwnNamesAndTerms()
+        {
+            var board = Board.Create(BoardTheme.Crypto);
+            Assert.Equal("Генезис-блок", board[0].Name);
+            Assert.Equal("Блокування акаунта", board[Jail].Name);
+            Assert.Equal("Dogecoin", board[Atb].Name);
+            Assert.Equal("Bitcoin", board[31].Name);
+
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Crypto });
+            game.Give(0, Atb, Varus);
+            Assert.Equal("Ноди будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        [Fact]
+        public void GamesBoard_HasItsOwnNamesAndTerms()
+        {
+            var board = Board.Create(BoardTheme.Games);
+            Assert.Equal("Головне меню", board[0].Name);
+            Assert.Equal("Бан за читерство", board[Jail].Name);
+            Assert.Equal("Steam", board[Wog].Name);
+            Assert.Equal("Dota 2", board[31].Name);
+
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Games });
+            game.Give(0, Atb, Varus);
+            Assert.Equal("Сервери будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        [Fact]
         public void Game_UsesChosenTheme_AndReplayKeepsIt()
         {
             var game = Game.Start(new[] { "Аня", "Богдан" }, seed: 7, BoardTheme.Military);
@@ -76,7 +125,7 @@ namespace Monopoly.Tests
             var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Military });
             game.Give(0, Wog);
 
-            Assert.Equal("На «ОК «Північ»» підрозділи не будуються.", game.Error(new BuildBranch(0, Wog)));
+            Assert.Equal("На «ОК „Північ“» підрозділи не будуються.", game.Error(new BuildBranch(0, Wog)));
         }
 
         // На военной доске «філія» — «підрозділ», «головний офіс» — «штаб» (§15); на основной — как было.

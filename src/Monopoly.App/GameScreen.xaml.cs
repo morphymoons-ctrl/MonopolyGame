@@ -378,7 +378,7 @@ namespace Monopoly.App
                 case CellType.GasStation:
                     for (int count = 1; count < GameRules.GasStationRent.Count; count++)
                     {
-                        rows.Add(($"{count} {EventText.Words.StationShort} у власника", GameManager.Format(GameRules.GasStationRent[count])));
+                        rows.Add(($"{EventText.GroupName(cell.Type)}: {count}", GameManager.Format(GameRules.GasStationRent[count])));
                     }
                     active = ownedInGroup - 1;
                     break;
