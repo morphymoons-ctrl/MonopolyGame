@@ -11,3 +11,6 @@ publish/
 
 # Test results
 TestResults/
+
+# Сборка выпусков (build\release.ps1)
+artifacts/

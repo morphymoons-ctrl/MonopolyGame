@@ -19,6 +19,7 @@
 | `src/Monopoly.Net/` | Сеть: хост (ASP.NET Core + SignalR внутри приложения), клиент, лобби, поиск игр по UDP. Порт 7777. |
 | `src/Monopoly.App/` | WPF-клиент, собирается в `Monopoly.exe`. Показывает состояние и отправляет действия; правила здесь не пишем. |
 | `src/Monopoly.Admin/` | Панель администратора (`Monopoly.Admin.exe`, RULES.md §14) — **только для ПК автора, друзьям не раздаётся**. Команды подписываются секретным ключом из `%AppData%\Monopoly\admin.key` (зашифрован DPAPI, в репозиторий не попадает); открытый ключ — `AdminAuth.OwnerPublicKey`. |
+| `src/Monopoly.Setup/` | Установщик для друзей `Monopoly-Install.exe` (.NET Framework 4.8 — есть в любой Windows): выбор папки, внутри — установщик Velopack. Собирает `build\release.ps1`. |
 | `tests/Monopoly.Tests/` | Тесты xUnit для `Monopoly.Core` и `Monopoly.Net` (сетевые — через настоящий хост на 127.0.0.1). |
 | `Directory.Build.props` | Общие настройки и **версия игры** (`<Version>`). Клиенты разных версий не должны играть вместе. |
 
@@ -28,6 +29,7 @@
 - Тесты: `dotnet test MonopolyGame.sln`
 - Запуск: `dotnet run --project src/Monopoly.App`
 - Панель администратора: `dotnet run --project src/Monopoly.Admin`
+- Выпуск новой версии друзьям: поднять `<Version>`, закоммитить и запушить, затем `.\build\release.ps1` (тесты → сборка с .NET внутри → Velopack → GitHub Releases; у всех обновится само). Только собрать установщик: `.\build\release.ps1 -DryRun`.
 - Сеть без друзей: запустить две копии, в первой «Создать игру», во второй подключиться к `127.0.0.1`.
 
 ## Правила работы

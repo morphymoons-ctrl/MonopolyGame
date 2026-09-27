@@ -12,6 +12,20 @@
             <TextBlock Text="для децелов (Максімка, Ілюшка, Данюшка, Ярушка і Чушка)" HorizontalAlignment="Center"
                        Style="{StaticResource Muted}" FontSize="13" FontStyle="Italic" Margin="0,2,0,24"/>
 
+            <!-- Скачана новая версия (Updater): перезапуск сразу или само при выходе из игры. -->
+            <Border Name="UpdateBanner" Width="620" Margin="0,0,0,14" Padding="20,14" CornerRadius="14" Visibility="Collapsed"
+                    Background="#2A3A1F" BorderBrush="{StaticResource SuccessBrush}" BorderThickness="1">
+                <DockPanel>
+                    <Button Name="UpdateButton" DockPanel.Dock="Right" Content="Оновити" Style="{StaticResource PrimaryButton}"
+                            Margin="14,0,0,0" MinWidth="130" Click="Update_Click"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Name="UpdateTitle" FontWeight="Bold" FontSize="18"/>
+                        <TextBlock Text="Гра перезапуститься. Якщо не зараз — оновиться сама, коли ви її закриєте."
+                                   Style="{StaticResource Muted}" FontSize="14"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <Border Style="{StaticResource Card}" Width="620" Padding="28" Effect="{StaticResource SoftShadow}">
                 <StackPanel>
                     <TextBlock Text="Ваше ім'я" Style="{StaticResource Muted}"/>

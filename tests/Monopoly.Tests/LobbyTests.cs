@@ -26,7 +26,7 @@ namespace Monopoly.Tests
 
             var result = lobby.Join("c1", new JoinRequest("Аня", "1.2.4"), T0);
 
-            Assert.Equal("Версії гри не збігаються: у хоста 1.2.3, у вас 1.2.4. Потрібна однакова версія в усіх.", result.Error);
+            Assert.Equal("Версії гри не збігаються: у хоста 1.2.3, у вас 1.2.4. Потрібна однакова версія в усіх — у кого версія старіша, перезапустіть гру: вона оновиться сама.", result.Error);
             Assert.Equal(1, lobby.PlayerCount);
         }
 

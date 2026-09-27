@@ -11,6 +11,7 @@ namespace Monopoly.App
     {
         private readonly UserSettings settings = UserSettings.Load();
         private readonly SaveStore saves = new();
+        private readonly Updater updater = new();
         private GameHost? host;
         private GameClient? client;
         private LobbyState? lastLobby;
@@ -21,14 +22,19 @@ namespace Monopoly.App
         {
             InitializeComponent();
             Closing += (_, _) => StopNetworkOnClose();
+            // Скачанная версия предлагается на стартовом экране — посреди партии не мешаем.
+            updater.Ready += () => Dispatcher.InvokeAsync(() => (Screen.Content as StartScreen)?.ShowUpdate(updater));
             ShowStart(null);
+            _ = updater.CheckAsync();
         }
 
         private void ShowStart(string? message)
         {
             lobbyScreen = null;
             gameScreen = null;
-            Screen.Content = new StartScreen(settings, saves, CreateGameAsync, JoinGameAsync, ResumeGameAsync, message);
+            var start = new StartScreen(settings, saves, CreateGameAsync, JoinGameAsync, ResumeGameAsync, message);
+            start.ShowUpdate(updater);
+            Screen.Content = start;
         }
 
         private GameHostOptions HostOptions => new() { Saves = saves };

@@ -30,7 +30,7 @@ namespace Monopoly.Net
         public JoinResult Join(string connectionId, JoinRequest request, DateTime now)
         {
             if (request.Version != version)
-                return Fail($"Версії гри не збігаються: у хоста {version}, у вас {request.Version}. Потрібна однакова версія в усіх.");
+                return Fail($"Версії гри не збігаються: у хоста {version}, у вас {request.Version}. Потрібна однакова версія в усіх — у кого версія старіша, перезапустіть гру: вона оновиться сама.");
 
             string name = (request.Name ?? "").Trim();
             if (name.Length == 0)

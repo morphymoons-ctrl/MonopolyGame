@@ -7,6 +7,8 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>Monopoly</AssemblyName>
     <RootNamespace>Monopoly.App</RootNamespace>
+    <!-- Свой Main: сначала Velopack (установка и обновления), потом игра. -->
+    <StartupObject>Monopoly.App.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +19,11 @@
   <ItemGroup>
     <!-- Логотипы компаний на клетках (Logos.cs); вшиваются в Monopoly.exe. -->
     <Resource Include="Assets\Logos\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Установка и автообновление из GitHub Releases (этап 6, Updater.cs). Версия — та же, что у утилиты vpk. -->
+    <PackageReference Include="Velopack" Version="1.2.158" />
   </ItemGroup>
 
 </Project>

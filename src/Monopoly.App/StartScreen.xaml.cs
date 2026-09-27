@@ -18,6 +18,7 @@ namespace Monopoly.App
         private readonly Func<SaveFile, Task<string?>> resume;
         private readonly UserSettings settings;
         private readonly SaveStore saves;
+        private Updater? updater;
         private bool busy;
 
         public StartScreen(UserSettings settings, SaveStore saves, Func<string, Task<string?>> create,
@@ -36,6 +37,29 @@ namespace Monopoly.App
             VersionText.Text = $"Версія {NetDefaults.GameVersion}";
             ShowSaves();
             Loaded += async (_, _) => await SearchAsync();
+        }
+
+        // Плашка «Доступне оновлення», если новая версия уже скачана.
+        public void ShowUpdate(Updater source)
+        {
+            updater = source;
+            if (source.ReadyVersion is not string version)
+            {
+                return;
+            }
+            UpdateTitle.Text = $"Доступне оновлення — версія {version}";
+            UpdateBanner.Visibility = Visibility.Visible;
+        }
+
+        private void Update_Click(object sender, RoutedEventArgs e)
+        {
+            if (busy)
+            {
+                return;
+            }
+            UpdateButton.IsEnabled = false;
+            UpdateTitle.Text = "Оновлюємо…";
+            updater?.ApplyAndRestart();
         }
 
         // Три последние незаконченные партии этого хоста: продолжить или удалить.

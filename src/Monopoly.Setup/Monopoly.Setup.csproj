@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Установщик для друзей (этап 6): окно выбора папки на украинском, внутри — установщик Velopack.
+       .NET Framework 4.8 уже есть в любой Windows 10/11, поэтому сам установщик ничего не требует и почти ничего не весит.
+       Собирает build\release.ps1: SetupPayload — путь к MonopolyGame-win-Setup.exe от vpk pack. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Monopoly-Install</AssemblyName>
+    <RootNamespace>Monopoly.Setup</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Page Include="..\Monopoly.App\Theme.xaml" Link="Theme.xaml" />
+  </ItemGroup>
+
+  <!-- Без установщика игры (обычная сборка решения) окно откроется и скажет, что встраивать нечего. -->
+  <ItemGroup Condition="'$(SetupPayload)' != '' And Exists('$(SetupPayload)')">
+    <EmbeddedResource Include="$(SetupPayload)" LogicalName="payload.exe" />
+  </ItemGroup>
+
+</Project>
