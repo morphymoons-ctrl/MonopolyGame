@@ -37,9 +37,9 @@ namespace Monopoly.Core
         // Филиалы строятся только в группах по три; у АЗС и логистики своя аренда.
         public bool IsBuildable => IsPurchasable && Type is not (CellType.GasStation or CellType.Logistics);
 
-        // Цена филиала и головного офиса — своя у группы (§5), продажа банку — за половину.
+        // Цена филиала и головного офиса — своя у группы (§5), продажа банку — за BranchSalePercent от неё.
         public int BranchCost => GameRules.BranchCost(Type);
-        public int BranchSaleValue => BranchCost / 2;
+        public int BranchSaleValue => BranchCost * GameRules.BranchSalePercent / 100;
 
         // Залог — половина цены, выкуп — залог + 10% (§10).
         public int MortgageValue => Price / 2;

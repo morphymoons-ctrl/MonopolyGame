@@ -31,7 +31,7 @@ namespace Monopoly.Core
             if (terms.Money < 0 || terms.JailCards < 0)
                 return "Неправильні умови обміну.";
             if (terms.Money > owner.Balance)
-                return $"Стільки грошей {whose} немає: {GameRules.Money(owner.Balance)}.";
+                return $"Стільки грошей {whose} немає: {Money(owner.Balance)}.";
             if (terms.JailCards > owner.JailCards)
                 return $"Стільки карток звільнення {whose} немає.";
             if (terms.Cells.Distinct().Count() != terms.Cells.Count)

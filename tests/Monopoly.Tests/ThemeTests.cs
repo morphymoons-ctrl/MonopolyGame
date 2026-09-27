@@ -6,8 +6,10 @@ namespace Monopoly.Tests
     // Тематики доски (RULES.md, §15): отличаются только названия.
     public class ThemeTests
     {
+        // Раскладка у всех досок одна. Цены внутри группы свои, но сумма по группе — как на основной доске:
+        // экономика партии не зависит от выбора доски (§15).
         [Fact]
-        public void AllThemes_SameLayoutAndPrices()
+        public void AllThemes_SameLayout_AndSameGroupTotals()
         {
             var business = Board.Create(BoardTheme.Business);
             foreach (var theme in Enum.GetValues<BoardTheme>())
@@ -15,10 +17,14 @@ namespace Monopoly.Tests
                 var board = Board.Create(theme);
                 Assert.Equal(Board.CellCount, board.Count);
                 for (int i = 0; i < Board.CellCount; i++)
-                {
                     Assert.Equal(business[i].Type, board[i].Type);
-                    Assert.Equal(business[i].Price, board[i].Price);
+
+                foreach (var type in Enum.GetValues<CellType>())
+                {
+                    int expected = business.Where(c => c.Type == type).Sum(c => c.Price);
+                    Assert.True(expected == board.Where(c => c.Type == type).Sum(c => c.Price), $"{theme}: сумма цен группы {type} другая");
                 }
+                Assert.All(board.Where(c => c.IsPurchasable), c => Assert.InRange(c.Price, 80_000, 280_000));
             }
         }
 
@@ -78,6 +84,25 @@ namespace Monopoly.Tests
             var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Crypto });
             game.Give(0, Atb, Varus);
             Assert.Equal("Ноди будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        // На доске «Криптовалюти» — доллары: те же суммы, другой знак (§15).
+        [Fact]
+        public void CryptoBoard_UsesDollars()
+        {
+            // Между тысячами в игре — неразрывный пробел; здесь сравниваем с обычным.
+            static string Plain(string text) => text.Replace(' ', ' ');
+
+            Assert.Equal("$1 500 000", Plain(GameRules.Money(1_500_000, BoardTheme.Crypto)));
+            Assert.Equal("1 500 000 грн", Plain(GameRules.Money(1_500_000, BoardTheme.Business)));
+            Assert.Equal("1 500 000 грн", Plain(GameRules.Money(1_500_000, BoardTheme.Military)));
+            Assert.Equal("$252к", GameRules.ShortMoney(252_000, BoardTheme.Crypto));
+            Assert.Equal("252к", GameRules.ShortMoney(252_000, BoardTheme.Business));
+
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Crypto });
+            game.Give(0, Atb, Varus, Silpo);
+            game.P(0).Balance = 50_000;
+            Assert.Equal("Не вистачає грошей: нода коштує $100 000.", Plain(game.Error(new BuildBranch(0, Atb))!));
         }
 
         [Fact]

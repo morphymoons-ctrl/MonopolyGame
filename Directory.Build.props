@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <!-- Версия игры; при подключении клиент сверяет её с версией хоста. -->
-    <Version>0.6.3</Version>
+    <Version>0.6.4</Version>
   </PropertyGroup>
 
 </Project>

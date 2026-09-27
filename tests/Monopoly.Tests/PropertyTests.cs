@@ -101,7 +101,7 @@ namespace Monopoly.Tests
         }
 
         [Fact]
-        public void Sell_EvenlyForHalfOfBranchCost()
+        public void Sell_Evenly_For75PercentOfBranchCost()
         {
             var game = WithSupermarkets();
             game.State.Board[Atb].Level = 1;
@@ -112,8 +112,8 @@ namespace Monopoly.Tests
             var result = game.Do(new SellBranch(0, Silpo));
 
             Assert.Equal(1, Level(game, Silpo));
-            Assert.Equal(GameRules.StartingBalance + 50_000, game.P(0).Balance);
-            Assert.Contains(new BranchSold(0, Silpo, 1, 50_000), result.Events);
+            Assert.Equal(GameRules.StartingBalance + 75_000, game.P(0).Balance);
+            Assert.Contains(new BranchSold(0, Silpo, 1, 75_000), result.Events);
         }
 
         [Fact]

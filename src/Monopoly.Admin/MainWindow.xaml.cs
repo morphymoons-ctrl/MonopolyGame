@@ -302,14 +302,18 @@ namespace Monopoly.Admin
 
         private string PlayerName(int id) => view?.Snapshot?.FindPlayer(id)?.Name ?? "?";
 
-        // Сумма из поля ввода: цифры, пробелы и «грн» допускаются. null — не число.
+        // Сумма из поля ввода: цифры, пробелы, «грн» и «$» допускаются. null — не число.
         private static int? ParseMoney(string text)
         {
             var digits = new string(text.Where(char.IsDigit).ToArray());
             return digits.Length is > 0 and <= 10 && long.TryParse(digits, out long value) && value <= int.MaxValue ? (int)value : null;
         }
 
-        private static string Plain(int amount) => GameRules.Money(amount).Replace(" грн", "");
+        // Число без знака валюты — для полей ввода.
+        private static string Plain(int amount) => amount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("uk-UA"));
+
+        // Суммы — в валюте доски партии (§15).
+        private string Money(int amount) => GameRules.Money(amount, theme);
 
         private static Ellipse Dot(Brush color) =>
             new() { Width = 16, Height = 16, Fill = color, VerticalAlignment = VerticalAlignment.Center };
@@ -407,7 +411,7 @@ namespace Monopoly.Admin
                     window.ShowStatus("Баланс — це число гривень, наприклад 1 500 000.", false);
                     return;
                 }
-                await window.RunAsync(new AdminSetBalance(Id, amount), $"Баланс {window.PlayerName(Id)}: {GameRules.Money(amount)}.");
+                await window.RunAsync(new AdminSetBalance(Id, amount), $"Баланс {window.PlayerName(Id)}: {window.Money(amount)}.");
                 Keyboard.ClearFocus();
             }
 
@@ -438,7 +442,7 @@ namespace Monopoly.Admin
                 }
                 status.Text = string.Join(" · ", parts);
 
-                balanceNow.Text = $"зараз {GameRules.Money(player.Balance)}";
+                balanceNow.Text = $"зараз {window.Money(player.Balance)}";
                 // Пока админ вводит сумму, живые обновления поле не трогают.
                 if (!balance.IsKeyboardFocusWithin)
                     balance.Text = Plain(player.Balance);
@@ -518,14 +522,14 @@ namespace Monopoly.Admin
                     window.ShowStatus("Ціна — це число гривень, наприклад 200 000.", false);
                     return;
                 }
-                await window.RunAsync(new AdminSetPrice(Index, amount), $"Ціна «{window.Cells[Index].Name}»: {GameRules.Money(amount)}.");
+                await window.RunAsync(new AdminSetPrice(Index, amount), $"Ціна «{window.Cells[Index].Name}»: {window.Money(amount)}.");
                 Keyboard.ClearFocus();
             }
 
             public void Update(CellSnapshot cell, GameSnapshot snapshot)
             {
                 currentOwner = cell.OwnerId;
-                var parts = new List<string> { $"ціна {GameRules.Money(cell.Price)}" };
+                var parts = new List<string> { $"ціна {window.Money(cell.Price)}" };
                 if (cell.Level == GameRules.HeadOfficeLevel)
                     parts.Add(window.Terms.Office);
                 else if (cell.Level > 0)

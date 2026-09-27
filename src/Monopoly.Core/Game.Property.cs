@@ -34,7 +34,7 @@ namespace Monopoly.Core
                 return $"Тут уже {State.Terms.Office}.";
             if (cell.Level > group.Min(c => c.Level))
                 return "Будуйте рівномірно: спершу на інших компаніях групи.";
-            return player.Balance < cell.BranchCost ? $"Не вистачає грошей: {State.Terms.Branch} коштує {GameRules.Money(cell.BranchCost)}." : null;
+            return player.Balance < cell.BranchCost ? $"Не вистачає грошей: {State.Terms.Branch} коштує {Money(cell.BranchCost)}." : null;
         }
 
         private string? ValidateSell(Player player, int cellIndex)
@@ -72,7 +72,7 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             if (!cell.IsMortgaged)
                 return "Компанію не закладено.";
-            return player.Balance < cell.RedeemCost ? $"Не вистачає грошей: викуп коштує {GameRules.Money(cell.RedeemCost)}." : null;
+            return player.Balance < cell.RedeemCost ? $"Не вистачає грошей: викуп коштує {Money(cell.RedeemCost)}." : null;
         }
 
         private void Build(Player player, int cellIndex, List<GameEvent> events)

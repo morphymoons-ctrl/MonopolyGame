@@ -61,6 +61,9 @@ namespace Monopoly.Core
 
         public bool CanExecute(GameAction action) => Validate(action) is null;
 
+        // Сумма в сообщениях движка — в валюте доски партии (§15).
+        private string Money(int amount) => GameRules.Money(amount, State.Theme);
+
         // Что игрок может сделать прямо сейчас. По этому списку интерфейс включает кнопки.
         public IReadOnlyList<GameAction> GetAvailableActions(int playerId)
         {
@@ -281,7 +284,7 @@ namespace Monopoly.Core
                 return error;
             var cell = State.CurrentCell;
             return player.Balance < cell.Price
-                ? $"Не вистачає грошей: «{cell.Name}» коштує {GameRules.Money(cell.Price)}, у вас {GameRules.Money(player.Balance)}."
+                ? $"Не вистачає грошей: «{cell.Name}» коштує {Money(cell.Price)}, у вас {Money(player.Balance)}."
                 : null;
         }
 
@@ -293,8 +296,8 @@ namespace Monopoly.Core
             if (!State.CasinoAvailable)
                 return "Грати в казино можна лише одразу після потрапляння на клітинку.";
             if (!GameRules.CasinoBets.Contains(bet))
-                return $"Ставка може бути {string.Join(", ", GameRules.CasinoBets.Select(GameRules.Money))}.";
-            return bet > player.Balance ? $"Не вистачає грошей на ставку: у вас {GameRules.Money(player.Balance)}." : null;
+                return $"Ставка може бути {string.Join(", ", GameRules.CasinoBets.Select(Money))}.";
+            return bet > player.Balance ? $"Не вистачає грошей на ставку: у вас {Money(player.Balance)}." : null;
         }
 
         // --- Ход ---

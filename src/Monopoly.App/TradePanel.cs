@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -156,7 +156,7 @@ namespace Monopoly.App
                     Padding = new Thickness(6),
                     Child = new ScrollViewer { Content = cells, Height = 330, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
                 });
-                Panel.Children.Add(new TextBlock { Text = "Гроші, грн", Margin = new Thickness(0, 12, 0, 6), Foreground = (Brush)Application.Current.Resources["MutedTextBrush"] });
+                Panel.Children.Add(new TextBlock { Text = $"Гроші, {GameRules.Currency(EventText.Theme)}", Margin = new Thickness(0, 12, 0, 6), Foreground = (Brush)Application.Current.Resources["MutedTextBrush"] });
                 Panel.Children.Add(money);
                 Panel.Children.Add(jailLabel);
                 Panel.Children.Add(jailCards);

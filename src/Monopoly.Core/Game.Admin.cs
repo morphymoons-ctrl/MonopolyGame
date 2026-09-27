@@ -51,7 +51,7 @@ namespace Monopoly.Core
                 case AdminSetBalance balance:
                     return ValidateAdminTarget(balance.TargetId)
                         ?? (balance.Amount < 0 || balance.Amount > AdminMaxBalance
-                            ? $"Баланс — від 0 до {GameRules.Money(AdminMaxBalance)}."
+                            ? $"Баланс — від 0 до {Money(AdminMaxBalance)}."
                             : null);
 
                 case AdminSetPrice price:
@@ -61,7 +61,7 @@ namespace Monopoly.Core
                     if (cell.OwnerId is not null)
                         return $"«{cell.Name}» вже куплена — ціну можна змінити лише вільній компанії.";
                     return price.Price < AdminMinPrice || price.Price > AdminMaxPrice
-                        ? $"Ціна — від {GameRules.Money(AdminMinPrice)} до {GameRules.Money(AdminMaxPrice)}."
+                        ? $"Ціна — від {Money(AdminMinPrice)} до {Money(AdminMaxPrice)}."
                         : null;
                 }
 

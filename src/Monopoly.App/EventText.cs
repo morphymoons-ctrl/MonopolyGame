@@ -53,7 +53,7 @@ namespace Monopoly.App
                 DiceRolled d => $"{Name(d.PlayerId)} кидає кубики: {d.Die1} + {d.Die2} = {d.Total}" + (d.IsDouble ? " — дубль!" : "."),
                 RollAgain r => $"{Name(r.PlayerId)} кидає ще раз.",
                 PlayerMoved m => $"{Name(m.PlayerId)} переходить на «{Cell(m.To)}».",
-                PassedStart p => $"{Name(p.PlayerId)} проходить «{Cell(0)}»: +{GameRules.Money(p.Amount)}.",
+                PassedStart p => $"{Name(p.PlayerId)} проходить «{Cell(0)}»: +{Money(p.Amount)}.",
                 RestStarted r => $"{Name(r.PlayerId)} {words.RestStarted}.",
 
                 SentToJail j => j.Reason switch
@@ -64,39 +64,39 @@ namespace Monopoly.App
                 },
                 JailCardUsed c => $"{Name(c.PlayerId)} показує картку «{words.JailCard}» — хід не пропускає.",
 
-                PurchaseOffered p => $"«{Cell(p.CellIndex)}» вільна — можна купити за {GameRules.Money(p.Price)}.",
-                PropertyBought b => $"{Name(b.PlayerId)} купує «{Cell(b.CellIndex)}» за {GameRules.Money(b.Price)}.",
+                PurchaseOffered p => $"«{Cell(p.CellIndex)}» вільна — можна купити за {Money(p.Price)}.",
+                PropertyBought b => $"{Name(b.PlayerId)} купує «{Cell(b.CellIndex)}» за {Money(b.Price)}.",
                 PurchaseDeclined d => $"{Name(d.PlayerId)} не купує «{Cell(d.CellIndex)}».",
-                AuctionStarted a => $"Аукціон: «{Cell(a.CellIndex)}». Ставки від {GameRules.Money(GameRules.AuctionStep)}, робити їх може кожен.",
-                BidPlaced b => $"{Name(b.PlayerId)} ставить {GameRules.Money(b.Amount)}.",
+                AuctionStarted a => $"Аукціон: «{Cell(a.CellIndex)}». Ставки від {Money(GameRules.AuctionStep)}, робити їх може кожен.",
+                BidPlaced b => $"{Name(b.PlayerId)} ставить {Money(b.Amount)}.",
                 AuctionPassed p => $"{Name(p.PlayerId)} пасує.",
-                AuctionWon w => $"{Name(w.PlayerId)} виграє аукціон: «{Cell(w.CellIndex)}» за {GameRules.Money(w.Amount)}.",
+                AuctionWon w => $"{Name(w.PlayerId)} виграє аукціон: «{Cell(w.CellIndex)}» за {Money(w.Amount)}.",
                 AuctionUnsold u => $"Ніхто не купив «{Cell(u.CellIndex)}» — компанія лишається в банку.",
 
-                RentPaid r => $"{Name(r.PayerId)} платить оренду {GameRules.Money(r.Amount)} гравцю {Name(r.OwnerId)}.",
+                RentPaid r => $"{Name(r.PayerId)} платить оренду {Money(r.Amount)} гравцю {Name(r.OwnerId)}.",
                 RentSkipped r => $"«{Cell(r.CellIndex)}» закладена — оренди немає.",
-                PaidToBank p => $"{Name(p.PlayerId)} платить банку {GameRules.Money(p.Amount)}.",
-                ReceivedFromBank r => $"{Name(r.PlayerId)} отримує від банку {GameRules.Money(r.Amount)}.",
-                PaidToPlayer p => $"{Name(p.FromId)} платить {GameRules.Money(p.Amount)} гравцю {Name(p.ToId)}.",
-                DebtIncurred d => $"{Name(d.DebtorId)}: бракує готівки, борг {GameRules.Money(d.Amount)} {Creditor(d.CreditorId)}.",
-                DebtPaid d => $"{Name(d.DebtorId)} закриває борг {GameRules.Money(d.Amount)} {Creditor(d.CreditorId)}.",
+                PaidToBank p => $"{Name(p.PlayerId)} платить банку {Money(p.Amount)}.",
+                ReceivedFromBank r => $"{Name(r.PlayerId)} отримує від банку {Money(r.Amount)}.",
+                PaidToPlayer p => $"{Name(p.FromId)} платить {Money(p.Amount)} гравцю {Name(p.ToId)}.",
+                DebtIncurred d => $"{Name(d.DebtorId)}: бракує готівки, борг {Money(d.Amount)} {Creditor(d.CreditorId)}.",
+                DebtPaid d => $"{Name(d.DebtorId)} закриває борг {Money(d.Amount)} {Creditor(d.CreditorId)}.",
                 PlayerBankrupt b => $"{Name(b.PlayerId)} — банкрут і вибуває з гри. Гроші переходять {Creditor(b.CreditorId)}, а компанії повертаються банку — їх знову можна купити.",
 
                 CasinoOffered c => $"{Name(c.PlayerId)} {words.CasinoOffered}: можна зробити ставку або пройти повз.",
                 CasinoPlayed c => c.Multiplier switch
                 {
-                    0 => $"{Cell(16)}: {Name(c.PlayerId)} програє {GameRules.Money(c.Bet)}.",
-                    1 => $"{Cell(16)}: ставка {GameRules.Money(c.Bet)} повертається до гравця {Name(c.PlayerId)}.",
-                    _ => $"{Cell(16)}: {Name(c.PlayerId)} виграє — ×{c.Multiplier}, виплата {GameRules.Money(c.Payout)}!",
+                    0 => $"{Cell(16)}: {Name(c.PlayerId)} програє {Money(c.Bet)}.",
+                    1 => $"{Cell(16)}: ставка {Money(c.Bet)} повертається до гравця {Name(c.PlayerId)}.",
+                    _ => $"{Cell(16)}: {Name(c.PlayerId)} виграє — ×{c.Multiplier}, виплата {Money(c.Payout)}!",
                 },
                 ChanceCardDrawn c => $"«{Cell(24)}» для гравця {Name(c.PlayerId)}: {CardText(c.Card)}",
 
                 BranchBuilt b => b.Level == GameRules.HeadOfficeLevel
-                    ? $"{Name(b.PlayerId)} відкриває {terms.Office} на «{Cell(b.CellIndex)}» за {GameRules.Money(b.Cost)}."
-                    : $"{Name(b.PlayerId)} відкриває {terms.BranchAccusative} на «{Cell(b.CellIndex)}» за {GameRules.Money(b.Cost)} (усього {b.Level}).",
-                BranchSold s => $"{Name(s.PlayerId)} продає {terms.BranchAccusative} на «{Cell(s.CellIndex)}» за {GameRules.Money(s.Amount)}.",
-                CompanyMortgaged m => $"{Name(m.PlayerId)} закладає «{Cell(m.CellIndex)}» і отримує {GameRules.Money(m.Amount)}.",
-                CompanyRedeemed r => $"{Name(r.PlayerId)} викуповує «{Cell(r.CellIndex)}» за {GameRules.Money(r.Amount)}.",
+                    ? $"{Name(b.PlayerId)} відкриває {terms.Office} на «{Cell(b.CellIndex)}» за {Money(b.Cost)}."
+                    : $"{Name(b.PlayerId)} відкриває {terms.BranchAccusative} на «{Cell(b.CellIndex)}» за {Money(b.Cost)} (усього {b.Level}).",
+                BranchSold s => $"{Name(s.PlayerId)} продає {terms.BranchAccusative} на «{Cell(s.CellIndex)}» за {Money(s.Amount)}.",
+                CompanyMortgaged m => $"{Name(m.PlayerId)} закладає «{Cell(m.CellIndex)}» і отримує {Money(m.Amount)}.",
+                CompanyRedeemed r => $"{Name(r.PlayerId)} викуповує «{Cell(r.CellIndex)}» за {Money(r.Amount)}.",
 
                 TradeProposed t => $"{Name(t.Offer.FromId)} пропонує обмін гравцю {Name(t.Offer.ToId)}: {DescribeOffer(t.Offer, snapshot)}",
                 TradeAccepted t => $"{Name(t.Offer.ToId)} погоджується на обмін.",
@@ -116,7 +116,7 @@ namespace Monopoly.App
             {
                 var parts = terms.Cells.Select(i => $"«{Cells[i].Name}»").ToList();
                 if (terms.Money > 0)
-                    parts.Add($"{GameRules.Money(terms.Money)}");
+                    parts.Add($"{Money(terms.Money)}");
                 if (terms.JailCards > 0)
                     parts.Add(terms.JailCards == 1 ? $"картку «{Words.JailCard}»" : $"картки «{Words.JailCard}» ({terms.JailCards})");
                 return parts.Count == 0 ? "нічого" : string.Join(", ", parts);
@@ -141,13 +141,13 @@ namespace Monopoly.App
             ChanceCard.ProjectBonus => $"Виграли кіберспортивний турнір: +{CardAmount(card)}.",
             ChanceCard.DancerRefund => $"Донат від глядача на стрімі: +{CardAmount(card)}.",
             ChanceCard.Cashback => $"Steam повернув гроші за гру: +{CardAmount(card)}.",
-            ChanceCard.Birthday => $"Ви затащили катку — кожен гравець кидає вам {GameRules.Money(ChanceCards.BirthdayGift)} на скін.",
+            ChanceCard.Birthday => $"Ви затащили катку — кожен гравець кидає вам {Money(ChanceCards.BirthdayGift)} на скін.",
             ChanceCard.ParkingFine => $"Лаги на сервері, злили рейтинг: −{CardAmount(card)}.",
             ChanceCard.Utilities => $"Нова відеокарта: −{CardAmount(card)}.",
             ChanceCard.Streaming => $"Купили гру на старті, а вона вийшла сирою: −{CardAmount(card)}.",
             ChanceCard.MassageFinish => $"Мама вимкнула роутер посеред катки: −{CardAmount(card)}.",
-            ChanceCard.Charity => $"Подарували гру кожному з друзів: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
-            ChanceCard.TaxAudit => $"Рахунки за хостинг: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожен сервер і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за турнірну арену.",
+            ChanceCard.Charity => $"Подарували гру кожному з друзів: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Рахунки за хостинг: {Money(ChanceCards.AuditPerBranch)} за кожен сервер і {Money(ChanceCards.AuditPerHeadOffice)} — за турнірну арену.",
             ChanceCard.GoToStart => $"Вихід у головне меню: уперед до «{Cells[0].Name}».",
             ChanceCard.NovaPoshta => $"Запросили на стрім: уперед до «{Cells[22].Name}».",
             ChanceCard.Taxi => "До найближчої платформи. Якщо вона чужа — подвійна оренда.",
@@ -164,13 +164,13 @@ namespace Monopoly.App
             ChanceCard.ProjectBonus => $"Прилетів аірдроп: +{CardAmount(card)}.",
             ChanceCard.DancerRefund => $"Продали NFT з мавпою якомусь диваку: +{CardAmount(card)}.",
             ChanceCard.Cashback => $"Стейкінг приніс відсотки: +{CardAmount(card)}.",
-            ChanceCard.Birthday => $"Ви запустили мемкоїн — кожен гравець купує на {GameRules.Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.Birthday => $"Ви запустили мемкоїн — кожен гравець купує на {Money(ChanceCards.BirthdayGift)}.",
             ChanceCard.ParkingFine => $"Комісія мережі Ethereum знову злетіла: −{CardAmount(card)}.",
             ChanceCard.Utilities => $"Рахунок за світло від майнінг-ферми: −{CardAmount(card)}.",
             ChanceCard.Streaming => $"Купили на хаях: −{CardAmount(card)}.",
             ChanceCard.MassageFinish => $"Відправили USDT не в ту мережу: −{CardAmount(card)}.",
-            ChanceCard.Charity => $"Підписались на «сигнали» в Telegram: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
-            ChanceCard.TaxAudit => $"Податкова дізналася про ваш крипто-дохід: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожну ноду і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за дата-центр.",
+            ChanceCard.Charity => $"Підписались на «сигнали» в Telegram: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Податкова дізналася про ваш крипто-дохід: {Money(ChanceCards.AuditPerBranch)} за кожну ноду і {Money(ChanceCards.AuditPerHeadOffice)} — за дата-центр.",
             ChanceCard.GoToStart => $"Халвінг! Уперед до «{Cells[0].Name}».",
             ChanceCard.NovaPoshta => $"Втеча в стейбли: уперед до «{Cells[22].Name}».",
             ChanceCard.Taxi => "Терміново треба хешрейт: до найближчої майнінг-ферми. Якщо вона чужа — подвійна оренда.",
@@ -187,13 +187,13 @@ namespace Monopoly.App
             ChanceCard.ProjectBonus => $"Премія за «Велике будівництво»: +{CardAmount(card)}.",
             ChanceCard.DancerRefund => $"Вас покликали на телемарафон «Єдині новини» — гонорар: +{CardAmount(card)}.",
             ChanceCard.Cashback => $"«Вовина тисяча», тільки з нулями: +{CardAmount(card)}.",
-            ChanceCard.Birthday => $"Єрмак сказав, що «все вирішено»: кожен гравець платить вам {GameRules.Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.Birthday => $"Єрмак сказав, що «все вирішено»: кожен гравець платить вам {Money(ChanceCards.BirthdayGift)}.",
             ChanceCard.ParkingFine => $"Кличко нагадав: «Не всі можуть дивитися в завтра». Ви не змогли — штраф −{CardAmount(card)}.",
             ChanceCard.Utilities => $"Уряд знову переглянув тарифи: −{CardAmount(card)}.",
             ChanceCard.Streaming => $"Підвищили військовий збір: −{CardAmount(card)}.",
             ChanceCard.MassageFinish => $"Проспали вечірнє звернення президента: −{CardAmount(card)}.",
-            ChanceCard.Charity => $"Скидаємося на зйомки «Слуга народу 4»: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
-            ChanceCard.TaxAudit => $"Перевірка НАБУ: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожен відділ і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за головне управління.",
+            ChanceCard.Charity => $"Скидаємося на зйомки «Слуга народу 4»: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Перевірка НАБУ: {Money(ChanceCards.AuditPerBranch)} за кожен відділ і {Money(ChanceCards.AuditPerHeadOffice)} — за головне управління.",
             ChanceCard.GoToStart => $"Термінове засідання на Банковій: уперед до «{Cells[0].Name}».",
             ChanceCard.NovaPoshta => $"Позачергова нарада в енергетиці: уперед до «{Cells[22].Name}».",
             ChanceCard.Taxi => "Поїхали «на лікування» за кордон: до найближчого КПП. Якщо він чужий — подвійна оренда.",
@@ -210,13 +210,13 @@ namespace Monopoly.App
             ChanceCard.ProjectBonus => $"Бойові виплати: +{CardAmount(card)}.",
             ChanceCard.DancerRefund => $"Волонтери закрили збір: +{CardAmount(card)}.",
             ChanceCard.Cashback => $"Премія за влучання: +{CardAmount(card)}.",
-            ChanceCard.Birthday => $"День ЗСУ: кожен гравець вітає вас {GameRules.Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.Birthday => $"День ЗСУ: кожен гравець вітає вас {Money(ChanceCards.BirthdayGift)}.",
             ChanceCard.ParkingFine => $"Штраф за порушення статуту: −{CardAmount(card)}.",
             ChanceCard.Utilities => $"Ремонт техніки: −{CardAmount(card)}.",
             ChanceCard.Streaming => $"Спорядження за власний кошт: −{CardAmount(card)}.",
             ChanceCard.MassageFinish => $"Загублений дрон: −{CardAmount(card)}.",
-            ChanceCard.Charity => $"Збір на пікап: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
-            ChanceCard.TaxAudit => $"Інспекція Генштабу: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожен підрозділ і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за штаб.",
+            ChanceCard.Charity => $"Збір на пікап: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Інспекція Генштабу: {Money(ChanceCards.AuditPerBranch)} за кожен підрозділ і {Money(ChanceCards.AuditPerHeadOffice)} — за штаб.",
             ChanceCard.GoToStart => $"Повернення до пункту збору: уперед до «{Cells[0].Name}».",
             ChanceCard.NovaPoshta => $"Ешелон: уперед до «{Cells[22].Name}».",
             ChanceCard.Taxi => "Марш до найближчого оперативного командування. Якщо воно чуже — подвійна оренда.",
@@ -232,13 +232,13 @@ namespace Monopoly.App
             ChanceCard.ProjectBonus => $"Премія за проєкт: +{CardAmount(card)}.",
             ChanceCard.DancerRefund => $"Ви сподобались танцівниці і вона повернула вам гроші за приватку: +{CardAmount(card)}.",
             ChanceCard.Cashback => $"Кешбек від Мінібанку: +{CardAmount(card)}.",
-            ChanceCard.Birthday => $"День народження: кожен гравець платить вам {GameRules.Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.Birthday => $"День народження: кожен гравець платить вам {Money(ChanceCards.BirthdayGift)}.",
             ChanceCard.ParkingFine => $"Штраф за паркування: −{CardAmount(card)}.",
             ChanceCard.Utilities => $"Оплата комуналки: −{CardAmount(card)}.",
             ChanceCard.Streaming => $"Підписка на всі стримінги: −{CardAmount(card)}.",
             ChanceCard.MassageFinish => $"Мастериця професійно зробила окончаніє, тому −{CardAmount(card)}.",
-            ChanceCard.Charity => $"Благодійний марафон: заплатіть кожному гравцю {GameRules.Money(ChanceCards.CharityGift)}.",
-            ChanceCard.TaxAudit => $"Податкова перевірка: {GameRules.Money(ChanceCards.AuditPerBranch)} за кожну філію і {GameRules.Money(ChanceCards.AuditPerHeadOffice)} — за головний офіс.",
+            ChanceCard.Charity => $"Благодійний марафон: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Податкова перевірка: {Money(ChanceCards.AuditPerBranch)} за кожну філію і {Money(ChanceCards.AuditPerHeadOffice)} — за головний офіс.",
             ChanceCard.GoToStart => "Вирушайте на «Старт».",
             ChanceCard.NovaPoshta => "Доставка Старою Поштою: уперед до «Стара Пошта».",
             ChanceCard.Taxi => "Таксі до найближчої АЗС. Якщо вона чужа — подвійна оренда.",
@@ -249,20 +249,24 @@ namespace Monopoly.App
         };
 
         // Сумма карточки «Шанса» без знака — знак стоит в тексте.
-        private static string CardAmount(ChanceCard card) => GameRules.Money(Math.Abs(ChanceCards.BankAmount(card)));
+        private static string CardAmount(ChanceCard card) => Money(Math.Abs(ChanceCards.BankAmount(card)));
 
-        // Ставки казино для подсказок: «50 000–300 000 грн».
-        public static string CasinoRange =>
-            $"{GameRules.CasinoBets[0].ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("uk-UA"))}–{GameRules.Money(GameRules.CasinoBets[^1])}";
+        // Суммы — в валюте доски партии (§15): гривны, на «Криптовалютах» — доллары.
+        public static string Money(int amount) => GameRules.Money(amount, Theme);
+
+        public static string ShortMoney(int amount) => GameRules.ShortMoney(amount, Theme);
+
+        // Ставки казино для подсказок: «50 000 грн – 300 000 грн» или «$50 000 – $300 000».
+        public static string CasinoRange => $"{Money(GameRules.CasinoBets[0])} – {Money(GameRules.CasinoBets[^1])}";
 
         // Подписи кнопок для действий без выбора клетки.
         public static string ActionLabel(GameAction action, GameSnapshot snapshot) => action switch
         {
             RollDice => snapshot.LastRoll is null ? "Кинути кубики" : "Кинути ще раз",
-            BuyProperty => snapshot.PendingPurchase is int cell ? $"Купити за {GameRules.Money(Cells[cell].Price)}" : "Купити",
+            BuyProperty => snapshot.PendingPurchase is int cell ? $"Купити за {Money(Cells[cell].Price)}" : "Купити",
             DeclinePurchase => "Не купувати (аукціон)",
             EndTurn => "Завершити хід",
-            PlayCasino c => $"{Cells[16].Name}: ставка {GameRules.Money(c.Bet)}",
+            PlayCasino c => $"{Cells[16].Name}: ставка {Money(c.Bet)}",
             PassAuction => "Пас",
             AcceptTrade => "Прийняти обмін",
             RejectTrade => "Відмовитися",

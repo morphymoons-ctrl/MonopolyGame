@@ -103,7 +103,7 @@ namespace Monopoly.Tests
         [Fact]
         public void Bankruptcy_SellsBranchesForCreditor()
         {
-            // Долг Богдану больше, чем можно собрать; филиал Ани продаётся за 50 000, деньги уходят Богдану.
+            // Долг Богдану больше, чем можно собрать; филиал Ани продаётся за 75 000, деньги уходят Богдану.
             var game = RentDue(players: 3);
             game.State.Board[Silpo].Level = 5; // аренда 924 000
             game.P(0).Balance = 100_000;
@@ -115,7 +115,7 @@ namespace Monopoly.Tests
             Assert.True(game.P(0).IsBankrupt);
             Assert.Equal(0, game.State.Board[Tet].Level);
             Assert.Null(game.State.Board[Tet].OwnerId);
-            Assert.Equal(GameRules.StartingBalance + 100_000 + 50_000, game.P(1).Balance);
+            Assert.Equal(GameRules.StartingBalance + 100_000 + 75_000, game.P(1).Balance);
         }
 
         [Fact]

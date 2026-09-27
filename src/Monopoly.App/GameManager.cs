@@ -58,12 +58,12 @@ namespace Monopoly.App
 
         public int MyPlayerId => startInfo.MyPlayerId;
 
-        public static string Format(int amount) => GameRules.Money(amount);
+        public static string Format(int amount) => EventText.Money(amount);
 
         // Крупная сумма (цена на клетке, баланс) — нейтральным шрифтом GameFonts.Money.
         private static void FillMoney(TextBlock block, int amount)
         {
-            block.Text = GameRules.Money(amount);
+            block.Text = EventText.Money(amount);
             block.FontFamily = GameFonts.Money;
             block.FontWeight = FontWeights.Normal;
         }
@@ -403,8 +403,8 @@ namespace Monopoly.App
 
             // Та же формула, что у движка при оплате (поле клиента обновлено из снимка — GameSnapshot.ApplyTo).
             string rent = cell.Type == CellType.Logistics
-                ? $"кубики ×{GameRules.ShortMoney(GameRules.Rent(board, index, 1))}"
-                : GameRules.ShortMoney(GameRules.Rent(board, index, 0));
+                ? $"кубики ×{EventText.ShortMoney(GameRules.Rent(board, index, 1))}"
+                : EventText.ShortMoney(GameRules.Rent(board, index, 0));
             line.Children.Add(new TextBlock
             {
                 Text = rent,

@@ -30,6 +30,8 @@ namespace Monopoly.Core
         // Цена филиала и головного офиса — своя у каждой группы, как в Monopoly One (§5):
         // дешёвые группы (компании за 100–140 тыс.) и дорогие (за 200–240 тыс.).
         public const int CheapBranchCost = 100_000, ExpensiveBranchCost = 150_000;
+        // Филиал продаётся банку за этот процент своей цены — и при обычной продаже, и при банкротстве (§5, §12).
+        public const int BranchSalePercent = 75;
 
         public static int BranchCost(CellType type) => type switch
         {
@@ -46,13 +48,25 @@ namespace Monopoly.Core
 
         private static readonly CultureInfo Ukrainian = CultureInfo.GetCultureInfo("uk-UA");
 
-        // Сумма для текста игроку: «1 500 000 грн». Между тысячами — неразрывный пробел, число не разрывается переносом.
-        public static string Money(int amount) => $"{amount.ToString("N0", Ukrainian)} грн";
+        // Сумма для текста игроку: «1 500 000 грн», на доске «Криптовалюти» — «$1 500 000» (§15). Суммы те же, меняется знак.
+        // Между тысячами — неразрывный пробел, число не разрывается переносом.
+        public static string Money(int amount, BoardTheme theme = BoardTheme.Business)
+        {
+            string number = amount.ToString("N0", Ukrainian);
+            return theme == BoardTheme.Crypto ? $"${number}" : $"{number} грн";
+        }
 
-        // Коротко, для аренды на клетке: «16,8к», «252к», «1,05м» — чтобы не путать с ценой покупки («140 000 грн»).
-        public static string ShortMoney(int amount) => amount >= 1_000_000
-            ? $"{(amount / 1_000_000.0).ToString("0.##", Ukrainian)}м"
-            : $"{(amount / 1_000.0).ToString("0.#", Ukrainian)}к";
+        // Знак валюты для подписей: «грн» или «$».
+        public static string Currency(BoardTheme theme) => theme == BoardTheme.Crypto ? "$" : "грн";
+
+        // Коротко, для аренды на клетке: «16,8к», «252к», «1,05м» (на крипто-доске — «$252к») — чтобы не путать с ценой покупки.
+        public static string ShortMoney(int amount, BoardTheme theme = BoardTheme.Business)
+        {
+            string text = amount >= 1_000_000
+                ? $"{(amount / 1_000_000.0).ToString("0.##", Ukrainian)}м"
+                : $"{(amount / 1_000.0).ToString("0.#", Ukrainian)}к";
+            return theme == BoardTheme.Crypto ? $"${text}" : text;
+        }
 
         // Базовая аренда — BaseRentPercent от цены.
         public static int BaseRent(BoardCell cell) => cell.Price * BaseRentPercent / 100;
