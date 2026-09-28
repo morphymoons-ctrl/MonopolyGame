@@ -191,7 +191,7 @@ namespace Monopoly.App
                     return ($"Перемога: {Name(s.WinnerId!.Value)}!", "Партію закінчено. Вийдіть у меню, щоб зібрати нову.", (Brush)FindResource("AccentBrush"));
                 case TurnPhase.Debt when s.Debt!.DebtorId == MyId:
                     return ("Бракує грошей",
-                        $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Натисніть на свою компанію на полі, щоб продати {EventText.Terms.Branches} або закласти її. Борг спишеться сам, щойно вистачить грошей.",
+                        $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Натисніть на свою компанію на полі, щоб продати {EventText.Terms.Branches} або закласти її, чи запропонуйте обмін іншому гравцю. Борг спишеться сам, щойно вистачить грошей.",
                         danger);
                 case TurnPhase.Debt:
                     return ($"{Name(s.Debt!.DebtorId)} шукає гроші", $"Борг {GameManager.Format(s.Debt.Amount)} {Target(s.Debt.CreditorId)}. Чекаємо.", danger);
@@ -334,7 +334,7 @@ namespace Monopoly.App
             }
 
             string owner = state?.OwnerId is int id ? Snapshot?.FindPlayer(id)?.Name ?? "?" : "банк";
-            string status = state is { IsMortgaged: true } ? " · закладена, оренди немає" : "";
+            string status = state is { IsMortgaged: true } ? $" · закладена, оренди немає · {EventText.MortgageLeft(state.MortgageTurnsLeft)}" : "";
             CellInfo.Text = $"{EventText.GroupName(cell.Type)} · ціна {GameManager.Format(cell.Price)} · власник: {owner}{status}";
             FillRentTable(index, cell, state);
 
@@ -436,7 +436,7 @@ namespace Monopoly.App
         private static string DescribeSpecial(CellType type) => type switch
         {
             CellType.Start => $"Прохід або потрапляння — +{GameManager.Format(GameRules.StartBonus)}.",
-            CellType.Jail => $"Пропуск наступного ходу — як «{EventText.Cells[17].Name}». Сюди ж ведуть три дублі поспіль і картка «{EventText.Cells[24].Name}». Картка «{EventText.Words.JailCard}» рятує від пропуску сама.",
+            CellType.Jail => $"Пропуск наступного ходу — як «{EventText.Cells[20].Name}». Сюди ж ведуть три дублі поспіль і картка «{EventText.Cells[24].Name}». Картка «{EventText.Words.JailCard}» рятує від пропуску сама.",
             CellType.Casino => $"Ставка {EventText.CasinoRange} одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
             CellType.Rest => "Пропуск наступного ходу.",
             CellType.Chance => $"Картка з колоди «{EventText.Cells[24].Name}»: гроші, переміщення, пропуск ходу або картка, що рятує від нього.",

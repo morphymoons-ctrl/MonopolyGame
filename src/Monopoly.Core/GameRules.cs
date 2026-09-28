@@ -32,6 +32,8 @@ namespace Monopoly.Core
         public const int CheapBranchCost = 100_000, ExpensiveBranchCost = 150_000;
         // Филиал продаётся банку за этот процент своей цены — и при обычной продаже, и при банкротстве (§5, §12).
         public const int BranchSalePercent = 75;
+        // Сколько своих ходов даётся на выкуп заложенной компании; потом она возвращается банку (§10).
+        public const int MortgageTurns = 15;
 
         public static int BranchCost(CellType type) => type switch
         {

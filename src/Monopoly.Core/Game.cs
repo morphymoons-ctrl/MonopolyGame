@@ -95,7 +95,7 @@ namespace Monopoly.Core
             var available = candidates.Where(CanExecute).ToList();
             // Условия обмена игрок выбирает сам, поэтому в списке — «пустой» обмен как знак, что предлагать можно.
             var player = State.FindPlayer(playerId);
-            if (player is not null && ValidateCommon(player) is null && RequireTurn(player, TurnPhase.AwaitingRoll, TurnPhase.Manage) is null)
+            if (player is not null && ValidateCommon(player) is null && ValidateTradeTiming(player) is null)
                 available.Add(new ProposeTrade(playerId, -1, TradeTerms.Empty, TradeTerms.Empty));
             return available;
         }
@@ -428,6 +428,7 @@ namespace Monopoly.Core
             State.CasinoAvailable = false;
             State.LastRoll = null;
             State.DoublesInRow = 0;
+            State.BuiltThisTurn.Clear();
 
             // Выбывших пропускаем молча, отдыхающих и сидящих в пєтушатні — с событием (§6, §7).
             // Цикл конечен: каждый пропуск снимает отметку, а активный игрок есть всегда.
@@ -447,6 +448,8 @@ namespace Monopoly.Core
 
             State.Stage = TurnPhase.AwaitingRoll;
             events.Add(new TurnStarted(State.CurrentPlayer.Id));
+            // Ход действительно начался (пропущенные не считаются) — срок выкупа заложенных компаний (§10).
+            TickMortgages(State.CurrentPlayer, events);
         }
 
         // --- Пєтушатня (§6) ---

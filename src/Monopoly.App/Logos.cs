@@ -18,7 +18,7 @@ namespace Monopoly.App
         {
             null, "atb", "varus", "silpo", "wog", "arcelormittal", "stasik", "azovstal",
             null, "tet", "novyi-kanal", "intel", "okko", "puzata-hata", "pizza-day", "bulochna-1",
-            null, null, "masazhka", "bordel", "stripclub", "upg", "nova-poshta", "ukrposhta",
+            null, "masazhka", "bordel", "stripclub", null, "upg", "nova-poshta", "ukrposhta",
             null, "pumb", "privatbank", "monobank", "ukrnafta", "allo", "citrus", "foxtrot",
         };
 
@@ -27,7 +27,7 @@ namespace Monopoly.App
         {
             null, "pikhota", "lehka-bronetekhnika", "tankovi-viiska", "ok-pivnich", "bronetankovyi-zavod", "zavod-boieprypasiv", "raketnyi-zavod",
             null, "viiskovyi-zviazok", "reb", "rozvidka", "ok-skhid", "minometna-bataria", "haubychna-artyleriia", "rszv-himars",
-            null, null, "fpv-drony", "rozviduvalni-bpla", "udarni-bpla", "ok-pivden", "viiskova-zaliznytsia", "medychna-sluzhba",
+            null, "fpv-drony", "rozviduvalni-bpla", "udarni-bpla", null, "ok-pivden", "viiskova-zaliznytsia", "medychna-sluzhba",
             null, "morska-pikhota", "katery", "morski-drony", "ok-zakhid", "zrk-buk", "iris-t", "patriot",
         };
 
@@ -36,7 +36,7 @@ namespace Monopoly.App
         {
             null, "patrulna-politsiia", "natsionalna-politsiia", "natsgvardiia", "kpp-yahodyn", "sbu", "hur", "szru",
             null, "nazk", "sap", "nabu", "kpp-chop", "pecherskyi-sud", "verkhovnyi-sud", "konstytutsiinyi-sud",
-            null, null, "podatkova", "mytnytsia", "beb", "kpp-krakovets", "naftohaz", "ukrenerho",
+            null, "podatkova", "mytnytsia", "beb", null, "kpp-krakovets", "naftohaz", "ukrenerho",
             null, "diia", "rezerv-plus", "armiia-plus", "kpp-shehyni", "kabmin", "verkhovna-rada", "ofis-prezydenta",
         };
 
@@ -45,7 +45,7 @@ namespace Monopoly.App
         {
             null, "dogecoin", "shiba-inu", "pepe", "ferma-harazh", "binance", "coinbase", "whitebit",
             null, "metamask", "trust-wallet", "ledger", "ferma-tekhas", "solana", "ton", "cardano",
-            null, null, "bored-ape", "cryptopunks", "pudgy-penguins", "ferma-islandiia", "usdt", "usdc",
+            null, "bored-ape", "cryptopunks", "pudgy-penguins", null, "ferma-islandiia", "usdt", "usdc",
             null, "uniswap", "aave", "pancakeswap", "ferma-kazakhstan", "bnb", "ethereum", "bitcoin",
         };
 
@@ -54,7 +54,7 @@ namespace Monopoly.App
         {
             null, "brawl-stars", "clash-royale", "subway-surfers", "steam", "valorant", "call-of-duty", "cs2",
             null, "stardew-valley", "terraria", "hollow-knight", "epic-games", "kozaky-3", "metro-exodus", "stalker-2",
-            null, null, "roblox", "garrys-mod", "minecraft", "playstation", "twitch", "youtube",
+            null, "roblox", "garrys-mod", "minecraft", null, "playstation", "twitch", "youtube",
             null, "pubg", "apex-legends", "fortnite", "xbox", "witcher-3", "gta-5", "dota-2",
         };
 

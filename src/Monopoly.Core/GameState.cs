@@ -92,14 +92,19 @@ namespace Monopoly.Core
         public IReadOnlyList<Debt> PendingDebts => Debts;
         public IEnumerable<Player> ActivePlayers => Players.Where(p => !p.IsBankrupt);
 
-        // Фаза с учётом всего, что ждёт ответа. Порядок важен: долги решаются первыми.
+        // Фаза с учётом всего, что ждёт ответа. Порядок важен.
+        // Обмен — выше долга: должник может предложить обмен (§11), и пока второй отвечает, ждём ответа.
+        // Обмен и аукцион или покупка одновременно не бывают: предложить обмен в них нельзя.
         public TurnPhase Phase =>
             WinnerId is not null ? TurnPhase.GameOver
+            : Trade is not null ? TurnPhase.TradeOffer
             : Debts.Count > 0 ? TurnPhase.Debt
             : Auction is not null ? TurnPhase.Auction
             : PendingPurchase is not null ? TurnPhase.BuyDecision
-            : Trade is not null ? TurnPhase.TradeOffer
             : Stage;
+
+        // Группы, где в этом ходу уже строили: за ход — одна постройка на группу (§5). Сбрасывается при передаче хода.
+        internal HashSet<CellType> BuiltThisTurn { get; } = new();
 
         public Player? FindPlayer(int id) => Players.FirstOrDefault(p => p.Id == id);
 
@@ -110,7 +115,7 @@ namespace Monopoly.Core
         public GameSnapshot ToSnapshot() => new(
             Players.Select(p => new PlayerSnapshot(p.Id, p.Name, p.Balance, p.Position, p.IsInJail, p.IsResting,
                 p.JailCards, p.IsBankrupt)).ToList(),
-            Board.Select(c => new CellSnapshot(c.OwnerId, c.Level, c.IsMortgaged, c.Price)).ToList(),
+            Board.Select(c => new CellSnapshot(c.OwnerId, c.Level, c.IsMortgaged, c.Price, c.MortgageTurnsLeft)).ToList(),
             CurrentPlayer.Id,
             Phase,
             LastRoll,

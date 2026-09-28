@@ -28,6 +28,7 @@ namespace Monopoly.Core
                     cell.OwnerId = owner.OwnerId;
                     if (owner.OwnerId is null)
                         cell.IsMortgaged = false;
+                        cell.MortgageTurnsLeft = 0;
                     break;
                 case AdminSetJail jail:
                     SetJail(State.FindPlayer(jail.TargetId)!, jail.InJail);

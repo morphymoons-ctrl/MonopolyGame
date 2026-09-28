@@ -16,6 +16,8 @@ namespace Monopoly.Core
         // 0 — без филиалов, 1–4 — филиалы, 5 — головной офис.
         public int Level { get; internal set; }
         public bool IsMortgaged { get; internal set; }
+        // Сколько своих ходов у владельца осталось на выкуп заложенной компании (§10). 0 — идёт последний ход.
+        public int MortgageTurnsLeft { get; internal set; }
 
         public BoardCell(string name, CellType type, int price = 0)
         {

@@ -345,7 +345,7 @@ namespace Monopoly.App
                     CornerRadius = new CornerRadius(4),
                     Padding = new Thickness(u * 0.06, 0, u * 0.06, 0),
                     Background = PlayerPalette.Make("#CC1E2126"),
-                    Child = new TextBlock { Text = "ЗАСТАВА", Foreground = Brushes.White, FontSize = u * 0.13, FontWeight = FontWeights.Black },
+                    Child = new TextBlock { Text = state.MortgageTurnsLeft > 0 ? $"ЗАСТАВА · {state.MortgageTurnsLeft}" : "ЗАСТАВА · !", Foreground = Brushes.White, FontSize = u * 0.13, FontWeight = FontWeights.Black },
                     IsHitTestVisible = false
                 };
                 mortgaged.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));

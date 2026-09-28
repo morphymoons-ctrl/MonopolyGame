@@ -40,13 +40,11 @@ namespace Monopoly.Tests
         public void Build_MustBeEven()
         {
             var game = WithSupermarkets();
-            game.Do(new BuildBranch(0, Atb));
+            game.State.Board[Atb].Level = 1;
 
             Assert.Equal("Будуйте рівномірно: спершу на інших компаніях групи.", game.Error(new BuildBranch(0, Atb)));
             game.Do(new BuildBranch(0, Varus));
-            game.Do(new BuildBranch(0, Silpo));
-            game.Do(new BuildBranch(0, Atb));
-            Assert.Equal(2, Level(game, Atb));
+            Assert.Equal(1, Level(game, Varus));
         }
 
         [Fact]
@@ -59,9 +57,31 @@ namespace Monopoly.Tests
             var result = game.Do(new BuildBranch(0, Silpo));
 
             Assert.Contains(new BranchBuilt(0, Silpo, 5, 100_000), result.Events);
-            game.Do(new BuildBranch(0, Atb));
-            game.Do(new BuildBranch(0, Varus));
             Assert.Equal("Тут уже головний офіс.", game.Error(new BuildBranch(0, Silpo)));
+        }
+
+        // За ход в группе — одно строительство (§5); в другой группе — можно; следующим ходом — снова можно.
+        [Fact]
+        public void Build_OnePerGroupPerTurn()
+        {
+            // Аня: 1 + 2 → свой «Сілько»; Богдан: 1 + 2 → «Сілько» Ани (аренда); Аня снова ходит.
+            var game = Create(1, 2, 1, 2);
+            game.Give(0, Atb, Varus, Silpo, Tet, 10, 11);
+
+            game.Do(new BuildBranch(0, Atb));
+            Assert.Equal("У цій групі вже будували цього ходу — наступне будівництво лише наступного ходу.", game.Error(new BuildBranch(0, Varus)));
+            Assert.DoesNotContain(new BuildBranch(0, Varus), game.GetAvailableActions(0));
+            game.Do(new BuildBranch(0, Tet));
+
+            // После броска ход тот же — ограничение действует до передачи хода.
+            game.Do(new RollDice(0));
+            Assert.NotNull(game.Error(new BuildBranch(0, Varus)));
+            game.Do(new EndTurn(0));
+            game.Do(new RollDice(1));
+            game.Do(new EndTurn(1));
+
+            game.Do(new BuildBranch(0, Varus));
+            Assert.Equal(1, Level(game, Varus));
         }
 
         [Fact]
@@ -137,6 +157,62 @@ namespace Monopoly.Tests
             game.Do(new RedeemCompany(0, Atb));
             Assert.False(game.State.Board[Atb].IsMortgaged);
             Assert.Equal(GameRules.StartingBalance - 5_000, game.P(0).Balance);
+        }
+
+        // Срок выкупа (§10): 15 своих ходов; не выкупил — в начале 16-го компания уходит банку.
+        // Ходы передаём напрямую (этап «после броска»), чтобы не расписывать кубики на 30 ходов.
+        private static ActionResult PassTo(Game game, int nextId)
+        {
+            int current = game.State.CurrentPlayer.Id;
+            game.State.Stage = TurnPhase.Manage;
+            var result = game.Do(new EndTurn(current));
+            Assert.Equal(nextId, game.State.CurrentPlayer.Id);
+            return result;
+        }
+
+        [Fact]
+        public void Mortgage_ExpiresAfterFifteenOwnTurns()
+        {
+            var game = WithSupermarkets();
+            game.Do(new MortgageCompany(0, Atb));
+            Assert.Equal(GameRules.MortgageTurns, game.State.Board[Atb].MortgageTurnsLeft);
+
+            for (int turn = 1; turn <= GameRules.MortgageTurns; turn++)
+            {
+                PassTo(game, 1);
+                var started = PassTo(game, 0);
+                Assert.DoesNotContain(started.Events, e => e is MortgageExpired);
+                Assert.Equal(GameRules.MortgageTurns - turn, game.State.Board[Atb].MortgageTurnsLeft);
+            }
+            Assert.Equal(0, game.State.Board[Atb].OwnerId);
+            Assert.Equal(0, game.State.ToSnapshot().Cells[Atb].MortgageTurnsLeft);
+
+            PassTo(game, 1);
+            var expired = PassTo(game, 0);
+
+            Assert.Contains(new MortgageExpired(0, Atb), expired.Events);
+            Assert.Null(game.State.Board[Atb].OwnerId);
+            Assert.False(game.State.Board[Atb].IsMortgaged);
+            // Деньги за залог остаются у игрока.
+            Assert.Equal(GameRules.StartingBalance + 50_000, game.P(0).Balance);
+        }
+
+        [Fact]
+        public void Mortgage_SkippedTurnsDoNotCount_RedeemClearsDeadline()
+        {
+            var game = WithSupermarkets();
+            game.Do(new MortgageCompany(0, Atb));
+
+            game.P(0).IsResting = true;
+            PassTo(game, 1);
+            PassTo(game, 1); // ход Ани пропущен — срок не уменьшается
+            Assert.Equal(GameRules.MortgageTurns, game.State.Board[Atb].MortgageTurnsLeft);
+
+            PassTo(game, 0);
+            Assert.Equal(GameRules.MortgageTurns - 1, game.State.Board[Atb].MortgageTurnsLeft);
+            game.Do(new RedeemCompany(0, Atb));
+            Assert.Equal(0, game.State.Board[Atb].MortgageTurnsLeft);
+            Assert.False(game.State.Board[Atb].IsMortgaged);
         }
 
         [Fact]

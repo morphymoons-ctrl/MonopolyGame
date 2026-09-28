@@ -358,8 +358,8 @@ namespace Monopoly.Tests
         [Fact]
         public void Rest_SkipsNextTurn()
         {
-            // Аня: 12 → 17 «Отдых». Богдан ходит дважды подряд — по своим компаниям: 0 → 3 → 7.
-            var game = Create(2, 3, 1, 2, 1, 3);
+            // Аня: 12 → 20 «Зачілься». Богдан ходит дважды подряд — по своим компаниям: 0 → 3 → 7.
+            var game = Create(3, 5, 1, 2, 1, 3);
             game.P(0).Position = Okko;
             game.Give(1, Silpo, Azovstal);
 

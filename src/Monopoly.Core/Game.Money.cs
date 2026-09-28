@@ -77,6 +77,7 @@ namespace Monopoly.Core
                 cell.Level = 0;
                 cell.OwnerId = null;
                 cell.IsMortgaged = false;
+                cell.MortgageTurnsLeft = 0;
             }
 
             if (creditor is not null)

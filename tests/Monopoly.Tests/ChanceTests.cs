@@ -1,4 +1,4 @@
-using Monopoly.Core;
+﻿using Monopoly.Core;
 using static Monopoly.Tests.TestGame;
 
 namespace Monopoly.Tests
@@ -9,7 +9,7 @@ namespace Monopoly.Tests
         private static Game Drawing(ChanceCard card, int players = 3)
         {
             var game = CreateFor(players, 1, 3);
-            game.P(0).Position = StripClub;
+            game.P(0).Position = FourBeforeChance;
             game.PutOnTop(card);
             return game;
         }
@@ -127,7 +127,7 @@ namespace Monopoly.Tests
         public void GoToJail_EvenAfterDouble_NoExtraRoll()
         {
             var game = CreateFor(3, 2, 2);
-            game.P(0).Position = StripClub;
+            game.P(0).Position = FourBeforeChance;
             game.PutOnTop(ChanceCard.GoToJail);
 
             var result = game.Do(new RollDice(0));

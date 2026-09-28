@@ -29,6 +29,7 @@ namespace Monopoly.Core
                 board[i].OwnerId = Cells[i].OwnerId;
                 board[i].Level = Cells[i].Level;
                 board[i].IsMortgaged = Cells[i].IsMortgaged;
+                board[i].MortgageTurnsLeft = Cells[i].MortgageTurnsLeft;
             }
         }
     }
@@ -37,7 +38,8 @@ namespace Monopoly.Core
     public sealed record PlayerSnapshot(
         int Id, string Name, int Balance, int Position, bool IsInJail, bool IsResting, int JailCards, bool IsBankrupt);
 
-    public sealed record CellSnapshot(int? OwnerId, int Level, bool IsMortgaged, int Price);
+    // MortgageTurnsLeft — сколько ходов владельца осталось на выкуп заложенной компании (§10).
+    public sealed record CellSnapshot(int? OwnerId, int Level, bool IsMortgaged, int Price, int MortgageTurnsLeft = 0);
 
     public sealed record AuctionSnapshot(int CellIndex, int? LeaderId, int HighBid, int MinBid, IReadOnlyList<int> PassedIds);
 }

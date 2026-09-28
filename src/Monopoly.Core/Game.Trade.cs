@@ -3,9 +3,15 @@ namespace Monopoly.Core
     // Обмен между игроками (RULES.md, §11).
     public partial class Game
     {
+        // Кто сейчас может предложить обмен: текущий игрок в свой ход или должник, пока висит его долг — даже не в свой ход.
+        private string? ValidateTradeTiming(Player player) =>
+            State.Phase == TurnPhase.Debt && State.Debts[0].DebtorId == player.Id
+                ? null
+                : RequireTurn(player, TurnPhase.AwaitingRoll, TurnPhase.Manage);
+
         private string? ValidateProposal(Player player, ProposeTrade proposal)
         {
-            var error = RequireTurn(player, TurnPhase.AwaitingRoll, TurnPhase.Manage);
+            var error = ValidateTradeTiming(player);
             if (error is not null)
                 return error;
             var target = State.FindPlayer(proposal.TargetId);

@@ -44,6 +44,9 @@ namespace Monopoly.Core
     // Сработала карточка «Вийти з пєтушатні»: ход не пропускается.
     public sealed record JailCardUsed(int PlayerId) : GameEvent;
 
+    // Заложенную компанию не выкупили за 15 ходов — она вернулась банку (§10).
+    public sealed record MortgageExpired(int PlayerId, int CellIndex) : GameEvent;
+
     // --- Покупка и аукцион ---
 
     public sealed record PurchaseOffered(int PlayerId, int CellIndex, int Price) : GameEvent;

@@ -535,7 +535,7 @@ namespace Monopoly.Admin
                 else if (cell.Level > 0)
                     parts.Add($"{window.Terms.BranchesGenitive}: {cell.Level}");
                 if (cell.IsMortgaged)
-                    parts.Add("закладена");
+                    parts.Add(cell.MortgageTurnsLeft > 0 ? $"закладена, на викуп ходів: {cell.MortgageTurnsLeft}" : "закладена, останній хід на викуп");
                 info.Text = string.Join(" · ", parts);
 
                 string name = cell.OwnerId is int id ? snapshot.FindPlayer(id)?.Name ?? "?" : "Банк";

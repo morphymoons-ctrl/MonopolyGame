@@ -97,6 +97,7 @@ namespace Monopoly.App
                 BranchSold s => $"{Name(s.PlayerId)} продає {terms.BranchAccusative} на «{Cell(s.CellIndex)}» за {Money(s.Amount)}.",
                 CompanyMortgaged m => $"{Name(m.PlayerId)} закладає «{Cell(m.CellIndex)}» і отримує {Money(m.Amount)}.",
                 CompanyRedeemed r => $"{Name(r.PlayerId)} викуповує «{Cell(r.CellIndex)}» за {Money(r.Amount)}.",
+                MortgageExpired x => $"{Name(x.PlayerId)} не викупив «{Cell(x.CellIndex)}» за {GameRules.MortgageTurns} ходів — компанія повертається банку, її знову можна купити.",
 
                 TradeProposed t => $"{Name(t.Offer.FromId)} пропонує обмін гравцю {Name(t.Offer.ToId)}: {DescribeOffer(t.Offer, snapshot)}",
                 TradeAccepted t => $"{Name(t.Offer.ToId)} погоджується на обмін.",
@@ -109,6 +110,9 @@ namespace Monopoly.App
         // Союз «і» / «й» по правилу милозвучності: после гласной — «й» («у пєтушатні й»), после согласной — «і» («під блокуванням і»).
         private static string And(string before) =>
             before.Length > 0 && "аеєиіїоуюяАЕЄИІЇОУЮЯ".Contains(before[^1]) ? "й" : "і";
+
+        // Срок на выкуп заложенной компании (§10): «ще 7 ходів» или «останній хід».
+        public static string MortgageLeft(int turnsLeft) => turnsLeft > 0 ? $"на викуп ходів: {turnsLeft}" : "останній хід на викуп";
 
         public static string DescribeOffer(TradeOffer offer, GameSnapshot snapshot)
         {

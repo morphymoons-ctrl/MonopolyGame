@@ -32,6 +32,8 @@ namespace Monopoly.Core
                 return "У групі є закладена компанія — спершу викупіть її.";
             if (cell.Level == GameRules.HeadOfficeLevel)
                 return $"Тут уже {State.Terms.Office}.";
+            if (State.BuiltThisTurn.Contains(cell.Type))
+                return "У цій групі вже будували цього ходу — наступне будівництво лише наступного ходу.";
             if (cell.Level > group.Min(c => c.Level))
                 return "Будуйте рівномірно: спершу на інших компаніях групи.";
             return player.Balance < cell.BranchCost ? $"Не вистачає грошей: {State.Terms.Branch} коштує {Money(cell.BranchCost)}." : null;
@@ -80,6 +82,7 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             player.Balance -= cell.BranchCost;
             cell.Level++;
+            State.BuiltThisTurn.Add(cell.Type);
             events.Add(new BranchBuilt(player.Id, cellIndex, cell.Level, cell.BranchCost));
         }
 
@@ -96,6 +99,7 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             player.Balance += cell.MortgageValue;
             cell.IsMortgaged = true;
+            cell.MortgageTurnsLeft = GameRules.MortgageTurns;
             events.Add(new CompanyMortgaged(player.Id, cellIndex, cell.MortgageValue));
         }
 
@@ -104,7 +108,28 @@ namespace Monopoly.Core
             var cell = State.Board[cellIndex];
             player.Balance -= cell.RedeemCost;
             cell.IsMortgaged = false;
+            cell.MortgageTurnsLeft = 0;
             events.Add(new CompanyRedeemed(player.Id, cellIndex, cell.RedeemCost));
+        }
+
+        // Начался ход владельца (§10): у его заложенных компаний срок на выкуп — на ход меньше.
+        // Срок вышел — компания возвращается банку свободной, деньги за залог у игрока остаются.
+        private void TickMortgages(Player owner, List<GameEvent> events)
+        {
+            for (int i = 0; i < State.Board.Count; i++)
+            {
+                var cell = State.Board[i];
+                if (cell.OwnerId != owner.Id || !cell.IsMortgaged)
+                    continue;
+                if (cell.MortgageTurnsLeft > 0)
+                {
+                    cell.MortgageTurnsLeft--;
+                    continue;
+                }
+                cell.OwnerId = null;
+                cell.IsMortgaged = false;
+                events.Add(new MortgageExpired(owner.Id, i));
+            }
         }
     }
 }

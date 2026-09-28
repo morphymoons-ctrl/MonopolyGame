@@ -35,6 +35,46 @@ namespace Monopoly.Tests
             Assert.Equal(TurnPhase.Manage, game.State.Phase);
         }
 
+        // Должник может предложить обмен, чтобы собрать деньги (§11); принятый обмен сам закрывает долг.
+        [Fact]
+        public void Debtor_CanProposeTrade_AcceptedTradeClosesDebt()
+        {
+            var game = RentDue(players: 3);
+            game.P(0).Balance = 10_000;
+            game.Give(0, Atb);
+            game.Do(new RollDice(0));
+            Assert.Equal(TurnPhase.Debt, game.State.Phase);
+            Assert.Contains(game.GetAvailableActions(0), a => a is ProposeTrade);
+
+            var offer = new ProposeTrade(0, 2, new TradeTerms(new[] { Atb }, 0, 0), new TradeTerms(Array.Empty<int>(), 50_000, 0));
+            Assert.NotNull(game.Error(offer with { PlayerId = 1, TargetId = 2 }));
+            game.Do(offer);
+            Assert.Equal(TurnPhase.TradeOffer, game.State.Phase);
+            Assert.Equal(new[] { 2 }, game.AwaitedPlayers());
+
+            var accepted = game.Do(new AcceptTrade(2));
+
+            Assert.Contains(new DebtPaid(0, 1, 16_800), accepted.Events);
+            Assert.Equal(2, game.State.Board[Atb].OwnerId);
+            Assert.Equal(10_000 + 50_000 - 16_800, game.P(0).Balance);
+            Assert.Equal(TurnPhase.Manage, game.State.Phase);
+        }
+
+        [Fact]
+        public void RejectedTrade_BackToDebt()
+        {
+            var game = RentDue(players: 3);
+            game.P(0).Balance = 10_000;
+            game.Give(0, Atb);
+            game.Do(new RollDice(0));
+
+            game.Do(new ProposeTrade(0, 2, new TradeTerms(new[] { Atb }, 0, 0), new TradeTerms(Array.Empty<int>(), 50_000, 0)));
+            game.Do(new RejectTrade(2));
+
+            Assert.Equal(TurnPhase.Debt, game.State.Phase);
+            Assert.Equal(new[] { 0 }, game.AwaitedPlayers());
+        }
+
         [Fact]
         public void CannotCover_BankruptToCreditor_AndGameOver()
         {
@@ -81,7 +121,7 @@ namespace Monopoly.Tests
         {
             // Аня: 20 → 24 «Шанс», «Подписка на стриминги» (−100 000). Наличных нет, собрать можно только 50 000 (залог «Масажки»).
             var game = CreateFor(3, 1, 3);
-            game.P(0).Position = StripClub;
+            game.P(0).Position = FourBeforeChance;
             game.P(0).Balance = 0;
             game.P(0).JailCards = 1;
             game.Give(0, Atb, Massage);
@@ -146,7 +186,7 @@ namespace Monopoly.Tests
         {
             // Аня: 20 → 24 «Шанс», «День рождения». У Богдана нет наличных, но есть АКБ; Вика платит сразу.
             var game = CreateFor(3, 1, 3);
-            game.P(0).Position = StripClub;
+            game.P(0).Position = FourBeforeChance;
             game.PutOnTop(ChanceCard.Birthday);
             game.P(1).Balance = 0;
             game.Give(1, Atb);

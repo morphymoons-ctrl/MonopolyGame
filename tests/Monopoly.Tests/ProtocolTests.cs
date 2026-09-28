@@ -37,6 +37,7 @@ namespace Monopoly.Tests
                 new RestStarted(1),
                 new SentToJail(1, JailReason.Landed),
                 new JailCardUsed(1),
+                new MortgageExpired(1, 3),
                 new PurchaseOffered(1, 3, 140),
                 new PropertyBought(1, 3, 140),
                 new PurchaseDeclined(1, 3),
