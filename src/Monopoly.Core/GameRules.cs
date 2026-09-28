@@ -50,28 +50,62 @@ namespace Monopoly.Core
 
         private static readonly CultureInfo Ukrainian = CultureInfo.GetCultureInfo("uk-UA");
 
-        // Сумма для текста игроку: «1 500 000 грн», на доске «Криптовалюти» — «$1 500 000» (§15). Суммы те же, меняется знак.
+        // Суммы в игре — не мельче сотен, а от миллиона — не мельче сотен тысяч (§5):
+        // коротко любая сумма пишется максимум с одним знаком после запятой («15,2к», «1,4м»), без «15,25к».
+        public static int RoundMoney(int amount)
+        {
+            int step = Math.Abs(amount) >= 1_000_000 ? 100_000 : 100;
+            return (int)Math.Round(amount / (double)step, MidpointRounding.AwayFromZero) * step;
+        }
+
+        // Военная доска и «Битва олігархів» (§15): суммы показываются в 1000 раз больше, в миллионах — «90 млн грн».
+        // Движок считает в тех же числах, что и на остальных досках, поэтому экономика одна.
+        public static int MoneyScale(BoardTheme theme) => theme is BoardTheme.Military or BoardTheme.Oligarchs ? 1000 : 1;
+
+        // Сумма для текста игроку: «1 500 000 грн», на доске «Криптовалюти» — «$1 500 000», на досках в миллионах — «1 500 млн грн» (§15).
         // Между тысячами — неразрывный пробел, число не разрывается переносом.
         public static string Money(int amount, BoardTheme theme = BoardTheme.Business)
         {
+            if (MoneyScale(theme) > 1)
+                return $"{Millions(amount, theme).ToString("#,0.#", Ukrainian)} млн грн";
             string number = amount.ToString("N0", Ukrainian);
             return theme == BoardTheme.Crypto ? $"${number}" : $"{number} грн";
         }
 
-        // Знак валюты для подписей: «грн» или «$».
-        public static string Currency(BoardTheme theme) => theme == BoardTheme.Crypto ? "$" : "грн";
+        private static double Millions(int amount, BoardTheme theme) => amount * (long)MoneyScale(theme) / 1_000_000.0;
 
-        // Коротко, для аренды на клетке: «16,8к», «252к», «1,05м» (на крипто-доске — «$252к») — чтобы не путать с ценой покупки.
+        // Единица для подписей и полей ввода: «грн», «$» или «млн грн».
+        public static string Currency(BoardTheme theme) =>
+            MoneyScale(theme) > 1 ? "млн грн" : theme == BoardTheme.Crypto ? "$" : "грн";
+
+        // Коротко, для аренды на клетке: «16,8к», «252к», «1,4м», на досках в миллионах — «16,8м», «1,4млрд»
+        // (на крипто-доске — «$252к») — чтобы не путать с ценой покупки. Знак после запятой — не больше одного.
         public static string ShortMoney(int amount, BoardTheme theme = BoardTheme.Business)
         {
-            string text = amount >= 1_000_000
-                ? $"{(amount / 1_000_000.0).ToString("0.##", Ukrainian)}м"
-                : $"{(amount / 1_000.0).ToString("0.#", Ukrainian)}к";
+            long value = amount * (long)MoneyScale(theme);
+            string text = value >= 1_000_000_000 ? $"{(value / 1_000_000_000.0).ToString("0.#", Ukrainian)}млрд"
+                : value >= 1_000_000 ? $"{(value / 1_000_000.0).ToString("0.#", Ukrainian)}м"
+                : $"{(value / 1_000.0).ToString("0.#", Ukrainian)}к";
             return theme == BoardTheme.Crypto ? $"${text}" : text;
         }
 
+        // Сумма для поля ввода — в единицах Currency: «150000» или, на досках в миллионах, «150» и «1,5».
+        public static string MoneyInput(int amount, BoardTheme theme) =>
+            MoneyScale(theme) > 1 ? Millions(amount, theme).ToString("0.#", Ukrainian) : amount.ToString(CultureInfo.InvariantCulture);
+
+        // Сумма из поля ввода (в единицах Currency): пробелы, «грн» и «$» не мешают, у миллионов можно дробь — «1,5» или «1.5».
+        // Результат округлён до сотен (RoundMoney). null — не число или слишком много.
+        public static int? ParseMoney(string text, BoardTheme theme)
+        {
+            var number = new string(text.Where(ch => char.IsDigit(ch) || ch is ',' or '.').ToArray()).Replace(',', '.');
+            if (!decimal.TryParse(number, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal value))
+                return null;
+            decimal amount = MoneyScale(theme) > 1 ? value * 1_000_000 / MoneyScale(theme) : value;
+            return amount <= int.MaxValue ? RoundMoney((int)Math.Round(amount)) : null;
+        }
+
         // Базовая аренда — BaseRentPercent от цены.
-        public static int BaseRent(BoardCell cell) => cell.Price * BaseRentPercent / 100;
+        public static int BaseRent(BoardCell cell) => RoundMoney(cell.Price * BaseRentPercent / 100);
 
         // Аренда за клетку (§5). diceTotal нужен для логистики.
         public static int Rent(IReadOnlyList<BoardCell> board, int cellIndex, int diceTotal)
@@ -92,11 +126,14 @@ namespace Monopoly.Core
                     return diceTotal * (owned == group.Count ? LogisticsBoth : LogisticsSingle);
             }
 
-            int baseRent = BaseRent(cell);
             if (cell.Level > 0)
-                return baseRent * LevelMultipliers[cell.Level];
+                return LevelRent(cell, cell.Level);
+            int baseRent = BaseRent(cell);
             return owned == group.Count ? baseRent * MonopolyMultiplier : baseRent;
         }
+
+        // Аренда с филиалами или головным офисом (level 1–5), округлённая: от миллиона — до сотен тысяч.
+        public static int LevelRent(BoardCell cell, int level) => RoundMoney(BaseRent(cell) * LevelMultipliers[level]);
 
         // Сколько компаний группы у владельца приносят доход — незаложенных. От этого числа — аренда АЗС, логистики и ×2 группы.
         public static int ActiveInGroup(IReadOnlyList<BoardCell> board, CellType type, int ownerId) =>

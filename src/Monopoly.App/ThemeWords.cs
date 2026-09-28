@@ -41,12 +41,24 @@ namespace Monopoly.App
             "в AFK і пропускає хід", "іде в AFK і пропустить наступний хід", "AFK",
             "відкриває кейси в CS");
 
+        public static readonly ThemeWords Oligarchs = new(
+            "під санкціями", "під санкції", "під санкції", "з-під санкцій", "Зняття санкцій",
+            "на віллі в Монако й пропускає хід", "летить на віллу в Монако й пропустить наступний хід", "у Монако",
+            "іде на рейдерське захоплення");
+
+        public static readonly ThemeWords Kyiv = new(
+            "у заторі", "у затор", "у затор", "із затору", "Об'їзд дворами",
+            "відпочиває на Трухановому острові й пропускає хід", "їде на Трухановий острів і пропустить наступний хід", "на Трухановому",
+            "грає з наперсточниками");
+
         public static ThemeWords For(BoardTheme theme) => theme switch
         {
             BoardTheme.Military => Military,
             BoardTheme.Government => Government,
             BoardTheme.Crypto => Crypto,
             BoardTheme.Games => Games,
+            BoardTheme.Oligarchs => Oligarchs,
+            BoardTheme.Kyiv => Kyiv,
             _ => Business,
         };
 
@@ -56,6 +68,8 @@ namespace Monopoly.App
             BoardTheme.Government => "Уряд України",
             BoardTheme.Crypto => "Криптовалюти",
             BoardTheme.Games => "Відеоігри",
+            BoardTheme.Oligarchs => "Битва олігархів",
+            BoardTheme.Kyiv => "Київ",
             _ => "Українські бізнеси",
         };
     }

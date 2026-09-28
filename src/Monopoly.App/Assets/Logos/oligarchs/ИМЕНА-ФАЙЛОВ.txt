@@ -1,0 +1,32 @@
+Логотипы доски «Битва олігархів».
+Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Ларьок на ринку            larok.png
+Автомийка                  avtomyika.png
+Ломбард                    lombard.png
+Полтавське родовище        poltavske-rodovyshche.png
+Хлібозавод                 khlibozavod.png
+Цукровий завод             tsukrovyi-zavod.png
+Птахофабрика               ptakhofabryka.png
+Регіональна газета         hazeta.png
+Радіостанція               radiostantsiia.png
+Телеканал                  telekanal.png
+Шебелинка                  shebelynka.png
+Коксохім                   koksokhim.png
+ГЗК                        hzk.png
+Меткомбінат                metkombinat.png
+Міні-НПЗ                   mini-npz.png
+Мережа АЗС                 merezha-azs.png
+Газзбут                    hazzbut.png
+Борислав                   boryslav.png
+Газопровід                 hazoprovid.png
+Нафтопровід                naftoprovid.png
+Кредитна спілка            kredytna-spilka.png
+Регіональний банк          rehionalnyi-bank.png
+Системний банк             systemnyi-bank.png
+Чорноморський шельф        shelf.png
+Інвестфонд                 investfond.png
+Офшор на Кіпрі             ofshor.png
+Фінпромгрупа               finpromhrupa.png

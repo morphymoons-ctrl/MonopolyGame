@@ -302,15 +302,16 @@ namespace Monopoly.Admin
 
         private string PlayerName(int id) => view?.Snapshot?.FindPlayer(id)?.Name ?? "?";
 
-        // Сумма из поля ввода: цифры, пробелы, «грн» и «$» допускаются. null — не число.
-        private static int? ParseMoney(string text)
-        {
-            var digits = new string(text.Where(char.IsDigit).ToArray());
-            return digits.Length is > 0 and <= 10 && long.TryParse(digits, out long value) && value <= int.MaxValue ? (int)value : null;
-        }
+        // Сумма из поля ввода — в единицах доски (гривны, $ или млн грн, §15). null — не число.
+        private int? ParseMoney(string text) => GameRules.ParseMoney(text, theme);
 
-        // Число без знака валюты — для полей ввода.
-        private static string Plain(int amount) => amount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("uk-UA"));
+        // Число без знака валюты — для полей ввода, в тех же единицах.
+        private string Plain(int amount) => GameRules.MoneyScale(theme) > 1
+            ? GameRules.MoneyInput(amount, theme)
+            : amount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("uk-UA"));
+
+        // Пример суммы для подсказки об ошибке: «1 500 000» или «1 500» (млн грн).
+        private string Example(int amount) => $"{Plain(amount)} ({GameRules.Currency(theme)})";
 
         // Суммы — в валюте доски партии (§15).
         private string Money(int amount) => GameRules.Money(amount, theme);
@@ -406,9 +407,9 @@ namespace Monopoly.Admin
 
             private async Task SetBalanceAsync()
             {
-                if (ParseMoney(balance.Text) is not int amount)
+                if (window.ParseMoney(balance.Text) is not int amount)
                 {
-                    window.ShowStatus("Баланс — це число гривень, наприклад 1 500 000.", false);
+                    window.ShowStatus($"Баланс — це число, наприклад {window.Example(GameRules.StartingBalance)}.", false);
                     return;
                 }
                 await window.RunAsync(new AdminSetBalance(Id, amount), $"Баланс {window.PlayerName(Id)}: {window.Money(amount)}.");
@@ -445,7 +446,7 @@ namespace Monopoly.Admin
                 balanceNow.Text = $"зараз {window.Money(player.Balance)}";
                 // Пока админ вводит сумму, живые обновления поле не трогают.
                 if (!balance.IsKeyboardFocusWithin)
-                    balance.Text = Plain(player.Balance);
+                    balance.Text = window.Plain(player.Balance);
 
                 bool active = !player.IsBankrupt && snapshot.WinnerId is null;
                 balance.IsEnabled = setBalance.IsEnabled = jail.IsEnabled = active;
@@ -517,9 +518,9 @@ namespace Monopoly.Admin
 
             private async Task SetPriceAsync()
             {
-                if (ParseMoney(price.Text) is not int amount)
+                if (window.ParseMoney(price.Text) is not int amount)
                 {
-                    window.ShowStatus("Ціна — це число гривень, наприклад 200 000.", false);
+                    window.ShowStatus($"Ціна — це число, наприклад {window.Example(200_000)}.", false);
                     return;
                 }
                 await window.RunAsync(new AdminSetPrice(Index, amount), $"Ціна «{window.Cells[Index].Name}»: {window.Money(amount)}.");
@@ -541,7 +542,7 @@ namespace Monopoly.Admin
                 string name = cell.OwnerId is int id ? snapshot.FindPlayer(id)?.Name ?? "?" : "Банк";
                 ownerText.Text = $"Власник: {name}  ▾";
                 if (!price.IsKeyboardFocusWithin)
-                    price.Text = Plain(cell.Price);
+                    price.Text = window.Plain(cell.Price);
 
                 bool running = snapshot.WinnerId is null;
                 owner.IsEnabled = running;

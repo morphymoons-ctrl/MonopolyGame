@@ -15,6 +15,8 @@ namespace Monopoly.Core
         public static readonly GameTerms Government = new("відділ", "відділ", "відділи", "відділів", "головне управління", "ГУ");
         public static readonly GameTerms Crypto = new("нода", "ноду", "ноди", "нод", "дата-центр", "ДЦ");
         public static readonly GameTerms Games = new("сервер", "сервер", "сервери", "серверів", "турнірна арена", "АРЕНА");
+        public static readonly GameTerms Oligarchs = new("дочка", "дочку", "дочки", "дочок", "холдинг", "ХОЛД");
+        public static readonly GameTerms Kyiv = new("поверх", "поверх", "поверхи", "поверхів", "хмарочос", "ВЕЖА");
 
         public static GameTerms For(BoardTheme theme) => theme switch
         {
@@ -22,6 +24,8 @@ namespace Monopoly.Core
             BoardTheme.Government => Government,
             BoardTheme.Crypto => Crypto,
             BoardTheme.Games => Games,
+            BoardTheme.Oligarchs => Oligarchs,
+            BoardTheme.Kyiv => Kyiv,
             _ => Business,
         };
 

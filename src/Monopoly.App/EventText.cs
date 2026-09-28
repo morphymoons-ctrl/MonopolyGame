@@ -135,7 +135,55 @@ namespace Monopoly.App
             BoardTheme.Government => GovernmentCardText(card),
             BoardTheme.Crypto => CryptoCardText(card),
             BoardTheme.Games => GamesCardText(card),
+            BoardTheme.Oligarchs => OligarchsCardText(card),
+            BoardTheme.Kyiv => KyivCardText(card),
             _ => BusinessCardText(card),
+        };
+
+        // Карточки «Київ Цифровий» доски «Київ»: те же действия, тексты — киевский быт (§15).
+        private static string KyivCardText(ChanceCard card) => card switch
+        {
+            ChanceCard.TaxRefund => $"«Київ Цифровий» нарахував бонуси за поїздки: +{CardAmount(card)}.",
+            ChanceCard.ProjectBonus => $"Здали квартиру на Печерську подобово: +{CardAmount(card)}.",
+            ChanceCard.DancerRefund => $"Знайшли гаманець у фунікулері — власник дякує: +{CardAmount(card)}.",
+            ChanceCard.Cashback => $"Кешбек за проїзд у метро: +{CardAmount(card)}.",
+            ChanceCard.Birthday => $"Новосілля на Позняках — кожен гравець дарує вам {Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.ParkingFine => $"Евакуатор забрав авто з тротуару: −{CardAmount(card)}.",
+            ChanceCard.Utilities => $"Рахунок за опалення прийшов раніше за саме опалення: −{CardAmount(card)}.",
+            ChanceCard.Streaming => $"Оренда однушки на Печерську: −{CardAmount(card)}.",
+            ChanceCard.MassageFinish => $"Застрягли в ліфті й запізнились на угоду: −{CardAmount(card)}.",
+            ChanceCard.Charity => $"Скидаємось на ремонт під'їзду: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Перевірка КМДА: {Money(ChanceCards.AuditPerBranch)} за кожен поверх і {Money(ChanceCards.AuditPerHeadOffice)} — за хмарочос.",
+            ChanceCard.GoToStart => $"Прогулянка Хрещатиком: уперед до «{Cells[0].Name}».",
+            ChanceCard.NovaPoshta => $"Спізнюєтесь на зустріч: уперед до «{Cells[22].Name}».",
+            ChanceCard.Taxi => "Таксі до найближчого вокзалу чи аеропорту. Якщо він чужий — подвійна оренда.",
+            ChanceCard.Train => "Проїхали свою станцію: назад на 3 клітинки.",
+            ChanceCard.GoToJail => "Ремонт на мосту — ви застрягли в заторі!",
+            ChanceCard.GetOutOfJail => "Об'їзд дворами. Спрацює сам, коли потрапите в затор, — хід не пропустите. Картку можна віддати в обміні.",
+            _ => card.ToString(),
+        };
+
+        // Карточки «Схеми» доски «Битва олігархів»: те же действия, тексты — общая сатира без реальных людей (§15).
+        private static string OligarchsCardText(ChanceCard card) => card switch
+        {
+            ChanceCard.TaxRefund => $"Держава компенсувала «втрачену вигоду»: +{CardAmount(card)}.",
+            ChanceCard.ProjectBonus => $"Виграли тендер, де були єдиним учасником: +{CardAmount(card)}.",
+            ChanceCard.DancerRefund => $"Продали футболіста за кордон: +{CardAmount(card)}.",
+            ChanceCard.Cashback => $"Повернули ПДВ «своїй» фірмі: +{CardAmount(card)}.",
+            ChanceCard.Birthday => $"Ювілей олігарха — кожен гравець дарує вам {Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.ParkingFine => $"Яхта зачепила чужий причал: −{CardAmount(card)}.",
+            ChanceCard.Utilities => $"Утримання охорони й адвокатів: −{CardAmount(card)}.",
+            ChanceCard.Streaming => $"«Купили» голосування в Раді: −{CardAmount(card)}.",
+            ChanceCard.MassageFinish => $"Журналісти знайшли ваш маєток — платите за PR: −{CardAmount(card)}.",
+            ChanceCard.Charity => $"Благодійний фонд для іміджу: заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Податкова згадала про вас: {Money(ChanceCards.AuditPerBranch)} за кожну дочку і {Money(ChanceCards.AuditPerHeadOffice)} — за холдинг.",
+            ChanceCard.GoToStart => $"Нова хвиля приватизації: уперед до «{Cells[0].Name}».",
+            ChanceCard.NovaPoshta => $"Перевірка труби: уперед до «{Cells[22].Name}».",
+            ChanceCard.Taxi => "До найближчого родовища. Якщо воно чуже — подвійна оренда.",
+            ChanceCard.Train => "Суд скасував угоду: назад на 3 клітинки.",
+            ChanceCard.GoToJail => "Вас внесли в санкційний список!",
+            ChanceCard.GetOutOfJail => "Зняття санкцій. Спрацює саме, коли потрапите під санкції, — хід не пропустите. Картку можна віддати в обміні.",
+            _ => card.ToString(),
         };
 
         // Карточки «Лутбокса» доски «Відеоігри»: те же действия, другие тексты (§15).
@@ -285,7 +333,37 @@ namespace Monopoly.App
             BoardTheme.Government => GovernmentGroupName(type),
             BoardTheme.Crypto => CryptoGroupName(type),
             BoardTheme.Games => GamesGroupName(type),
+            BoardTheme.Oligarchs => OligarchsGroupName(type),
+            BoardTheme.Kyiv => KyivGroupName(type),
             _ => BusinessGroupName(type),
+        };
+
+        private static string KyivGroupName(CellType type) => type switch
+        {
+            CellType.Supermarket => "Спальні райони",
+            CellType.GasStation => "Вокзали й аеропорти",
+            CellType.Factory => "Торгові центри",
+            CellType.TV => "Ринки",
+            CellType.Food => "Мегамоли",
+            CellType.Nightlife => "Відпочинок",
+            CellType.Logistics => "Міський транспорт",
+            CellType.Bank => "Готелі",
+            CellType.NetworkShop => "Бізнес-центри",
+            _ => "",
+        };
+
+        private static string OligarchsGroupName(CellType type) => type switch
+        {
+            CellType.Supermarket => "Дрібні активи",
+            CellType.GasStation => "Родовища",
+            CellType.Factory => "Підприємства",
+            CellType.TV => "Медіа",
+            CellType.Food => "Металургія",
+            CellType.Nightlife => "Нафтопереробка",
+            CellType.Logistics => "Трубопроводи",
+            CellType.Bank => "Банки",
+            CellType.NetworkShop => "Фінансова імперія",
+            _ => "",
         };
 
         private static string GamesGroupName(CellType type) => type switch

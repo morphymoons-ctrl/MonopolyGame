@@ -126,7 +126,7 @@ namespace Monopoly.Tests
         [InlineData(16_800, "16,8к")]
         [InlineData(84_000, "84к")]
         [InlineData(924_000, "924к")]
-        [InlineData(1_050_000, "1,05м")]
+        [InlineData(1_400_000, "1,4м")]
         [InlineData(2_000_000, "2м")]
         public void ShortMoney_ForRentOnCells(int amount, string text)
         {

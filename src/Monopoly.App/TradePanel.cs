@@ -195,10 +195,10 @@ namespace Monopoly.App
             public TradeTerms? Terms(out string? error)
             {
                 error = null;
-                // Пробелы между тысячами допускаются: «50 000».
-                if (!int.TryParse(Digits(money.Text), out int moneyValue) || moneyValue < 0)
+                // Пробелы между тысячами допускаются: «50 000»; на досках в миллионах — дробь «1,5» (§15). Сумма округляется (§11).
+                if (money.Text.Contains('-') || GameRules.ParseMoney(money.Text, EventText.Theme) is not int moneyValue)
                 {
-                    error = "Гроші — ціле число від 0.";
+                    error = GameRules.MoneyScale(EventText.Theme) > 1 ? "Гроші — число мільйонів від 0, наприклад 1,5." : "Гроші — ціле число від 0.";
                     return null;
                 }
                 if (!int.TryParse(Digits(jailCards.Text), out int cardValue) || cardValue < 0)

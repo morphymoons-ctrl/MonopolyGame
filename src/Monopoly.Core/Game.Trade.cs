@@ -36,6 +36,9 @@ namespace Monopoly.Core
         {
             if (terms.Money < 0 || terms.JailCards < 0)
                 return "Неправильні умови обміну.";
+            // Суммы в игре круглые (§5, §11): до сотен, от миллиона — до сотен тысяч.
+            if (terms.Money != GameRules.RoundMoney(terms.Money))
+                return $"Сума в обміні має бути круглою, наприклад {Money(GameRules.RoundMoney(terms.Money))}.";
             if (terms.Money > owner.Balance)
                 return $"Стільки грошей {whose} немає: {Money(owner.Balance)}.";
             if (terms.JailCards > owner.JailCards)

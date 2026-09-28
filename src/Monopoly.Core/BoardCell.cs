@@ -41,10 +41,10 @@ namespace Monopoly.Core
 
         // Цена филиала и головного офиса — своя у группы (§5), продажа банку — за BranchSalePercent от неё.
         public int BranchCost => GameRules.BranchCost(Type);
-        public int BranchSaleValue => BranchCost * GameRules.BranchSalePercent / 100;
+        public int BranchSaleValue => GameRules.RoundMoney(BranchCost * GameRules.BranchSalePercent / 100);
 
-        // Залог — половина цены, выкуп — залог + 10% (§10).
-        public int MortgageValue => Price / 2;
-        public int RedeemCost => MortgageValue + MortgageValue / 10;
+        // Залог — половина цены, выкуп — залог + 10% (§10). Округлены до сотен: цену может задать администратор (§14).
+        public int MortgageValue => GameRules.RoundMoney(Price / 2);
+        public int RedeemCost => GameRules.RoundMoney(MortgageValue + MortgageValue / 10);
     }
 }

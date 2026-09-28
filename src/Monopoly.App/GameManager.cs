@@ -297,7 +297,19 @@ namespace Monopoly.App
             double detail = boxTop + boxHeight + gap;
             if (Logos.For(index, EventText.Theme) is { } logo)
             {
-                var (width, height) = LogoSize(logo, boxWidth, boxHeight, u * u * 0.4);
+                // На досках с фото и эмблемами (§15) по картинке место не узнать — под ней ещё и название.
+                TextBlock? caption = null;
+                double logoBoxHeight = boxHeight, captionGap = 0;
+                if (Logos.WithCaption(EventText.Theme))
+                {
+                    // Картинке с подписью нужно больше места: рамка — от верха клетки до цены, а не симметрично вокруг центра.
+                    boxTop = c.Y + u * 0.05;
+                    boxHeight = detail - gap - boxTop;
+                    caption = FitName(cell.Name, boxWidth, boxHeight * 0.4, u * 0.12, u * 0.08, text);
+                    captionGap = u * 0.03;
+                    logoBoxHeight = boxHeight - caption.DesiredSize.Height - captionGap;
+                }
+                var (width, height) = LogoSize(logo, boxWidth, logoBoxHeight, u * u * 0.4);
                 var image = new Image
                 {
                     Source = logo,
@@ -308,33 +320,19 @@ namespace Monopoly.App
                     IsHitTestVisible = false
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-                Place(image, c.X + (c.Width - width) / 2, boxTop + (boxHeight - height) / 2);
+                // Картинка с подписью — одним блоком по центру рамки.
+                double blockHeight = height + (caption is null ? 0 : captionGap + caption.DesiredSize.Height);
+                double imageTop = boxTop + (boxHeight - blockHeight) / 2;
+                Place(image, c.X + (c.Width - width) / 2, imageTop);
+                if (caption is not null)
+                {
+                    Place(caption, c.X + (c.Width - boxWidth) / 2, imageTop + height + captionGap);
+                }
             }
             else
             {
-                // Логотипа нет (военная доска, §15) — название по центру рамки, с переносом по словам.
-                // Не влезает — шрифт уменьшается, пока текст не поместится.
-                var name = new TextBlock
-                {
-                    Text = cell.Name,
-                    Width = boxWidth,
-                    TextWrapping = TextWrapping.Wrap,
-                    TextAlignment = TextAlignment.Center,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = text,
-                    IsHitTestVisible = false,
-                };
-                // Слово не должно рваться посередине: самое длинное слово тоже должно влезать в ширину.
-                var longestWord = new TextBlock { Text = cell.Name.Split(' ').OrderByDescending(w => w.Length).First(), FontWeight = FontWeights.Bold };
-                for (double size = u * 0.17; ; size -= u * 0.01)
-                {
-                    name.FontSize = longestWord.FontSize = size;
-                    name.Measure(new Size(boxWidth, double.PositiveInfinity));
-                    longestWord.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                    bool fits = name.DesiredSize.Height <= boxHeight && longestWord.DesiredSize.Width <= boxWidth;
-                    if (fits || size <= u * 0.1)
-                        break;
-                }
+                // Логотипа нет — название по центру рамки.
+                var name = FitName(cell.Name, boxWidth, boxHeight, u * 0.17, u * 0.1, text);
                 Place(name, c.X + (c.Width - boxWidth) / 2, boxTop + Math.Max(0, (boxHeight - name.DesiredSize.Height) / 2));
             }
             if (state?.IsMortgaged == true)
@@ -363,6 +361,33 @@ namespace Monopoly.App
             }
 
             // Владельца показывает цвет фона клетки (CompanyBackground).
+        }
+
+        // Название клетки с переносом по словам: не влезает в рамку — шрифт уменьшается, пока текст не поместится.
+        private static TextBlock FitName(string text, double width, double maxHeight, double startSize, double minSize, Brush color)
+        {
+            var name = new TextBlock
+            {
+                Text = text,
+                Width = width,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                FontWeight = FontWeights.Bold,
+                Foreground = color,
+                IsHitTestVisible = false,
+            };
+            // Слово не должно рваться посередине: самое длинное слово тоже должно влезать в ширину.
+            var longestWord = new TextBlock { Text = text.Split(' ').OrderByDescending(w => w.Length).First(), FontWeight = FontWeights.Bold };
+            for (double size = startSize; ; size -= startSize / 17)
+            {
+                name.FontSize = longestWord.FontSize = size;
+                name.Measure(new Size(width, double.PositiveInfinity));
+                longestWord.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                bool fits = name.DesiredSize.Height <= maxHeight && longestWord.DesiredSize.Width <= width;
+                if (fits || size <= minSize)
+                    break;
+            }
+            return name;
         }
 
         // Купленная компания: аренда, которую заплатит вставший на клетку, — коротко («252к»), чтобы не путать с ценой покупки.

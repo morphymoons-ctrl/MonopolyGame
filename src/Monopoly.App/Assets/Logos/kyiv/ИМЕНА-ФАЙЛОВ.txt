@@ -1,0 +1,32 @@
+Логотипы доски «Київ».
+Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Троєщина                   troieshchyna.png
+Борщагівка                 borshchahivka.png
+Оболонь                    obolon.png
+Центральний вокзал         tsentralnyi-vokzal.png
+Retroville                 retroville.png
+Blockbuster Mall           blockbuster-mall.png
+Gulliver                   gulliver.png
+Лук'янівський ринок        lukianivskyi-rynok.png
+Житній ринок               zhytnii-rynok.png
+Бессарабський ринок        bessarabskyi-rynok.png
+Аеропорт „Бориспіль“       boryspil.png
+Lavina Mall                lavina-mall.png
+Ocean Plaza                ocean-plaza.png
+Respublika Park            respublika-park.png
+Гідропарк                  hidropark.png
+Пейзажна алея              peizazhna-aleia.png
+ВДНГ                       vdnh.png
+Вокзал „Дарниця“           darnytsia.png
+Метрополітен               metro.png
+Фунікулер                  funikuler.png
+Готель „Україна“           hotel-ukraina.png
+Hilton Kyiv                hilton.png
+Fairmont Grand Hotel       fairmont.png
+Аеропорт „Жуляни“          zhuliany.png
+БЦ „Леонардо“              leonardo.png
+БЦ „Парус“                 parus.png
+101 Tower                  101-tower.png

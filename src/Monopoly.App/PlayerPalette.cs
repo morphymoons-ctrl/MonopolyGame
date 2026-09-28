@@ -78,7 +78,47 @@ namespace Monopoly.App
             BoardTheme.Government => GovernmentIcon(type),
             BoardTheme.Crypto => CryptoIcon(type),
             BoardTheme.Games => GamesIcon(type),
+            BoardTheme.Oligarchs => OligarchsIcon(type),
+            BoardTheme.Kyiv => KyivIcon(type),
             _ => BusinessIcon(type),
+        };
+
+        private static string? KyivIcon(CellType type) => type switch
+        {
+            CellType.Start => "➜",
+            CellType.Jail => "🚧",
+            CellType.Casino => "🎲",
+            CellType.Rest => "🏖",
+            CellType.Chance => "📱",
+            CellType.GasStation => "✈",
+            CellType.Logistics => "🚇",
+            CellType.Supermarket => "🏘",
+            CellType.Factory => "🛍",
+            CellType.TV => "🍎",
+            CellType.Food => "🏬",
+            CellType.Nightlife => "🎡",
+            CellType.Bank => "🏨",
+            CellType.NetworkShop => "🏙",
+            _ => null,
+        };
+
+        private static string? OligarchsIcon(CellType type) => type switch
+        {
+            CellType.Start => "➜",
+            CellType.Jail => "⛔",
+            CellType.Casino => "🦈",
+            CellType.Rest => "🛥",
+            CellType.Chance => "💼",
+            CellType.GasStation => "🛢",
+            CellType.Logistics => "🔧",
+            CellType.Supermarket => "💵",
+            CellType.Factory => "🏭",
+            CellType.TV => "📡",
+            CellType.Food => "⚒",
+            CellType.Nightlife => "⛽",
+            CellType.Bank => "🏦",
+            CellType.NetworkShop => "💰",
+            _ => null,
         };
 
         private static string? GamesIcon(CellType type) => type switch

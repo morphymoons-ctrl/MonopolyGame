@@ -383,8 +383,8 @@ namespace Monopoly.App
                     active = ownedInGroup - 1;
                     break;
                 case CellType.Logistics:
-                    rows.Add(("Одна компанія", $"кубики × {GameRules.LogisticsSingle}"));
-                    rows.Add(("Обидві компанії", $"кубики × {GameRules.LogisticsBoth}"));
+                    rows.Add(("Одна компанія", $"кубики × {GameManager.Format(GameRules.LogisticsSingle)}"));
+                    rows.Add(("Обидві компанії", $"кубики × {GameManager.Format(GameRules.LogisticsBoth)}"));
                     active = ownedInGroup - 1;
                     break;
                 default:
@@ -395,7 +395,7 @@ namespace Monopoly.App
                     string[] names = { "", $"1 {terms.Branch}", $"2 {terms.Branches}", $"3 {terms.Branches}", $"4 {terms.Branches}", GameTerms.Capital(terms.Office) };
                     for (int level = 1; level <= GameRules.HeadOfficeLevel; level++)
                     {
-                        rows.Add((names[level], GameManager.Format(rent * GameRules.LevelMultipliers[level])));
+                        rows.Add((names[level], GameManager.Format(GameRules.LevelRent(cell, level))));
                     }
                     if (owner is not null)
                     {

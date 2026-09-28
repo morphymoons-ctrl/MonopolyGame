@@ -95,7 +95,7 @@ namespace Monopoly.Tests
 
             Assert.Equal("$1 500 000", Plain(GameRules.Money(1_500_000, BoardTheme.Crypto)));
             Assert.Equal("1 500 000 грн", Plain(GameRules.Money(1_500_000, BoardTheme.Business)));
-            Assert.Equal("1 500 000 грн", Plain(GameRules.Money(1_500_000, BoardTheme.Military)));
+            Assert.Equal("1 500 млн грн", Plain(GameRules.Money(1_500_000, BoardTheme.Military)));
             Assert.Equal("$252к", GameRules.ShortMoney(252_000, BoardTheme.Crypto));
             Assert.Equal("252к", GameRules.ShortMoney(252_000, BoardTheme.Business));
 
@@ -117,6 +117,34 @@ namespace Monopoly.Tests
             var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Games });
             game.Give(0, Atb, Varus);
             Assert.Equal("Сервери будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        [Fact]
+        public void OligarchsBoard_HasItsOwnNamesAndTerms()
+        {
+            var board = Board.Create(BoardTheme.Oligarchs);
+            Assert.Equal("Ваучер", board[0].Name);
+            Assert.Equal("Санкції", board[Jail].Name);
+            Assert.Equal("Полтавське родовище", board[Wog].Name);
+            Assert.Equal("Фінпромгрупа", board[31].Name);
+
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Oligarchs });
+            game.Give(0, Atb, Varus);
+            Assert.Equal("Дочки будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        [Fact]
+        public void KyivBoard_HasItsOwnNamesAndTerms()
+        {
+            var board = Board.Create(BoardTheme.Kyiv);
+            Assert.Equal("Нульовий кілометр", board[0].Name);
+            Assert.Equal("Затор на мосту Патона", board[Jail].Name);
+            Assert.Equal("Центральний вокзал", board[Wog].Name);
+            Assert.Equal("101 Tower", board[31].Name);
+
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Kyiv });
+            game.Give(0, Atb, Varus);
+            Assert.Equal("Поверхи будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
         }
 
         [Fact]

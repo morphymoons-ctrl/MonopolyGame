@@ -13,6 +13,10 @@ namespace Monopoly.Core
         Crypto,
         // «Відеоігри».
         Games,
+        // «Битва олігархів».
+        Oligarchs,
+        // «Київ».
+        Kyiv,
     }
 
     public static class Board
@@ -29,6 +33,8 @@ namespace Monopoly.Core
             BoardTheme.Government => Government(),
             BoardTheme.Crypto => Crypto(),
             BoardTheme.Games => Games(),
+            BoardTheme.Oligarchs => Oligarchs(),
+            BoardTheme.Kyiv => Kyiv(),
             _ => Business(),
         };
 
@@ -214,6 +220,80 @@ namespace Monopoly.Core
             new BoardCell("The Witcher 3", CellType.NetworkShop, 200_000),
             new BoardCell("GTA V", CellType.NetworkShop, 230_000),
             new BoardCell("Dota 2", CellType.NetworkShop, 230_000),
+        };
+
+        // «Битва олігархів»: дешёвые активы → предприятия → нефтегаз → финансовая империя (§15).
+        private static List<BoardCell> Oligarchs() => new()
+        {
+            new BoardCell("Ваучер", CellType.Start),
+            new BoardCell("Ларьок на ринку", CellType.Supermarket, 90_000),
+            new BoardCell("Автомийка", CellType.Supermarket, 120_000),
+            new BoardCell("Ломбард", CellType.Supermarket, 150_000),
+            new BoardCell("Полтавське родовище", CellType.GasStation, 170_000),
+            new BoardCell("Хлібозавод", CellType.Factory, 190_000),
+            new BoardCell("Цукровий завод", CellType.Factory, 210_000),
+            new BoardCell("Птахофабрика", CellType.Factory, 260_000),
+            new BoardCell("Санкції", CellType.Jail),
+            new BoardCell("Регіональна газета", CellType.TV, 90_000),
+            new BoardCell("Радіостанція", CellType.TV, 110_000),
+            new BoardCell("Телеканал", CellType.TV, 160_000),
+            new BoardCell("Шебелинка", CellType.GasStation, 180_000),
+            new BoardCell("Коксохім", CellType.Food, 190_000),
+            new BoardCell("ГЗК", CellType.Food, 210_000),
+            new BoardCell("Меткомбінат", CellType.Food, 260_000),
+            new BoardCell("Рейдерство", CellType.Casino),
+            new BoardCell("Міні-НПЗ", CellType.Nightlife, 100_000),
+            new BoardCell("Мережа АЗС", CellType.Nightlife, 120_000),
+            new BoardCell("Газзбут", CellType.Nightlife, 140_000),
+            new BoardCell("Вілла в Монако", CellType.Rest),
+            new BoardCell("Борислав", CellType.GasStation, 140_000),
+            new BoardCell("Газопровід", CellType.Logistics, 230_000),
+            new BoardCell("Нафтопровід", CellType.Logistics, 190_000),
+            new BoardCell("Схема", CellType.Chance),
+            new BoardCell("Кредитна спілка", CellType.Bank, 90_000),
+            new BoardCell("Регіональний банк", CellType.Bank, 120_000),
+            new BoardCell("Системний банк", CellType.Bank, 150_000),
+            new BoardCell("Чорноморський шельф", CellType.GasStation, 150_000),
+            new BoardCell("Інвестфонд", CellType.NetworkShop, 190_000),
+            new BoardCell("Офшор на Кіпрі", CellType.NetworkShop, 210_000),
+            new BoardCell("Фінпромгрупа", CellType.NetworkShop, 260_000),
+        };
+
+        // «Київ»: реальные места города — от спальных районов к бизнес-центрам (§15).
+        private static List<BoardCell> Kyiv() => new()
+        {
+            new BoardCell("Нульовий кілометр", CellType.Start),
+            new BoardCell("Троєщина", CellType.Supermarket, 90_000),
+            new BoardCell("Борщагівка", CellType.Supermarket, 120_000),
+            new BoardCell("Оболонь", CellType.Supermarket, 150_000),
+            new BoardCell("Центральний вокзал", CellType.GasStation, 170_000),
+            new BoardCell("Retroville", CellType.Factory, 190_000),
+            new BoardCell("Blockbuster Mall", CellType.Factory, 210_000),
+            new BoardCell("Gulliver", CellType.Factory, 260_000),
+            new BoardCell("Затор на мосту Патона", CellType.Jail),
+            new BoardCell("Лук'янівський ринок", CellType.TV, 90_000),
+            new BoardCell("Житній ринок", CellType.TV, 110_000),
+            new BoardCell("Бессарабський ринок", CellType.TV, 160_000),
+            new BoardCell("Аеропорт „Бориспіль“", CellType.GasStation, 180_000),
+            new BoardCell("Lavina Mall", CellType.Food, 190_000),
+            new BoardCell("Ocean Plaza", CellType.Food, 210_000),
+            new BoardCell("Respublika Park", CellType.Food, 260_000),
+            new BoardCell("Наперсточники", CellType.Casino),
+            new BoardCell("Гідропарк", CellType.Nightlife, 100_000),
+            new BoardCell("Пейзажна алея", CellType.Nightlife, 120_000),
+            new BoardCell("ВДНГ", CellType.Nightlife, 140_000),
+            new BoardCell("Трухановий острів", CellType.Rest),
+            new BoardCell("Вокзал „Дарниця“", CellType.GasStation, 140_000),
+            new BoardCell("Метрополітен", CellType.Logistics, 230_000),
+            new BoardCell("Фунікулер", CellType.Logistics, 190_000),
+            new BoardCell("Київ Цифровий", CellType.Chance),
+            new BoardCell("Готель „Україна“", CellType.Bank, 90_000),
+            new BoardCell("Hilton Kyiv", CellType.Bank, 120_000),
+            new BoardCell("Fairmont Grand Hotel", CellType.Bank, 150_000),
+            new BoardCell("Аеропорт „Жуляни“", CellType.GasStation, 150_000),
+            new BoardCell("БЦ „Леонардо“", CellType.NetworkShop, 190_000),
+            new BoardCell("БЦ „Парус“", CellType.NetworkShop, 210_000),
+            new BoardCell("101 Tower", CellType.NetworkShop, 260_000),
         };
     }
 }
