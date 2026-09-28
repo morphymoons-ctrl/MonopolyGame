@@ -9,6 +9,8 @@
     <RootNamespace>Monopoly.App</RootNamespace>
     <!-- Свой Main: сначала Velopack (установка и обновления), потом игра. -->
     <StartupObject>Monopoly.App.Program</StartupObject>
+    <!-- Иконка exe: ярлыки, панель задач и заголовок окна берут её отсюда. Пока файла нет — стандартная. -->
+    <ApplicationIcon Condition="Exists('Assets\Icon\monopoly.ico')">Assets\Icon\monopoly.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,8 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Логотипы компаний на клетках (Logos.cs), по папке на доску: business, military. Вшиваются в Monopoly.exe. -->
+    <!-- Картинки клеток (Logos.cs), по папке на доску: логотипы — PNG, фото — JPEG. Вшиваются в Monopoly.exe. -->
     <Resource Include="Assets\Logos\**\*.png" />
+    <Resource Include="Assets\Logos\**\*.jpg" />
+    <!-- Логотип на стартовом экране. -->
+    <Resource Include="Assets\StartLogo.png" />
   </ItemGroup>
 
   <ItemGroup>

@@ -80,11 +80,14 @@ namespace Monopoly.Core
         // Колода «Шанса»: сверху берут, использованные — в сброс.
         internal List<ChanceCard> ChanceDeck { get; } = new();
         internal List<ChanceCard> ChanceDiscard { get; } = new();
+        // Статистика партии для итогов (§16).
+        public GameStats Stats { get; }
 
         public GameState(IReadOnlyList<BoardCell> board, IReadOnlyList<Player> players)
         {
             Board = board ?? throw new ArgumentNullException(nameof(board));
             Players = players ?? throw new ArgumentNullException(nameof(players));
+            Stats = new GameStats(board.Count);
         }
 
         public Player CurrentPlayer => Players[CurrentPlayerIndex];
@@ -126,6 +129,7 @@ namespace Monopoly.Core
             Trade,
             CasinoAvailable,
             WinnerId,
-            Theme);
+            Theme,
+            Stats.ToSnapshot(Players.Select(p => p.Id)));
     }
 }

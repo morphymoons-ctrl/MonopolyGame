@@ -67,8 +67,11 @@ if (-not $DryRun) {
 }
 
 Run "Пакування (Velopack)" {
+    # Иконка игры — у установщика Velopack и в «Програмах і компонентах» (если она уже есть).
+    $icon = Join-Path $root "src\Monopoly.App\Assets\Icon\monopoly.ico"
+    $iconArgs = if (Test-Path $icon) { @("--icon", $icon) } else { @() }
     vpk pack --packId MonopolyGame --packVersion $version --packDir $publishDir --mainExe Monopoly.exe --runtime win-x64 `
-        --packTitle "Монополія" --packAuthors "Denchik" -o $releasesDir
+        --packTitle "Монополія" --packAuthors "Denchik" -o $releasesDir @iconArgs
 }
 
 # Установщик для друзей: окно выбора папки (Monopoly.Setup), внутри — установщик Velopack.

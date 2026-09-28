@@ -57,6 +57,7 @@ namespace Monopoly.Core
 
             history.Add(new GameStarted((random as SeededRandom)?.Seed, players.Select(p => p.Id).ToList()));
             history.Add(new TurnStarted(State.CurrentPlayer.Id));
+            State.Stats.TurnStarted();
         }
 
         public bool CanExecute(GameAction action) => Validate(action) is null;
@@ -387,6 +388,7 @@ namespace Monopoly.Core
                     }
                     var owner = State.FindPlayer(cell.OwnerId.Value)!;
                     int rent = GameRules.Rent(State.Board, player.Position, State.LastRoll?.Total ?? 0) * rentMultiplier;
+                    State.Stats.Rent(player.Id, owner.Id, player.Position, rent);
                     Charge(player, owner, rent, events, new RentPaid(player.Id, owner.Id, player.Position, rent));
                 }
                 return;
@@ -419,6 +421,7 @@ namespace Monopoly.Core
             player.Balance -= cell.Price;
             cell.OwnerId = player.Id;
             State.PendingPurchase = null;
+            State.Stats.Bought(player.Id);
             events.Add(new PropertyBought(player.Id, player.Position, cell.Price));
         }
 
@@ -448,6 +451,7 @@ namespace Monopoly.Core
 
             State.Stage = TurnPhase.AwaitingRoll;
             events.Add(new TurnStarted(State.CurrentPlayer.Id));
+            State.Stats.TurnStarted();
             // Ход действительно начался (пропущенные не считаются) — срок выкупа заложенных компаний (§10).
             TickMortgages(State.CurrentPlayer, events);
         }
@@ -475,6 +479,7 @@ namespace Monopoly.Core
                 return;
             }
             player.IsInJail = true;
+            State.Stats.Jailed(player.Id);
         }
 
         // --- Казино ---
@@ -486,6 +491,7 @@ namespace Monopoly.Core
             int multiplier = roll < 50 ? 0 : roll < 60 ? 1 : roll < 95 ? 2 : 3;
             player.Balance += bet * multiplier - bet;
             State.CasinoAvailable = false;
+            State.Stats.Casino(player.Id, bet * multiplier - bet);
             events.Add(new CasinoPlayed(player.Id, bet, multiplier));
         }
 

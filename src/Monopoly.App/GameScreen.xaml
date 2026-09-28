@@ -96,7 +96,7 @@
                         <ListBox Name="ActionLog" Style="{StaticResource DarkList}" FontSize="17"/>
                     </Border>
 
-                    <!-- Узкая колонка: обмен на всю ширину, под ним звук и выход. -->
+                    <!-- Узкая колонка: обмен и статистика, под ними звук и выход. -->
                     <Grid Grid.Row="3" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
@@ -108,7 +108,8 @@
                             <RowDefinition Height="10"/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Button Name="TradeButton" Grid.ColumnSpan="3" Content="⇄  Запропонувати обмін" FontSize="17" Click="Trade_Click"/>
+                        <Button Name="TradeButton" Content="⇄  Обмін" FontSize="17" Click="Trade_Click"/>
+                        <Button Name="StatsButton" Grid.Column="2" Content="Статистика" FontSize="17" Click="Stats_Click"/>
                         <Button Name="SoundButton" Grid.Row="2" FontSize="17" Click="Sound_Click"/>
                         <Button Grid.Row="2" Grid.Column="2" Content="Вийти в меню" FontSize="17" Click="Leave_Click"/>
                     </Grid>

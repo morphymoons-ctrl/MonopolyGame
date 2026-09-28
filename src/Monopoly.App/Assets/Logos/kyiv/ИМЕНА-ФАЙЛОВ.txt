@@ -1,32 +1,32 @@
 Логотипы доски «Київ».
-Формат: PNG, лучше квадрат 512×512 с прозрачным фоном. Поля вокруг картинки игра обрежет сама и поставит логотип по центру клетки.
+Формат: квадрат 512×512. Логотип — PNG, лучше с прозрачным фоном (поля игра обрежет сама). Фото — JPG: так в разы легче, скруглённые углы игра дорисует сама.
 Нет файла — на клетке останется название. Добавлять можно постепенно.
 
 Клетка                     Имя файла
-Троєщина                   troieshchyna.png
-Борщагівка                 borshchahivka.png
-Оболонь                    obolon.png
-Центральний вокзал         tsentralnyi-vokzal.png
+Троєщина                   troieshchyna.jpg
+Борщагівка                 borshchahivka.jpg
+Оболонь                    obolon.jpg
+Центральний вокзал         tsentralnyi-vokzal.jpg
 Retroville                 retroville.png
 Blockbuster Mall           blockbuster-mall.png
-Gulliver                   gulliver.png
-Лук'янівський ринок        lukianivskyi-rynok.png
-Житній ринок               zhytnii-rynok.png
-Бессарабський ринок        bessarabskyi-rynok.png
-Аеропорт „Бориспіль“       boryspil.png
+Gulliver                   gulliver.jpg
+Лук'янівський ринок        lukianivskyi-rynok.jpg
+Житній ринок               zhytnii-rynok.jpg
+Бессарабський ринок        bessarabskyi-rynok.jpg
+Аеропорт „Бориспіль“       boryspil.jpg
 Lavina Mall                lavina-mall.png
-Ocean Plaza                ocean-plaza.png
-Respublika Park            respublika-park.png
-Гідропарк                  hidropark.png
-Пейзажна алея              peizazhna-aleia.png
-ВДНГ                       vdnh.png
-Вокзал „Дарниця“           darnytsia.png
-Метрополітен               metro.png
-Фунікулер                  funikuler.png
-Готель „Україна“           hotel-ukraina.png
-Hilton Kyiv                hilton.png
-Fairmont Grand Hotel       fairmont.png
-Аеропорт „Жуляни“          zhuliany.png
-БЦ „Леонардо“              leonardo.png
-БЦ „Парус“                 parus.png
-101 Tower                  101-tower.png
+Ocean Plaza                ocean-plaza.jpg
+Respublika Park            respublika-park.jpg
+Гідропарк                  hidropark.jpg
+Пейзажна алея              peizazhna-aleia.jpg
+ВДНГ                       vdnh.jpg
+Вокзал „Дарниця“           darnytsia.jpg
+Метрополітен               metro.jpg
+Фунікулер                  funikuler.jpg
+Готель „Україна“           hotel-ukraina.jpg
+Hilton Kyiv                hilton.jpg
+Fairmont Grand Hotel       fairmont.jpg
+Аеропорт „Жуляни“          zhuliany.jpg
+БЦ „Леонардо“              leonardo.jpg
+БЦ „Парус“                 parus.jpg
+101 Tower                  101-tower.jpg

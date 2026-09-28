@@ -102,11 +102,17 @@ namespace Monopoly.App
             return logo;
         }
 
-        private static ImageSource? Load(string folder, string file)
+        // Логотип — PNG (прозрачный фон). Фото — JPEG: в разы легче, а скруглённые углы игра дорисует сама.
+        private static ImageSource? Load(string folder, string file) =>
+            Read(folder, file + ".png") is { } png ? Trim(png)
+            : Read(folder, file + ".jpg") is { } jpg ? RoundCorners(jpg)
+            : null;
+
+        private static BitmapSource? Read(string folder, string name)
         {
             try
             {
-                var resource = Application.GetResourceStream(new Uri($"pack://application:,,,/Assets/Logos/{folder}/{file}.png"));
+                var resource = Application.GetResourceStream(new Uri($"pack://application:,,,/Assets/Logos/{folder}/{name}"));
                 if (resource is null)
                 {
                     return null;
@@ -118,13 +124,30 @@ namespace Monopoly.App
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.EndInit();
                 image.Freeze();
-                return Trim(image);
+                return image;
             }
             catch (IOException)
             {
-                // Такого логотипа ещё нет.
+                // Такого файла нет.
                 return null;
             }
+        }
+
+        // Фото со скруглёнными углами — как у картинок-PNG (радиус — 1/8 стороны).
+        private static BitmapSource RoundCorners(BitmapSource source)
+        {
+            int width = source.PixelWidth, height = source.PixelHeight;
+            double radius = Math.Min(width, height) / 8.0;
+            var visual = new DrawingVisual();
+            using (var context = visual.RenderOpen())
+            {
+                context.PushClip(new RectangleGeometry(new Rect(0, 0, width, height), radius, radius));
+                context.DrawImage(source, new Rect(0, 0, width, height));
+            }
+            var result = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            result.Render(visual);
+            result.Freeze();
+            return result;
         }
 
         // Картинки квадратные 512×512, а сам логотип лежит в квадрате как придётся: широкий — полосой, иногда выше середины.

@@ -67,6 +67,7 @@ namespace Monopoly.Core
         // их снова можно купить. Деньги и карточки — кредитору; при долге банку — банку и в колоду.
         private void GoBankrupt(Player player, int? creditorId, List<GameEvent> events)
         {
+            State.Stats.Bankrupt(player.Id);
             var creditor = creditorId is int id ? State.FindPlayer(id) : null;
             if (creditor is { IsBankrupt: true })
                 creditor = null;

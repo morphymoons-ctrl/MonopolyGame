@@ -15,7 +15,8 @@ namespace Monopoly.Core
         TradeOffer? Trade,
         bool CasinoAvailable,
         int? WinnerId,
-        BoardTheme Theme = BoardTheme.Business)
+        BoardTheme Theme = BoardTheme.Business,
+        StatsSnapshot? Stats = null)
     {
         public PlayerSnapshot? FindPlayer(int id) => Players.FirstOrDefault(p => p.Id == id);
 

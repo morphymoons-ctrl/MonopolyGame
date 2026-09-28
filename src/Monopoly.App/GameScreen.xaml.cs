@@ -28,6 +28,8 @@ namespace Monopoly.App
         private IReadOnlyList<GameAction> available = Array.Empty<GameAction>();
         // Действие отправлено, ответа ещё нет — кнопки скрыты.
         private bool sending;
+        // Итоги партии уже открывались сами после победы (§16).
+        private bool summaryShown;
         // Таймер хода: до какого момента ждут решения и от кого.
         private DateTime? deadline;
         private IReadOnlyList<int> awaitedIds = Array.Empty<int>();
@@ -147,6 +149,12 @@ namespace Monopoly.App
             }
             playing = false;
             Refresh();
+            // Партия закончилась — итоги открываются сами, один раз (§16).
+            if (Snapshot?.WinnerId is not null && !summaryShown)
+            {
+                summaryShown = true;
+                ShowStats();
+            }
         }
 
         private void Refresh()
@@ -278,6 +286,14 @@ namespace Monopoly.App
                     _ => "BoardButton",
                 };
                 AddButton(ActionsPanel, EventText.ActionLabel(action, s), action, style);
+            }
+
+            // После победы — итоги партии (§16).
+            if (s.Phase == TurnPhase.GameOver)
+            {
+                var summary = new Button { Content = "Підсумки партії", FontSize = 19, Margin = new Thickness(0, 0, 10, 10), Style = (Style)FindResource("PrimaryButton") };
+                summary.Click += (_, _) => ShowStats();
+                ActionsPanel.Children.Add(summary);
             }
         }
 
@@ -460,6 +476,21 @@ namespace Monopoly.App
                     await SendAsync(proposal);
                 }
             };
+            TradeOverlay.Child = panel;
+            TradeOverlay.Visibility = Visibility.Visible;
+        }
+
+        // Статистика партии — в том же окне поверх поля, что и обмен (§16).
+        private void Stats_Click(object sender, RoutedEventArgs e) => ShowStats();
+
+        private void ShowStats()
+        {
+            if (Snapshot is null)
+            {
+                return;
+            }
+            var panel = new StatsPanel(Snapshot, gameManager.PlayerColor, DurationText.Text);
+            panel.Closed += CloseTrade;
             TradeOverlay.Child = panel;
             TradeOverlay.Visibility = Visibility.Visible;
         }

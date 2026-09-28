@@ -139,6 +139,20 @@ namespace Monopoly.Core
         public static int ActiveInGroup(IReadOnlyList<BoardCell> board, CellType type, int ownerId) =>
             board.Count(c => c.Type == type && c.OwnerId == ownerId && !c.IsMortgaged);
 
+        // Капитал для итогов партии (§16): деньги + цены компаний (заложенных — половина) + цена построенных филиалов.
+        public static int NetWorth(IReadOnlyList<BoardCell> board, int playerId, int balance) =>
+            balance + board.Where(c => c.OwnerId == playerId)
+                .Sum(c => (c.IsMortgaged ? c.MortgageValue : c.Price) + c.Level * c.BranchCost);
+
+        // Места (§16): победитель, затем оставшиеся по капиталу, затем выбывшие — кто выбыл позже, тот выше.
+        public static IReadOnlyList<int> Standings(IReadOnlyList<BoardCell> board, GameSnapshot snapshot, StatsSnapshot stats) =>
+            snapshot.Players.Where(p => !p.IsBankrupt)
+                .OrderByDescending(p => p.Id == snapshot.WinnerId)
+                .ThenByDescending(p => NetWorth(board, p.Id, p.Balance))
+                .Select(p => p.Id)
+                .Concat(stats.Eliminated.Reverse())
+                .ToList();
+
         // Все компании группы у одного владельца (заложенные тоже считаются) — нужно для постройки филиалов.
         public static bool IsMonopoly(IReadOnlyList<BoardCell> board, CellType type, int ownerId) =>
             board.Where(c => c.Type == type).All(c => c.OwnerId == ownerId);

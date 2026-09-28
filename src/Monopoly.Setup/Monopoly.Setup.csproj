@@ -10,6 +10,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Monopoly-Install</AssemblyName>
     <RootNamespace>Monopoly.Setup</RootNamespace>
+    <!-- Та же иконка, что у игры. -->
+    <ApplicationIcon Condition="Exists('..\Monopoly.App\Assets\Icon\monopoly.ico')">..\Monopoly.App\Assets\Icon\monopoly.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

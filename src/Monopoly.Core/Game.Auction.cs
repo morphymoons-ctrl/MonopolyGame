@@ -67,6 +67,7 @@ namespace Monopoly.Core
                 var winner = State.FindPlayer(winnerId)!;
                 winner.Balance -= auction.HighBid;
                 cell.OwnerId = winnerId;
+                State.Stats.Bought(winnerId);
                 events.Add(new AuctionWon(winnerId, auction.CellIndex, auction.HighBid));
             }
             else
