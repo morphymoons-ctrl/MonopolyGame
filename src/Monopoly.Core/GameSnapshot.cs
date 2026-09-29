@@ -42,5 +42,6 @@ namespace Monopoly.Core
     // MortgageTurnsLeft — сколько ходов владельца осталось на выкуп заложенной компании (§10).
     public sealed record CellSnapshot(int? OwnerId, int Level, bool IsMortgaged, int Price, int MortgageTurnsLeft = 0);
 
-    public sealed record AuctionSnapshot(int CellIndex, int? LeaderId, int HighBid, int MinBid, IReadOnlyList<int> PassedIds);
+    // FinderId — кто получит 30% итоговой ставки (§4), null — никто.
+    public sealed record AuctionSnapshot(int CellIndex, int? LeaderId, int HighBid, int MinBid, IReadOnlyList<int> PassedIds, int? FinderId = null);
 }

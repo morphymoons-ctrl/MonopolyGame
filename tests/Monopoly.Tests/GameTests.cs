@@ -119,18 +119,22 @@ namespace Monopoly.Tests
             Assert.Equal(Silpo, game.P(0).Position);
             Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
             Assert.Contains(new PassedStart(0, 200_000), result.Events);
+            Assert.DoesNotContain(result.Events, e => e is LandedOnStart);
         }
 
+        // Встал ровно на «Старт»: 200 000 за проход и ещё 200 000 сверху (§3).
         [Fact]
-        public void LandingOnStart_Gives200()
+        public void LandingOnStart_GivesDouble()
         {
             var game = Create(1, 3);
             game.P(0).Position = 28;
 
-            game.Do(new RollDice(0));
+            var result = game.Do(new RollDice(0));
 
             Assert.Equal(0, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 400_000, game.P(0).Balance);
+            Assert.Contains(new PassedStart(0, 200_000), result.Events);
+            Assert.Contains(new LandedOnStart(0, 200_000), result.Events);
         }
 
         [Fact]

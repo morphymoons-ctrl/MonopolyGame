@@ -77,14 +77,14 @@ namespace Monopoly.Tests
         }
 
         [Fact]
-        public void GoToStart_Gives200()
+        public void GoToStart_GivesDouble()
         {
             var game = Drawing(ChanceCard.GoToStart);
 
             game.Do(new RollDice(0));
 
             Assert.Equal(0, game.P(0).Position);
-            Assert.Equal(GameRules.StartingBalance + 200_000, game.P(0).Balance);
+            Assert.Equal(GameRules.StartingBalance + 400_000, game.P(0).Balance);
         }
 
         [Fact]

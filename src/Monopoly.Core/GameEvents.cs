@@ -31,6 +31,9 @@ namespace Monopoly.Core
 
     public sealed record PassedStart(int PlayerId, int Amount) : GameEvent;
 
+    // Встал ровно на «Старт» — ещё столько же сверху (§3).
+    public sealed record LandedOnStart(int PlayerId, int Amount) : GameEvent;
+
     // Игрок попал на «Отдых» и пропустит следующий ход.
     public sealed record RestStarted(int PlayerId) : GameEvent;
 
@@ -55,13 +58,17 @@ namespace Monopoly.Core
 
     public sealed record PurchaseDeclined(int PlayerId, int CellIndex) : GameEvent;
 
-    public sealed record AuctionStarted(int CellIndex) : GameEvent;
+    // StartBid — первая ставка (90% цены); FinderId — кто получит 30% от продажи, null — никто (§4).
+    public sealed record AuctionStarted(int CellIndex, int StartBid, int? FinderId) : GameEvent;
 
     public sealed record BidPlaced(int PlayerId, int Amount) : GameEvent;
 
     public sealed record AuctionPassed(int PlayerId) : GameEvent;
 
     public sealed record AuctionWon(int PlayerId, int CellIndex, int Amount) : GameEvent;
+
+    // Находчику, которому не хватило денег на покупку, — 30% итоговой ставки (§4).
+    public sealed record FinderPaid(int PlayerId, int CellIndex, int Amount) : GameEvent;
 
     public sealed record AuctionUnsold(int CellIndex) : GameEvent;
 

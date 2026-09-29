@@ -19,6 +19,10 @@ namespace Monopoly.Core
         public const int HeadOfficeLevel = 5;
 
         public const int AuctionStep = 10_000;
+        // Аукцион (§4): первая ставка — от 90% цены; находчику, которому не хватило денег, — 30% итоговой ставки.
+        public const int AuctionStartPercent = 90, FinderSharePercent = 30;
+        public static int AuctionStartBid(int price) => RoundMoney(price * AuctionStartPercent / 100);
+        public static int FinderShare(int amount) => RoundMoney(amount * FinderSharePercent / 100);
 
         public static readonly IReadOnlyList<int> CasinoBets = new[] { 50_000, 100_000, 200_000, 300_000 };
 

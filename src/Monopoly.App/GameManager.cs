@@ -96,11 +96,14 @@ namespace Monopoly.App
                         PlaceToken(j.PlayerId, GameRules.JailCell, 0, 1, 250);
                         await Task.Delay(250);
                         break;
-                    case PassedStart or ReceivedFromBank or PropertyBought or AuctionWon or RentPaid or PaidToPlayer or DebtPaid:
+                    case PassedStart or LandedOnStart or ReceivedFromBank or PropertyBought or AuctionWon or FinderPaid or RentPaid or PaidToPlayer or DebtPaid:
                         coin = true;
                         break;
                     case TurnStarted t when t.PlayerId == MyPlayerId:
                         sounds.Turn();
+                        break;
+                    case TradeProposed p when p.Offer.ToId == MyPlayerId:
+                        sounds.Trade();
                         break;
                     case GameOver:
                         sounds.Win();

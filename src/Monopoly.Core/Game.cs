@@ -411,7 +411,11 @@ namespace Monopoly.Core
                     events.Add(new SentToJail(player.Id, JailReason.Landed));
                     Imprison(player, events);
                     break;
-                // «Старт» — бонус уже начислен при движении.
+                // «Старт»: за проход бонус уже начислен при движении; встал ровно на него — ещё столько же (§3).
+                case CellType.Start:
+                    player.Balance += GameRules.StartBonus;
+                    events.Add(new LandedOnStart(player.Id, GameRules.StartBonus));
+                    break;
             }
         }
 

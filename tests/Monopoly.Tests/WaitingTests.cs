@@ -20,7 +20,7 @@ namespace Monopoly.Tests
 
             game.Do(new DeclinePurchase(0));
             Assert.Equal(new[] { 0, 1, 2 }, game.AwaitedPlayers());
-            game.Do(new PlaceBid(1, 10_000));
+            game.Do(new PlaceBid(1, game.State.Auction!.MinBid));
             Assert.Equal(new[] { 0, 2 }, game.AwaitedPlayers());
             Assert.Equal(new PassAuction(2), game.TimeoutAction(2));
             Assert.Null(game.TimeoutAction(1));

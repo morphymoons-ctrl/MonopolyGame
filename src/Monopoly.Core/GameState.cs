@@ -41,16 +41,22 @@ namespace Monopoly.Core
     public sealed class AuctionState
     {
         public int CellIndex { get; }
+        // Первая ставка — от 90% цены компании (§4).
+        public int StartBid { get; }
+        // Встал на компанию, но денег на покупку не хватило: получит 30% итоговой ставки, если выиграет другой (§4).
+        public int? FinderId { get; }
         public int? LeaderId { get; internal set; }
         public int HighBid { get; internal set; }
         internal HashSet<int> Passed { get; } = new();
 
-        public AuctionState(int cellIndex)
+        public AuctionState(int cellIndex, int startBid, int? finderId)
         {
             CellIndex = cellIndex;
+            StartBid = startBid;
+            FinderId = finderId;
         }
 
-        public int MinBid => LeaderId is null ? GameRules.AuctionStep : HighBid + GameRules.AuctionStep;
+        public int MinBid => LeaderId is null ? StartBid : HighBid + GameRules.AuctionStep;
     }
 
     // Всё состояние партии. Меняет его только Game.
@@ -124,7 +130,7 @@ namespace Monopoly.Core
             LastRoll,
             PendingPurchase,
             Auction is null ? null : new AuctionSnapshot(Auction.CellIndex, Auction.LeaderId, Auction.HighBid,
-                Auction.MinBid, Auction.Passed.Order().ToList()),
+                Auction.MinBid, Auction.Passed.Order().ToList(), Auction.FinderId),
             Debts.FirstOrDefault(),
             Trade,
             CasinoAvailable,

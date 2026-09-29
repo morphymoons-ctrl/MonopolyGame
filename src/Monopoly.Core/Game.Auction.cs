@@ -7,9 +7,12 @@ namespace Monopoly.Core
         {
             int cellIndex = State.PendingPurchase!.Value;
             State.PendingPurchase = null;
-            State.Auction = new AuctionState(cellIndex);
+            int price = State.Board[cellIndex].Price;
+            // 30% от продажи — только тому, кому не хватило денег: отказ при деньгах ничего не приносит (§4).
+            int? finderId = player.Balance < price ? player.Id : null;
+            State.Auction = new AuctionState(cellIndex, GameRules.AuctionStartBid(price), finderId);
             events.Add(new PurchaseDeclined(player.Id, cellIndex));
-            events.Add(new AuctionStarted(cellIndex));
+            events.Add(new AuctionStarted(cellIndex, State.Auction.StartBid, finderId));
         }
 
         private string? ValidateBid(Player player, int amount)
@@ -69,6 +72,13 @@ namespace Monopoly.Core
                 cell.OwnerId = winnerId;
                 State.Stats.Bought(winnerId);
                 events.Add(new AuctionWon(winnerId, auction.CellIndex, auction.HighBid));
+                // Находчику — 30% ставки из денег победителя, банку — остальное (§4).
+                if (auction.FinderId is int finderId && finderId != winnerId && State.FindPlayer(finderId) is { IsBankrupt: false } finder)
+                {
+                    int share = GameRules.FinderShare(auction.HighBid);
+                    finder.Balance += share;
+                    events.Add(new FinderPaid(finderId, auction.CellIndex, share));
+                }
             }
             else
             {

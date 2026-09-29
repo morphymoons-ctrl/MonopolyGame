@@ -211,7 +211,8 @@ namespace Monopoly.App
                         : $"Ставок поки немає. Перша — від {GameManager.Format(auction.MinBid)}.";
                     var passed = auction.PassedIds.Select(Name).ToList();
                     string passedText = passed.Count > 0 ? $" Спасували: {string.Join(", ", passed)}." : "";
-                    return ($"Аукціон: «{lot.Name}»", $"Ціна компанії {GameManager.Format(lot.Price)}. {bid}{passedText}", GroupPalette.Get(lot.Type));
+                    string finderText = auction.FinderId is int finder ? $" {Name(finder)} отримає 30% від продажу, якщо виграє інший." : "";
+                    return ($"Аукціон: «{lot.Name}»", $"Ціна компанії {GameManager.Format(lot.Price)}. {bid}{passedText}{finderText}", GroupPalette.Get(lot.Type));
                 case TurnPhase.TradeOffer when s.Trade!.ToId == MyId:
                     return ("Вам пропонують обмін", $"{Name(s.Trade.FromId)} {EventText.DescribeOffer(s.Trade, s)}", blue);
                 case TurnPhase.TradeOffer when s.Trade!.FromId == MyId:
@@ -260,8 +261,8 @@ namespace Monopoly.App
             if (available.OfType<PlaceBid>().FirstOrDefault() is { } minBid && s.Auction is { } auction)
             {
                 int balance = s.FindPlayer(MyId)?.Balance ?? 0;
-                int baseBid = auction.LeaderId is null ? 0 : auction.HighBid;
-                var amounts = new[] { minBid.Amount, baseBid + GameRules.AuctionStep * 5, baseBid + GameRules.AuctionStep * 10 }
+                // Минимальная ставка и две побольше: +40 000 и +90 000 к ней.
+                var amounts = new[] { minBid.Amount, minBid.Amount + GameRules.AuctionStep * 4, minBid.Amount + GameRules.AuctionStep * 9 }
                     .Where(a => a >= minBid.Amount && a <= balance)
                     .Distinct();
                 bool first = true;

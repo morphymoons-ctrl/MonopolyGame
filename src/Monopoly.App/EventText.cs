@@ -54,6 +54,7 @@ namespace Monopoly.App
                 RollAgain r => $"{Name(r.PlayerId)} кидає ще раз.",
                 PlayerMoved m => $"{Name(m.PlayerId)} переходить на «{Cell(m.To)}».",
                 PassedStart p => $"{Name(p.PlayerId)} проходить «{Cell(0)}»: +{Money(p.Amount)}.",
+                LandedOnStart l => $"{Name(l.PlayerId)} стає прямо на «{Cell(0)}» — ще +{Money(l.Amount)}.",
                 RestStarted r => $"{Name(r.PlayerId)} {words.RestStarted}.",
 
                 SentToJail j => j.Reason switch
@@ -67,10 +68,12 @@ namespace Monopoly.App
                 PurchaseOffered p => $"«{Cell(p.CellIndex)}» вільна — можна купити за {Money(p.Price)}.",
                 PropertyBought b => $"{Name(b.PlayerId)} купує «{Cell(b.CellIndex)}» за {Money(b.Price)}.",
                 PurchaseDeclined d => $"{Name(d.PlayerId)} не купує «{Cell(d.CellIndex)}».",
-                AuctionStarted a => $"Аукціон: «{Cell(a.CellIndex)}». Ставки від {Money(GameRules.AuctionStep)}, робити їх може кожен.",
+                AuctionStarted a => $"Аукціон: «{Cell(a.CellIndex)}». Ставки від {Money(a.StartBid)}, робити їх може кожен."
+                    + (a.FinderId is int finder ? $" {Name(finder)} отримає 30% від продажу, якщо виграє хтось інший." : ""),
                 BidPlaced b => $"{Name(b.PlayerId)} ставить {Money(b.Amount)}.",
                 AuctionPassed p => $"{Name(p.PlayerId)} пасує.",
                 AuctionWon w => $"{Name(w.PlayerId)} виграє аукціон: «{Cell(w.CellIndex)}» за {Money(w.Amount)}.",
+                FinderPaid f => $"{Name(f.PlayerId)} отримує 30% від продажу «{Cell(f.CellIndex)}»: {Money(f.Amount)}.",
                 AuctionUnsold u => $"Ніхто не купив «{Cell(u.CellIndex)}» — компанія лишається в банку.",
 
                 RentPaid r => $"{Name(r.PayerId)} платить оренду {Money(r.Amount)} гравцю {Name(r.OwnerId)}.",

@@ -34,6 +34,7 @@ namespace Monopoly.Tests
                 new RollAgain(1),
                 new PlayerMoved(1, 30, 3),
                 new PassedStart(1, 200),
+                new LandedOnStart(1, 200),
                 new RestStarted(1),
                 new SentToJail(1, JailReason.Landed),
                 new JailCardUsed(1),
@@ -41,10 +42,11 @@ namespace Monopoly.Tests
                 new PurchaseOffered(1, 3, 140),
                 new PropertyBought(1, 3, 140),
                 new PurchaseDeclined(1, 3),
-                new AuctionStarted(3),
+                new AuctionStarted(3, 126, 0),
                 new BidPlaced(2, 30),
                 new AuctionPassed(0),
                 new AuctionWon(2, 3, 30),
+                new FinderPaid(0, 3, 9),
                 new AuctionUnsold(3),
                 new RentPaid(1, 0, 4, 16),
                 new RentSkipped(1, 4),
@@ -103,7 +105,7 @@ namespace Monopoly.Tests
             var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(1, 2), TestGame.Fixed);
             var result = game.Execute(new RollDice(0));
             game.Execute(new DeclinePurchase(0));
-            game.Execute(new PlaceBid(1, 10_000));
+            game.Execute(new PlaceBid(1, 126_000));
             var update = new GameUpdate(result.Events, game.State.ToSnapshot(), game.GetAvailableActions(0));
 
             var copy = RoundTrip(update);
@@ -115,7 +117,7 @@ namespace Monopoly.Tests
             Assert.Equal(TurnPhase.Auction, copy.Snapshot.Phase);
             Assert.Equal(new DiceRoll(1, 2), copy.Snapshot.LastRoll);
             Assert.Equal(1, copy.Snapshot.Auction!.LeaderId);
-            Assert.Equal(20_000, copy.Snapshot.Auction.MinBid);
+            Assert.Equal(136_000, copy.Snapshot.Auction.MinBid);
         }
 
         [Theory]
