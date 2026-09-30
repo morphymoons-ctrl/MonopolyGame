@@ -116,11 +116,13 @@ namespace Monopoly.Net
         public Task<string?> SetReadyAsync(bool ready) => InvokeAsync("SetReady", ready);
 
         public Task<string?> SetColorAsync(int colorIndex) => InvokeAsync("SetColor", colorIndex);
+        public Task<string?> SetUnitAsync(int unit) => InvokeAsync("SetUnit", unit);
 
         public Task<string?> AddBotAsync() => InvokeAsync("AddBot");
 
         // Только хост и только до старта (RULES.md, §15).
         public Task<string?> SetThemeAsync(BoardTheme theme) => InvokeAsync("SetTheme", theme);
+        public Task<string?> SetEventsAsync(EventFrequency events) => InvokeAsync("SetEvents", events);
 
         public Task<string?> RemoveBotAsync(int seatId) => InvokeAsync("RemoveBot", seatId);
 

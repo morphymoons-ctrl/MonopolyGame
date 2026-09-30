@@ -37,6 +37,8 @@ namespace Monopoly.App
         private GameDuration? duration;
         private DateTime durationReceived;
         private readonly System.Windows.Threading.DispatcherTimer clock = new() { Interval = TimeSpan.FromSeconds(1) };
+        // Плашка события (§17) висит несколько секунд.
+        private readonly System.Windows.Threading.DispatcherTimer bannerTimer = new() { Interval = TimeSpan.FromSeconds(7) };
 
         public GameScreen(GameClient client, GameStartInfo info, UserSettings settings, Func<Task> leave)
         {
@@ -55,6 +57,8 @@ namespace Monopoly.App
                 gameManager.Select(cell);
                 ShowCell();
             };
+            gameManager.WorldEventShown += ShowEventBanner;
+            bannerTimer.Tick += (_, _) => HideEventBanner();
             gameManager.DrawBoard();
             UpdateSoundButton();
             Refresh();
@@ -84,7 +88,8 @@ namespace Monopoly.App
             }
             int seconds = duration.Seconds + (duration.Running ? (int)(DateTime.UtcNow - durationReceived).TotalSeconds : 0);
             string time = $"{seconds / 3600}:{seconds / 60 % 60:00}:{seconds % 60:00}";
-            DurationText.Text = duration.Running ? $"Партія триває {time}" : $"Партія тривала {time}";
+            string round = Snapshot is { } s ? $" · коло {s.Round}" : "";
+            DurationText.Text = (duration.Running ? $"Партія триває {time}" : $"Партія тривала {time}") + round;
         }
 
         // Отсчёт считается от момента, когда пришло обновление: часы у компьютеров могут не совпадать.
@@ -106,6 +111,8 @@ namespace Monopoly.App
 
         private int MyId => gameManager.MyPlayerId;
         private GameSnapshot? Snapshot => gameManager.Snapshot;
+        // Бонус «Старта» с учётом инфляции (§17).
+        private int StartBonus => WorldEvents.Indexed(GameRules.StartBonus, Snapshot?.PriceIndex ?? 100);
         private bool Busy => sending || playing;
 
         public void Apply(GameUpdate update)
@@ -162,6 +169,66 @@ namespace Monopoly.App
             ShowSituation();
             ShowActions();
             ShowCell();
+            ShowEvents();
+        }
+
+        // --- События партии (§17) ---
+
+        private void ShowEventBanner(WorldEventStarted e)
+        {
+            EventBannerTitle.Text = EventText.EventName(e.Kind);
+            EventBannerText.Text = GameTerms.Capital(EventText.EventDescription(e.Kind, e.Group));
+            EventBannerTime.Text = e.Rounds > 0 ? $"Діє {WorldEvents.Rounds(e.Rounds)}."
+                : e.Kind == WorldEventKind.Inflation ? "До кінця гри." : "Діє одразу.";
+            EventBanner.Visibility = Visibility.Visible;
+            bannerTimer.Stop();
+            bannerTimer.Start();
+        }
+
+        private void HideEventBanner()
+        {
+            bannerTimer.Stop();
+            EventBanner.Visibility = Visibility.Collapsed;
+        }
+
+        private void EventBanner_MouseDown(object sender, MouseButtonEventArgs e) => HideEventBanner();
+
+        // Идущие события — «фишки» в центре поля: название и сколько кругов осталось; подсказка — что делает.
+        private void ShowEvents()
+        {
+            EventsPanel.Children.Clear();
+            if (Snapshot is not { } s)
+            {
+                return;
+            }
+            if (s.PriceIndex > 100)
+            {
+                EventsPanel.Children.Add(EventChip(EventText.EventName(WorldEventKind.Inflation), $"ціни +{s.PriceIndex - 100}%",
+                    EventText.EventDescription(WorldEventKind.Inflation, null)));
+            }
+            foreach (var e in s.Events ?? Array.Empty<ActiveEvent>())
+            {
+                string name = EventText.EventName(e.Kind) + (e.Group is CellType group ? $": «{EventText.GroupName(group)}»" : "");
+                EventsPanel.Children.Add(EventChip(name, $"ще {WorldEvents.Rounds(e.RoundsLeft(s.Round))}", EventText.EventDescription(e.Kind, e.Group)));
+            }
+        }
+
+        private Border EventChip(string name, string time, string description)
+        {
+            var text = new TextBlock { FontSize = 18, Foreground = (Brush)FindResource("BoardTextBrush") };
+            text.Inlines.Add(new System.Windows.Documents.Run(name) { FontWeight = FontWeights.Bold });
+            text.Inlines.Add(new System.Windows.Documents.Run($" · {time}") { Foreground = (Brush)FindResource("AccentBrush") });
+            return new Border
+            {
+                Child = text,
+                Background = PlayerPalette.Make("#E6262A31"),
+                BorderBrush = (Brush)FindResource("AccentBrush"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(14, 6, 14, 6),
+                Margin = new Thickness(4),
+                ToolTip = GameTerms.Capital(description),
+            };
         }
 
         // --- Карточка в центре поля: что происходит ---
@@ -389,30 +456,34 @@ namespace Monopoly.App
             var group = Enumerable.Range(0, EventText.Cells.Count).Where(i => EventText.Cells[i].Type == cell.Type).ToList();
             // Работающие (незаложенные) компании владельца в группе — от них аренда (§5).
             int ownedInGroup = owner is int ownerId ? GameRules.ActiveInGroup(EventText.Cells, cell.Type, ownerId) : 0;
+            // Инфляция и события (§17) — в таблице та же аренда, что возьмёт игра.
+            var context = Snapshot?.RentContext ?? RentContext.None;
+            int Now(int rent) => WorldEvents.AdjustRent(rent, cell.Type, context);
+            int Indexed(int amount) => WorldEvents.Indexed(amount, context.PriceIndex);
 
             switch (cell.Type)
             {
                 case CellType.GasStation:
                     for (int count = 1; count < GameRules.GasStationRent.Count; count++)
                     {
-                        rows.Add(($"{EventText.GroupName(cell.Type)}: {count}", GameManager.Format(GameRules.GasStationRent[count])));
+                        rows.Add(($"{EventText.GroupName(cell.Type)}: {count}", GameManager.Format(Now(Indexed(GameRules.GasStationRent[count])))));
                     }
                     active = ownedInGroup - 1;
                     break;
                 case CellType.Logistics:
-                    rows.Add(("Одна компанія", $"кубики × {GameManager.Format(GameRules.LogisticsSingle)}"));
-                    rows.Add(("Обидві компанії", $"кубики × {GameManager.Format(GameRules.LogisticsBoth)}"));
+                    rows.Add(("Одна компанія", $"кубики × {GameManager.Format(Now(Indexed(GameRules.LogisticsSingle)))}"));
+                    rows.Add(("Обидві компанії", $"кубики × {GameManager.Format(Now(Indexed(GameRules.LogisticsBoth)))}"));
                     active = ownedInGroup - 1;
                     break;
                 default:
                     int rent = GameRules.BaseRent(cell);
-                    rows.Add(("Оренда", GameManager.Format(rent)));
-                    rows.Add(("Уся група", GameManager.Format(rent * GameRules.MonopolyMultiplier)));
+                    rows.Add(("Оренда", GameManager.Format(Now(rent))));
+                    rows.Add(("Уся група", GameManager.Format(Now(rent * GameRules.MonopolyMultiplier))));
                     var terms = EventText.Terms;
                     string[] names = { "", $"1 {terms.Branch}", $"2 {terms.Branches}", $"3 {terms.Branches}", $"4 {terms.Branches}", GameTerms.Capital(terms.Office) };
                     for (int level = 1; level <= GameRules.HeadOfficeLevel; level++)
                     {
-                        rows.Add((names[level], GameManager.Format(GameRules.LevelRent(cell, level))));
+                        rows.Add((names[level], GameManager.Format(Now(GameRules.LevelRent(cell, level)))));
                     }
                     if (owner is not null)
                     {
@@ -450,9 +521,9 @@ namespace Monopoly.App
             RentTable.Children.Add(footer);
         }
 
-        private static string DescribeSpecial(CellType type) => type switch
+        private string DescribeSpecial(CellType type) => type switch
         {
-            CellType.Start => $"Прохід або потрапляння — +{GameManager.Format(GameRules.StartBonus)}.",
+            CellType.Start => $"Прохід — +{GameManager.Format(StartBonus)}, стати прямо на клітинку — ще +{GameManager.Format(StartBonus)}.",
             CellType.Jail => $"Пропуск наступного ходу — як «{EventText.Cells[20].Name}». Сюди ж ведуть три дублі поспіль і картка «{EventText.Cells[24].Name}». Картка «{EventText.Words.JailCard}» рятує від пропуску сама.",
             CellType.Casino => $"Ставка {EventText.CasinoRange} одразу після потрапляння: 50% — програш, 10% — повернення, 35% — ×2, 5% — ×3.",
             CellType.Rest => "Пропуск наступного ходу.",

@@ -61,15 +61,10 @@ namespace Monopoly.App
                     remove.Click += async (_, _) => StatusText.Text = await client.RemoveBotAsync(seatId) ?? "";
                     row.Children.Add(remove);
                 }
-                row.Children.Add(new Ellipse
-                {
-                    Width = 20,
-                    Height = 20,
-                    Fill = PlayerPalette.Get(seat.ColorIndex),
-                    Stroke = Brushes.White,
-                    StrokeThickness = 2,
-                    Margin = new Thickness(0, 0, 10, 0)
-                });
+                var unit = UnitVisual.Create(seat.Unit, PlayerPalette.Get(seat.ColorIndex), 22, 2);
+                unit.Margin = new Thickness(0, 0, 10, 0);
+                unit.VerticalAlignment = VerticalAlignment.Center;
+                row.Children.Add(unit);
                 row.Children.Add(new TextBlock { Text = $"{seat.Name}{me}", FontWeight = FontWeights.SemiBold });
                 row.Children.Add(new TextBlock { Text = $" — {role}", Foreground = (Brush)FindResource("MutedTextBrush") });
                 SeatsPanel.Children.Add(row);
@@ -98,7 +93,10 @@ namespace Monopoly.App
                 ColorsPanel.Children.Add(button);
             }
 
+            ShowUnits(mine);
+
             ShowTheme(lobby.Theme);
+            ShowEvents(lobby.Events);
 
             updatingReady = true;
             ReadyBox.IsChecked = mine?.IsReady == true;
@@ -139,6 +137,38 @@ namespace Monopoly.App
                     }
                 };
                 ThemesPanel.Children.Add(chip);
+            }
+        }
+
+        // Частота событий (§17): хост выбирает «фишками», остальные видят выбор.
+        private void ShowEvents(EventFrequency selected)
+        {
+            EventsPanel.Children.Clear();
+            EventsPanel.Visibility = isHost ? Visibility.Visible : Visibility.Collapsed;
+            EventsText.Visibility = isHost ? Visibility.Collapsed : Visibility.Visible;
+            EventsText.Text = EventText.FrequencyName(selected);
+            if (!isHost)
+            {
+                return;
+            }
+            foreach (var frequency in Enum.GetValues<EventFrequency>())
+            {
+                var chip = new RadioButton
+                {
+                    Content = EventText.FrequencyName(frequency),
+                    GroupName = "EventFrequency",
+                    Style = (Style)FindResource("Chip"),
+                    IsChecked = frequency == selected,
+                    FontSize = 16,
+                };
+                chip.Checked += async (_, _) =>
+                {
+                    if (frequency != state?.Events)
+                    {
+                        StatusText.Text = await client.SetEventsAsync(frequency) ?? "";
+                    }
+                };
+                EventsPanel.Children.Add(chip);
             }
         }
 
@@ -226,6 +256,52 @@ namespace Monopoly.App
                 FirewallButton.Visibility = Visibility.Collapsed;
             }
         }
+
+        // «Обрати юніта»: на кнопке — свой юнит в своём цвете, по щелчку — карточка со всеми вариантами.
+        private void ShowUnits(LobbySeat? mine)
+        {
+            int current = mine?.Unit ?? 0;
+            var color = PlayerPalette.Get(mine?.ColorIndex ?? 0);
+
+            var face = new StackPanel { Orientation = Orientation.Horizontal };
+            var unit = UnitVisual.Create(current, color, 30, 2);
+            unit.Margin = new Thickness(0, 0, 12, 0);
+            unit.VerticalAlignment = VerticalAlignment.Center;
+            face.Children.Add(unit);
+            face.Children.Add(new TextBlock { Text = UnitVisual.Name(current), FontSize = 18, VerticalAlignment = VerticalAlignment.Center });
+            face.Children.Add(new TextBlock { Text = "  ▾", FontSize = 16, VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)FindResource("MutedTextBrush") });
+            UnitButton.Content = face;
+
+            UnitsPanel.Children.Clear();
+            for (int i = 0; i < Lobby.Units.Count; i++)
+            {
+                bool chosen = i == current;
+                var option = new Button
+                {
+                    Width = 56,
+                    Height = 56,
+                    Margin = new Thickness(4),
+                    Padding = new Thickness(0),
+                    Content = UnitVisual.Create(i, color, 34, 2),
+                    BorderBrush = chosen ? (Brush)FindResource("AccentBrush") : (Brush)FindResource("SurfaceBorderBrush"),
+                    BorderThickness = new Thickness(chosen ? 3 : 1),
+                    ToolTip = UnitVisual.Name(i),
+                    Tag = i,
+                };
+                System.Windows.Automation.AutomationProperties.SetName(option, UnitVisual.Name(i));
+                option.Click += async (_, _) =>
+                {
+                    UnitPopup.IsOpen = false;
+                    if (option.Tag is int picked && picked != current)
+                    {
+                        StatusText.Text = await client.SetUnitAsync(picked) ?? "";
+                    }
+                };
+                UnitsPanel.Children.Add(option);
+            }
+        }
+
+        private void UnitButton_Click(object sender, RoutedEventArgs e) => UnitPopup.IsOpen = !UnitPopup.IsOpen;
 
         private async void Color_Click(object sender, RoutedEventArgs e)
         {

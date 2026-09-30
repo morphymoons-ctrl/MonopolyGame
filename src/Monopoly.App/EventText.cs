@@ -25,6 +25,56 @@ namespace Monopoly.App
 
         public static string ThemeName(BoardTheme theme) => ThemeWords.ThemeName(theme);
 
+        // --- События партии (RULES.md, §17): одинаковые на любой доске ---
+
+        public static string FrequencyName(EventFrequency frequency) => frequency switch
+        {
+            EventFrequency.Off => "Вимкнено",
+            EventFrequency.Rare => "Рідко",
+            EventFrequency.Often => "Часто",
+            _ => "Звичайно",
+        };
+
+        public static string EventName(WorldEventKind kind) => kind switch
+        {
+            WorldEventKind.Inflation => "Інфляція",
+            WorldEventKind.Crisis => "Економічна криза",
+            WorldEventKind.Boom => "Економічний бум",
+            WorldEventKind.LuxuryTax => "Податок на розкіш",
+            WorldEventKind.StateAid => "Державна допомога",
+            WorldEventKind.Solidarity => "Солідарний внесок",
+            WorldEventKind.BuildingBan => "Мораторій на будівництво",
+            WorldEventKind.Privatization => "Велика приватизація",
+            WorldEventKind.DemandSeason => "Сезон попиту",
+            WorldEventKind.Sanctions => "Санкції проти галузі",
+            WorldEventKind.Blackout => "Блекаут",
+            WorldEventKind.Raid => "Облава",
+            WorldEventKind.Jackpot => "Джекпот-тиждень",
+            WorldEventKind.Quarantine => "Карантин",
+            _ => kind.ToString(),
+        };
+
+        public static string EventDescription(WorldEventKind kind, CellType? group) => kind switch
+        {
+            WorldEventKind.Inflation => $"ціни компаній і {Terms.BranchesGenitive}, оренда та бонус «{Cells[0].Name}» — +10% до кінця гри.",
+            WorldEventKind.Crisis => "уся оренда вдвічі менша.",
+            WorldEventKind.Boom => "уся оренда на 50% більша.",
+            WorldEventKind.LuxuryTax => "кожен платить банку 10% своїх грошей.",
+            WorldEventKind.StateAid => $"кожен отримує {Money(WorldEvents.StateAid)}, найбідніший — {Money(WorldEvents.StateAidPoorest)}.",
+            WorldEventKind.Solidarity => "найбагатший платить найбіднішому 10% своїх грошей.",
+            WorldEventKind.BuildingBan => $"будувати {Terms.Branches} не можна, продавати — можна.",
+            WorldEventKind.Privatization => "усі вільні компанії по черзі йдуть на аукціон — від половини ціни.",
+            WorldEventKind.DemandSeason => $"«{GroupOf(group)}» приносять подвійну оренду.",
+            WorldEventKind.Sanctions => $"«{GroupOf(group)}» не приносять оренди.",
+            WorldEventKind.Blackout => $"«{GroupName(CellType.GasStation)}» і «{GroupName(CellType.Logistics)}» не приносять оренди.",
+            WorldEventKind.Raid => $"хто потрапить {Words.IntoJail}, пропустить 2 ходи.",
+            WorldEventKind.Jackpot => $"у «{Cells[16].Name}» ×3 випадає втричі частіше.",
+            WorldEventKind.Quarantine => "ніхто не платить оренду.",
+            _ => "",
+        };
+
+        private static string GroupOf(CellType? group) => group is CellType type ? GroupName(type) : "";
+
         // Имя игрока в тексте журнала помечается: NameStart, Id, NameSplit, имя, NameEnd.
         // Журнал по этим меткам красит имя в цвет фишки (GameManager.AddLog).
         public const char NameStart = '', NameSplit = '', NameEnd = '';
@@ -49,6 +99,12 @@ namespace Monopoly.App
                     ? $"{Name(s.PlayerId)} сидить {words.InJail} {And(words.InJail)} пропускає хід."
                     : $"{Name(s.PlayerId)} {words.RestSkipped}.",
                 GameOver g => $"Гру закінчено! Перемога: {Name(g.WinnerId)}.",
+
+                RoundStarted r => $"Починається коло {r.Round}.",
+                WorldEventStarted w => $"Подія «{EventName(w.Kind)}»: {EventDescription(w.Kind, w.Group)}"
+                    + (w.Rounds > 0 ? $" Діє {WorldEvents.Rounds(w.Rounds)}." : ""),
+                WorldEventEnded w => $"Подія «{EventName(w.Kind)}» закінчилася.",
+                RentWaived r => $"{Name(r.PlayerId)} не платить оренду за «{Cell(r.CellIndex)}» — «{EventName(r.Reason)}».",
 
                 DiceRolled d => $"{Name(d.PlayerId)} кидає кубики: {d.Die1} + {d.Die2} = {d.Total}" + (d.IsDouble ? " — дубль!" : "."),
                 RollAgain r => $"{Name(r.PlayerId)} кидає ще раз.",

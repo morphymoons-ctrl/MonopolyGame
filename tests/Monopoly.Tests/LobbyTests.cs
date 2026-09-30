@@ -49,6 +49,44 @@ namespace Monopoly.Tests
             Assert.Equal(BoardTheme.Military, lobby.Theme);
         }
 
+        // Юнит (кружок или эмодзи): выбирает каждый себе, повторяться может, после старта — нельзя.
+        [Fact]
+        public void Unit_ChosenBeforeStart()
+        {
+            var lobby = CreateLobbyWithHost();
+            Join(lobby, "c1", "Аня");
+
+            Assert.Equal(0, lobby.GetState().Seats[1].Unit);
+            Assert.Null(lobby.SetUnit("c1", 5));
+            Assert.Null(lobby.SetUnit("host", 5));
+            Assert.Equal(5, lobby.GetState().Seats[1].Unit);
+            Assert.Equal("Такого юніта немає.", lobby.SetUnit("c1", Lobby.Units.Count));
+
+            lobby.SetReady("c1", true);
+            Assert.Null(lobby.Start("host", out _));
+            Assert.Equal("Гра вже почалася.", lobby.SetUnit("c1", 1));
+            Assert.Equal(5, lobby.UnitByPlayerId()[1]);
+            Assert.All(lobby.SavedSeats(), s => Assert.Equal(5, s.Unit));
+        }
+
+        // Частота событий (RULES.md, §17): по умолчанию «Звичайно», меняет только хост и только до старта.
+        [Fact]
+        public void Events_ChosenByHostBeforeStart()
+        {
+            var lobby = CreateLobbyWithHost();
+            Join(lobby, "c1", "Аня");
+
+            Assert.Equal(EventFrequency.Normal, lobby.GetState().Events);
+            Assert.Equal("Це може лише хост.", lobby.SetEvents("c1", EventFrequency.Off));
+            Assert.Null(lobby.SetEvents("host", EventFrequency.Often));
+            Assert.Equal(EventFrequency.Often, lobby.GetState().Events);
+            Assert.Equal("Такої частоти подій немає.", lobby.SetEvents("host", (EventFrequency)42));
+
+            lobby.SetReady("c1", true);
+            Assert.Null(lobby.Start("host", out _));
+            Assert.Equal("Гра вже почалася.", lobby.SetEvents("host", EventFrequency.Off));
+        }
+
         [Fact]
         public void Restore_KeepsTheme()
         {

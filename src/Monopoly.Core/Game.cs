@@ -10,6 +10,8 @@ namespace Monopoly.Core
         public bool ReduceDoubles { get; init; } = true;
         // Тематика доски (§15): названия клеток; правила от неё не зависят.
         public BoardTheme Theme { get; init; } = BoardTheme.Business;
+        // События партии (§17). В тестах по умолчанию выключены: они берут числа из генератора.
+        public EventFrequency Events { get; init; } = EventFrequency.Off;
     }
 
     // Движок: принимает действия игроков, проверяет их по правилам и меняет состояние.
@@ -30,9 +32,10 @@ namespace Monopoly.Core
         public int? Seed => (random as SeededRandom)?.Seed;
 
         // Новая партия. Без seed зерно выбирается случайно и попадает в событие GameStarted.
-        public static Game Start(IReadOnlyList<string> playerNames, int? seed = null, BoardTheme theme = BoardTheme.Business)
+        public static Game Start(IReadOnlyList<string> playerNames, int? seed = null, BoardTheme theme = BoardTheme.Business,
+            EventFrequency events = EventFrequency.Off)
         {
-            return new Game(playerNames, new SeededRandom(seed ?? Random.Shared.Next()), new GameOptions { Theme = theme });
+            return new Game(playerNames, new SeededRandom(seed ?? Random.Shared.Next()), new GameOptions { Theme = theme, Events = events });
         }
 
         public Game(IReadOnlyList<string> playerNames, IRandomSource random, GameOptions? options = null)
@@ -348,8 +351,8 @@ namespace Monopoly.Core
             // Проход или попадание на «Старт» (§3) — в журнале раньше, чем прибытие на клетку.
             if (from + steps >= count)
             {
-                player.Balance += GameRules.StartBonus;
-                events.Add(new PassedStart(player.Id, GameRules.StartBonus));
+                player.Balance += State.StartBonus;
+                events.Add(new PassedStart(player.Id, State.StartBonus));
             }
             events.Add(new PlayerMoved(player.Id, from, player.Position));
         }
@@ -386,8 +389,14 @@ namespace Monopoly.Core
                         events.Add(new RentSkipped(player.Id, player.Position));
                         return;
                     }
+                    // Санкции, блекаут или карантин (§17) — аренды нет, в журнале — почему.
+                    if (WorldEvents.RentBlockedBy(State.Events, cell.Type) is WorldEventKind blockedBy)
+                    {
+                        events.Add(new RentWaived(player.Id, player.Position, blockedBy));
+                        return;
+                    }
                     var owner = State.FindPlayer(cell.OwnerId.Value)!;
-                    int rent = GameRules.Rent(State.Board, player.Position, State.LastRoll?.Total ?? 0) * rentMultiplier;
+                    int rent = GameRules.Rent(State.Board, player.Position, State.LastRoll?.Total ?? 0, State.RentContext) * rentMultiplier;
                     State.Stats.Rent(player.Id, owner.Id, player.Position, rent);
                     Charge(player, owner, rent, events, new RentPaid(player.Id, owner.Id, player.Position, rent));
                 }
@@ -413,8 +422,8 @@ namespace Monopoly.Core
                     break;
                 // «Старт»: за проход бонус уже начислен при движении; встал ровно на него — ещё столько же (§3).
                 case CellType.Start:
-                    player.Balance += GameRules.StartBonus;
-                    events.Add(new LandedOnStart(player.Id, GameRules.StartBonus));
+                    player.Balance += State.StartBonus;
+                    events.Add(new LandedOnStart(player.Id, State.StartBonus));
                     break;
             }
         }
@@ -442,6 +451,9 @@ namespace Monopoly.Core
             while (true)
             {
                 State.CurrentPlayerIndex = (State.CurrentPlayerIndex + 1) % State.Players.Count;
+                // Ход снова у первого в порядке ходов — новый круг: события (§17).
+                if (State.CurrentPlayerIndex == 0)
+                    StartRound(events);
                 var next = State.CurrentPlayer;
                 if (next.IsBankrupt)
                     continue;
@@ -449,7 +461,9 @@ namespace Monopoly.Core
                     break;
                 var reason = next.IsInJail ? SkipReason.Jail : SkipReason.Rest;
                 next.IsResting = false;
-                next.IsInJail = false;
+                // Во время «Облави» пропускается два хода (§17).
+                if (next.IsInJail && --next.JailSkips <= 0)
+                    next.IsInJail = false;
                 events.Add(new TurnSkipped(next.Id, reason));
             }
 
@@ -483,16 +497,19 @@ namespace Monopoly.Core
                 return;
             }
             player.IsInJail = true;
+            player.JailSkips = WorldEvents.IsActive(State.Events, WorldEventKind.Raid) ? 2 : 1;
             State.Stats.Jailed(player.Id);
         }
 
         // --- Казино ---
 
         // 50% — проигрыш, 10% — ставка возвращается, 35% — ×2, 5% — ×3 (§8).
+        // «Джекпот-тиждень» (§17): 40% — проигрыш, 10% — возврат, 35% — ×2, 15% — ×3.
         private void PlayCasinoBet(Player player, int bet, List<GameEvent> events)
         {
             int roll = random.Next(0, 100);
-            int multiplier = roll < 50 ? 0 : roll < 60 ? 1 : roll < 95 ? 2 : 3;
+            int lose = WorldEvents.IsActive(State.Events, WorldEventKind.Jackpot) ? 40 : 50;
+            int multiplier = roll < lose ? 0 : roll < lose + 10 ? 1 : roll < lose + 45 ? 2 : 3;
             player.Balance += bet * multiplier - bet;
             State.CasinoAvailable = false;
             State.Stats.Casino(player.Id, bet * multiplier - bet);

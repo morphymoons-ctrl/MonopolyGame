@@ -85,6 +85,8 @@ namespace Monopoly.Core
                 events.Add(new AuctionUnsold(auction.CellIndex));
             }
             State.Auction = null;
+            // «Велика приватизація» (§17): следующая компания из очереди — сразу на аукцион.
+            StartNextPrivatization(events);
         }
     }
 }

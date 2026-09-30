@@ -16,6 +16,20 @@ namespace Monopoly.Core
 
     public sealed record GameOver(int WinnerId) : GameEvent;
 
+    // --- События партии (§17) ---
+
+    // Новый круг: ход снова дошёл до первого в порядке ходов.
+    public sealed record RoundStarted(int Round) : GameEvent;
+
+    // Началось событие. Rounds — сколько кругов действует (0 — мгновенное или до конца игры); Group — у «Сезона» и «Санкцій».
+    public sealed record WorldEventStarted(WorldEventKind Kind, int Rounds, CellType? Group = null) : GameEvent;
+
+    // Событие на несколько кругов закончилось.
+    public sealed record WorldEventEnded(WorldEventKind Kind, CellType? Group = null) : GameEvent;
+
+    // Аренду не взяли из-за события (санкции, блекаут, карантин).
+    public sealed record RentWaived(int PlayerId, int CellIndex, WorldEventKind Reason) : GameEvent;
+
     // --- Движение ---
 
     public sealed record DiceRolled(int PlayerId, int Die1, int Die2) : GameEvent

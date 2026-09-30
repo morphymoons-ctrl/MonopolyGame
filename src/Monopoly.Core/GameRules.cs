@@ -112,12 +112,18 @@ namespace Monopoly.Core
         public static int BaseRent(BoardCell cell) => RoundMoney(cell.Price * BaseRentPercent / 100);
 
         // Аренда за клетку (§5). diceTotal нужен для логистики.
-        public static int Rent(IReadOnlyList<BoardCell> board, int cellIndex, int diceTotal)
+        // context — инфляция и события (§17); без него — как в партии без событий.
+        public static int Rent(IReadOnlyList<BoardCell> board, int cellIndex, int diceTotal, RentContext? context = null)
         {
             var cell = board[cellIndex];
             if (cell.OwnerId is not int owner || cell.IsMortgaged)
                 return 0;
+            context ??= RentContext.None;
+            return WorldEvents.AdjustRent(PlainRent(board, cell, owner, diceTotal, context.PriceIndex), cell.Type, context);
+        }
 
+        private static int PlainRent(IReadOnlyList<BoardCell> board, BoardCell cell, int owner, int diceTotal, int priceIndex)
+        {
             // Заложенные компании не усиливают остальные: считаются только работающие (§5).
             var group = board.Where(c => c.Type == cell.Type).ToList();
             int owned = ActiveInGroup(board, cell.Type, owner);
@@ -125,9 +131,9 @@ namespace Monopoly.Core
             switch (cell.Type)
             {
                 case CellType.GasStation:
-                    return GasStationRent[owned];
+                    return WorldEvents.Indexed(GasStationRent[owned], priceIndex);
                 case CellType.Logistics:
-                    return diceTotal * (owned == group.Count ? LogisticsBoth : LogisticsSingle);
+                    return diceTotal * WorldEvents.Indexed(owned == group.Count ? LogisticsBoth : LogisticsSingle, priceIndex);
             }
 
             if (cell.Level > 0)

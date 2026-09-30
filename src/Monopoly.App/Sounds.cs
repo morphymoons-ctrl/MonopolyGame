@@ -15,6 +15,8 @@ namespace Monopoly.App
         private readonly SoundPlayer win = Create(Tones((523, 0.0, 0.3), (659, 0.15, 0.45), (784, 0.3, 0.6), (1047, 0.45, 0.9)));
         // «Дін-дон», как дверной звонок: вам предложили обмен. Не путается со своим ходом (восходящий аккорд).
         private readonly SoundPlayer trade = Create(Tones((988, 0.0, 0.4), (784, 0.22, 0.8)));
+        // Низкий «гонг»: началось событие партии (§17).
+        private readonly SoundPlayer worldEvent = Create(Tones((196, 0.0, 1.2), (294, 0.0, 1.2), (392, 0.03, 1.0)));
 
         public bool Enabled { get; set; } = true;
 
@@ -23,6 +25,7 @@ namespace Monopoly.App
         public void Turn() => Play(turn);
         public void Win() => Play(win);
         public void Trade() => Play(trade);
+        public void WorldEvent() => Play(worldEvent);
 
         private void Play(SoundPlayer player)
         {

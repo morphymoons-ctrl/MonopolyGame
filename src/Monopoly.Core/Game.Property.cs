@@ -26,6 +26,9 @@ namespace Monopoly.Core
             var group = State.GroupOf(cell).ToList();
             if (!cell.IsBuildable)
                 return $"На «{cell.Name}» {State.Terms.Branches} не будуються.";
+            // «Мораторій на будівництво» (§17): строить нельзя, продавать можно.
+            if (State.Events.FirstOrDefault(e => e.Kind == WorldEventKind.BuildingBan) is { } ban)
+                return $"Мораторій на будівництво: будувати не можна ще {WorldEvents.Rounds(ban.RoundsLeft(State.Round))}.";
             if (!GameRules.IsMonopoly(State.Board, cell.Type, player.Id))
                 return $"{GameTerms.Capital(State.Terms.Branches)} будуються, лише коли у вас уся група.";
             if (group.Any(c => c.IsMortgaged))

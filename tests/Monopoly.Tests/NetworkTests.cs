@@ -274,6 +274,11 @@ namespace Monopoly.Tests
                 Assert.Equal("Це може лише хост.", await guest.Client.SetThemeAsync(BoardTheme.Military));
                 Assert.Null(await hostPlayer.Client.SetThemeAsync(BoardTheme.Military));
                 await guest.WaitLobbyAsync(s => s.Theme == BoardTheme.Military);
+                Assert.Equal("Це може лише хост.", await guest.Client.SetEventsAsync(EventFrequency.Off));
+                Assert.Null(await hostPlayer.Client.SetEventsAsync(EventFrequency.Often));
+                await guest.WaitLobbyAsync(s => s.Events == EventFrequency.Often);
+                Assert.Null(await guest.Client.SetUnitAsync(3));
+                await guest.WaitLobbyAsync(s => s.Seats.Any(seat => seat.Unit == 3));
 
                 Assert.Null(await guest.Client.SetReadyAsync(true));
                 Assert.Null(await hostPlayer.Client.StartGameAsync());
@@ -281,10 +286,12 @@ namespace Monopoly.Tests
                 var first = await guest.NextUpdateAsync();
                 Assert.Equal(BoardTheme.Military, info.Theme);
                 Assert.Equal(BoardTheme.Military, first.Snapshot.Theme);
+                Assert.Contains(3, info.UnitByPlayerId!.Values);
             }
 
             var save = Assert.Single(store.ListUnfinished());
             Assert.Equal(BoardTheme.Military, save.Theme);
+            Assert.Equal(EventFrequency.Often, save.Events);
 
             int port2 = FreePort();
             await using var resumed = await GameHost.ResumeAsync(save, new GameHostOptions { Port = port2, EnableDiscovery = false, Saves = store });

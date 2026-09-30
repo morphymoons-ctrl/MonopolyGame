@@ -235,3 +235,76 @@ namespace Monopoly.App
         public static readonly FontFamily Icons = new(GroupPalette.IconFont);
     }
 }
+
+namespace Monopoly.App
+{
+    // Юнит игрока — чем он ходит по полю (лобби: «Обрати юніта»). 0 — кружок, остальное — эмодзи из Lobby.Units,
+    // окрашенные в цвет игрока, как значки на клетках. Размер у всех одинаковый.
+    public static class UnitVisual
+    {
+        public static readonly string[] Names =
+        {
+            "Кружечок", "Мавпа", "Папуга", "Горила", "Орангутан", "Пес", "Кіт", "Тигр", "Кінь",
+            "Коза", "Вівця", "Свиня", "Слон", "Півень", "Черепаха", "Крокодил",
+        };
+
+        public static bool IsEmoji(int unit) => unit > 0 && unit < Lobby.Units.Count;
+
+        public static string Name(int unit) => unit >= 0 && unit < Names.Length ? Names[unit] : Names[0];
+
+        // Контуры эмодзи — один раз на юнит.
+        private static readonly System.Collections.Generic.Dictionary<int, Geometry> Outlines = new();
+
+        // Юнит — фигура с белой обводкой stroke, как кружок: и кружок, и эмодзи читаются на любой клетке, даже своего цвета.
+        // Эмодзи — контур значка (заливка цветом игрока), вписанный в тот же квадрат size, что и кружок.
+        public static System.Windows.Shapes.Shape Create(int unit, Brush color, double size, double stroke)
+        {
+            if (!IsEmoji(unit))
+            {
+                return new System.Windows.Shapes.Ellipse { Width = size, Height = size, Fill = color, Stroke = System.Windows.Media.Brushes.White, StrokeThickness = stroke };
+            }
+            // У эмодзи обводка тонкая и тёмная: многие значки нарисованы тонкими линиями, белая обводка их бы забила.
+            return new System.Windows.Shapes.Path
+            {
+                Data = Outline(unit),
+                Width = size,
+                Height = size,
+                Stretch = Stretch.Uniform,
+                Fill = color,
+                Stroke = EmojiEdge,
+                StrokeThickness = stroke / 2,
+                StrokeLineJoin = PenLineJoin.Round,
+            };
+        }
+
+        private static readonly Brush EmojiEdge = PlayerPalette.Make("#1A1C20");
+
+        // Юнит того, кто ходит, — заметнее: у кружка обводка толще, у эмодзи — золотое свечение вокруг (обводка та же,
+        // иначе тонкие линии значка потеряются). Остальные — с обычной тенью.
+        public static void Highlight(System.Windows.Shapes.Shape unit, bool current, double size)
+        {
+            if (unit is System.Windows.Shapes.Ellipse)
+            {
+                unit.StrokeThickness = current ? 5 : 3;
+                return;
+            }
+            unit.Effect = current
+                ? new System.Windows.Media.Effects.DropShadowEffect { Color = Color.FromRgb(0xFF, 0xD2, 0x4A), ShadowDepth = 0, BlurRadius = size * 0.45, Opacity = 1 }
+                : new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 8, ShadowDepth = 2, Opacity = 0.6 };
+        }
+
+        private static Geometry Outline(int unit)
+        {
+            if (!Outlines.TryGetValue(unit, out var geometry))
+            {
+                var text = new FormattedText(Lobby.Units[unit], System.Globalization.CultureInfo.InvariantCulture,
+                    System.Windows.FlowDirection.LeftToRight, new Typeface(GameFonts.Icons, System.Windows.FontStyles.Normal,
+                        System.Windows.FontWeights.Normal, System.Windows.FontStretches.Normal), 100, System.Windows.Media.Brushes.Black, 1.0);
+                geometry = text.BuildGeometry(new System.Windows.Point(0, 0));
+                geometry.Freeze();
+                Outlines[unit] = geometry;
+            }
+            return geometry;
+        }
+    }
+}

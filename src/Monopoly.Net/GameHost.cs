@@ -76,10 +76,10 @@ namespace Monopoly.Net
                 throw new InvalidDataException($"Збереження від версії {save.Version}, а гра — {NetDefaults.GameVersion}.");
 
             var host = new GameHost(options ?? new GameHostOptions(), save.GameId);
-            host.game = Game.Replay(save.Seats.Select(s => s.Name).ToList(), save.Seed, save.Actions, save.Theme);
+            host.game = Game.Replay(save.Seats.Select(s => s.Name).ToList(), save.Seed, save.Actions, save.Theme, save.Events);
             host.playedBefore = TimeSpan.FromSeconds(save.PlayedSeconds);
             host.playStarted = Now;
-            host.lobby.Restore(save.Seats, Now, save.Theme);
+            host.lobby.Restore(save.Seats, Now, save.Theme, save.Events);
             host.discoveryInfo = host.DescribeForDiscovery();
             return LaunchAsync(host);
         }
@@ -121,7 +121,7 @@ namespace Monopoly.Net
 
             // Вернулся в идущую партию: кто он, вся история и новости для остальных.
             int playerId = lobby.FindPlayerId(connectionId)!.Value;
-            await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId, lobby.ColorByPlayerId(), game.State.Theme));
+            await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId, lobby.ColorByPlayerId(), game.State.Theme, lobby.UnitByPlayerId()));
             await Hub.Clients.Client(connectionId).SendAsync(ClientMethods.Update, MakeUpdate(game.History, playerId, resync: true));
             await SendToAllAsync(ClientMethods.Notice, $"{lobby.FindName(connectionId)} повернувся до гри.");
             await SendUpdateAsync(Array.Empty<GameEvent>());
@@ -131,10 +131,12 @@ namespace Monopoly.Net
         internal Task<string?> SetReadyAsync(string connectionId, bool ready) => LobbyChange(() => lobby.SetReady(connectionId, ready));
 
         internal Task<string?> SetColorAsync(string connectionId, int colorIndex) => LobbyChange(() => lobby.SetColor(connectionId, colorIndex));
+        internal Task<string?> SetUnitAsync(string connectionId, int unit) => LobbyChange(() => lobby.SetUnit(connectionId, unit));
 
         internal Task<string?> AddBotAsync(string connectionId) => LobbyChange(() => lobby.AddBot(connectionId));
 
         internal Task<string?> SetThemeAsync(string connectionId, BoardTheme theme) => LobbyChange(() => lobby.SetTheme(connectionId, theme));
+        internal Task<string?> SetEventsAsync(string connectionId, EventFrequency events) => LobbyChange(() => lobby.SetEvents(connectionId, events));
 
         internal Task<string?> RemoveBotAsync(string connectionId, int seatId) => LobbyChange(() => lobby.RemoveBot(connectionId, seatId));
 
@@ -144,13 +146,13 @@ namespace Monopoly.Net
             if (error is not null)
                 return error;
 
-            game = Game.Start(names, theme: lobby.Theme);
+            game = Game.Start(names, theme: lobby.Theme, events: lobby.Events);
             playStarted = Now;
             lastChange = Now;
             Save();
             var colors = lobby.ColorByPlayerId();
             foreach (var (connection, playerId) in lobby.Connections())
-                await Hub.Clients.Client(connection).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId!.Value, colors, game.State.Theme));
+                await Hub.Clients.Client(connection).SendAsync(ClientMethods.GameStart, new GameStartInfo(playerId!.Value, colors, game.State.Theme, lobby.UnitByPlayerId()));
             await SendUpdateAsync(game.History);
             return null;
         });
@@ -329,7 +331,7 @@ namespace Monopoly.Net
             if (options.Saves is null || game?.Seed is not int seed)
                 return;
             options.Saves.Write(new SaveFile(gameId, NetDefaults.GameVersion, seed, lobby.SavedSeats(),
-                game.Actions.ToList(), Now, game.State.Phase == TurnPhase.GameOver, (int)Played(Now).TotalSeconds, game.State.Theme));
+                game.Actions.ToList(), Now, game.State.Phase == TurnPhase.GameOver, (int)Played(Now).TotalSeconds, game.State.Theme, lobby.Events));
         }
 
         private IHubContext<GameHub> Hub => hub ?? throw new InvalidOperationException("Хост не запущено.");
@@ -432,10 +434,12 @@ namespace Monopoly.Net
         public Task<string?> SetReady(bool ready) => host.SetReadyAsync(Context.ConnectionId, ready);
 
         public Task<string?> SetColor(int colorIndex) => host.SetColorAsync(Context.ConnectionId, colorIndex);
+        public Task<string?> SetUnit(int unit) => host.SetUnitAsync(Context.ConnectionId, unit);
 
         public Task<string?> AddBot() => host.AddBotAsync(Context.ConnectionId);
 
         public Task<string?> SetTheme(BoardTheme theme) => host.SetThemeAsync(Context.ConnectionId, theme);
+        public Task<string?> SetEvents(EventFrequency events) => host.SetEventsAsync(Context.ConnectionId, events);
 
         public Task<string?> RemoveBot(int seatId) => host.RemoveBotAsync(Context.ConnectionId, seatId);
 

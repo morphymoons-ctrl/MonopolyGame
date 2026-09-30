@@ -65,6 +65,10 @@ namespace Monopoly.Tests
                 new CompanyRedeemed(1, 3, 77),
                 new TradeRejected(0, 1),
                 new TradeCancelled(0, 1),
+                new RoundStarted(3),
+                new WorldEventStarted(WorldEventKind.DemandSeason, 2, CellType.Food),
+                new WorldEventEnded(WorldEventKind.Crisis),
+                new RentWaived(1, 4, WorldEventKind.Quarantine),
             };
             var withLists = new[] { nameof(GameStarted), nameof(TradeProposed), nameof(TradeAccepted) };
             var eventTypes = typeof(GameEvent).Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(GameEvent)));

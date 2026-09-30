@@ -8,6 +8,11 @@ namespace Monopoly.Net
     {
         // Сколько цветов фишек в палитре интерфейса — по одному на место.
         public const int ColorCount = GameRules.MaxPlayers;
+        // Юнит — чем игрок ходит по полю: 0 — кружок, остальное — эмодзи, окрашенные в цвет игрока. Повторяться могут: цвета разные.
+        public static readonly IReadOnlyList<string> Units = new[]
+        {
+            "", "🐒", "🦜", "🦍", "🦧", "🐕", "🐈", "🐅", "🐎", "🐐", "🐑", "🐖", "🐘", "🐓", "🐢", "🐊",
+        };
         public const int MaxNameLength = 20;
 
         private readonly List<Seat> seats = new();
@@ -18,6 +23,8 @@ namespace Monopoly.Net
         public bool IsStarted { get; private set; }
         // Тематика доски (RULES.md, §15): выбирает хост до старта.
         public BoardTheme Theme { get; private set; } = BoardTheme.Business;
+        // Частота событий партии (§17): выбирает хост до старта.
+        public EventFrequency Events { get; private set; } = EventFrequency.Normal;
 
         public Lobby(string hostToken, string version)
         {
@@ -131,6 +138,17 @@ namespace Monopoly.Net
             return null;
         }
 
+        public string? SetEvents(string connectionId, EventFrequency events)
+        {
+            var error = RequireHostBeforeStart(connectionId);
+            if (error is not null)
+                return error;
+            if (!Enum.IsDefined(events))
+                return "Такої частоти подій немає.";
+            Events = events;
+            return null;
+        }
+
         public string? SetReady(string connectionId, bool ready)
         {
             var seat = Find(connectionId);
@@ -140,6 +158,19 @@ namespace Monopoly.Net
                 return "Гра вже почалася.";
             if (!seat.IsHost)
                 seat.IsReady = ready;
+            return null;
+        }
+
+        public string? SetUnit(string connectionId, int unit)
+        {
+            var seat = Find(connectionId);
+            if (seat is null)
+                return "Ви не в лобі.";
+            if (IsStarted)
+                return "Гра вже почалася.";
+            if (unit < 0 || unit >= Units.Count)
+                return "Такого юніта немає.";
+            seat.Unit = unit;
             return null;
         }
 
@@ -177,14 +208,17 @@ namespace Monopoly.Net
         }
 
         // Партия из сохранения: места и доска те же, все люди пока не подключены.
-        public void Restore(IReadOnlyList<SavedSeat> saved, DateTime now, BoardTheme theme = BoardTheme.Business)
+        public void Restore(IReadOnlyList<SavedSeat> saved, DateTime now, BoardTheme theme = BoardTheme.Business,
+            EventFrequency events = EventFrequency.Off)
         {
             Theme = theme;
+            Events = events;
             seats.Clear();
             for (int i = 0; i < saved.Count; i++)
             {
                 seats.Add(new Seat(nextSeatId++, saved[i].Name, saved[i].ColorIndex, saved[i].IsHost, saved[i].IsBot)
                 {
+                    Unit = saved[i].Unit,
                     IsReady = true,
                     PlayerId = i,
                     DisconnectedAt = saved[i].IsBot ? null : now,
@@ -213,10 +247,11 @@ namespace Monopoly.Net
             seats.FirstOrDefault(s => s.PlayerId == playerId) is { } seat && (seat.IsBot || seat.BotActive);
 
         public LobbyState GetState() => new(
-            seats.Select(s => new LobbySeat(s.SeatId, s.Name, s.ColorIndex, s.IsReady, s.IsHost, s.IsBot)).ToList(),
+            seats.Select(s => new LobbySeat(s.SeatId, s.Name, s.ColorIndex, s.IsReady, s.IsHost, s.IsBot, s.Unit)).ToList(),
             GameRules.MaxPlayers,
             StartBlockedReason(),
-            Theme);
+            Theme,
+            Events);
 
         public IReadOnlyList<SeatStatus> SeatStatuses(DateTime now, TimeSpan takeover) =>
             seats.Where(s => s.PlayerId is not null).Select(s =>
@@ -233,7 +268,7 @@ namespace Monopoly.Net
         public IReadOnlyList<SavedSeat> SavedSeats() =>
             seats.Where(s => s.PlayerId is not null)
                 .OrderBy(s => s.PlayerId)
-                .Select(s => new SavedSeat(s.Name, s.ColorIndex, s.IsHost, s.IsBot))
+                .Select(s => new SavedSeat(s.Name, s.ColorIndex, s.IsHost, s.IsBot, s.Unit))
                 .ToList();
 
         // Подключённые игроки: адресаты рассылки.
@@ -246,6 +281,9 @@ namespace Monopoly.Net
 
         public IReadOnlyDictionary<int, int> ColorByPlayerId() =>
             seats.Where(s => s.PlayerId is not null).ToDictionary(s => s.PlayerId!.Value, s => s.ColorIndex);
+
+        public IReadOnlyDictionary<int, int> UnitByPlayerId() =>
+            seats.Where(s => s.PlayerId is not null).ToDictionary(s => s.PlayerId!.Value, s => s.Unit);
 
         private string? StartBlockedReason()
         {
@@ -284,6 +322,7 @@ namespace Monopoly.Net
             // Бот, добавленный хостом в лобби.
             public bool IsBot { get; }
             public int ColorIndex { get; set; }
+            public int Unit { get; set; }
             public bool IsReady { get; set; }
             public int? PlayerId { get; set; }
             // null — не подключён (бот или отключившийся игрок).

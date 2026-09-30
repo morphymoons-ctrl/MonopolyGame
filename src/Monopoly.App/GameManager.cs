@@ -27,7 +27,7 @@ namespace Monopoly.App
         private readonly Canvas boardCanvas;
         private readonly Canvas tokenCanvas;
         private readonly StackPanel playersPanel;
-        private readonly Dictionary<int, Ellipse> tokens = new();
+        private readonly Dictionary<int, FrameworkElement> tokens = new();
         // Где фишка нарисована сейчас (во время анимации отстаёт от снимка).
         private readonly Dictionary<int, int> shownPositions = new();
 
@@ -58,6 +58,9 @@ namespace Monopoly.App
 
         public int MyPlayerId => startInfo.MyPlayerId;
 
+        // Началось событие партии (§17): экран показывает плашку.
+        public event Action<WorldEventStarted>? WorldEventShown;
+
         public static string Format(int amount) => EventText.Money(amount);
 
         // Крупная сумма (цена на клетке, баланс) — нейтральным шрифтом GameFonts.Money.
@@ -67,6 +70,10 @@ namespace Monopoly.App
             block.FontFamily = GameFonts.Money;
             block.FontWeight = FontWeights.Normal;
         }
+
+        // Юнит игрока (лобби: «Обрати юніта»): 0 — кружок.
+        public int PlayerUnit(int playerId) =>
+            startInfo.UnitByPlayerId is { } units && units.TryGetValue(playerId, out int unit) ? unit : 0;
 
         public Brush PlayerColor(int playerId) =>
             PlayerPalette.Get(startInfo.ColorByPlayerId.TryGetValue(playerId, out int color) ? color : playerId);
@@ -104,6 +111,11 @@ namespace Monopoly.App
                         break;
                     case TradeProposed p when p.Offer.ToId == MyPlayerId:
                         sounds.Trade();
+                        break;
+                    case WorldEventStarted w:
+                        sounds.WorldEvent();
+                        WorldEventShown?.Invoke(w);
+                        await Task.Delay(400);
                         break;
                     case GameOver:
                         sounds.Win();
@@ -431,8 +443,8 @@ namespace Monopoly.App
 
             // Та же формула, что у движка при оплате (поле клиента обновлено из снимка — GameSnapshot.ApplyTo).
             string rent = cell.Type == CellType.Logistics
-                ? $"кубики ×{EventText.ShortMoney(GameRules.Rent(board, index, 1))}"
-                : EventText.ShortMoney(GameRules.Rent(board, index, 0));
+                ? $"кубики ×{EventText.ShortMoney(GameRules.Rent(board, index, 1, Snapshot?.RentContext))}"
+                : EventText.ShortMoney(GameRules.Rent(board, index, 0, Snapshot?.RentContext));
             line.Children.Add(new TextBlock
             {
                 Text = rent,
@@ -528,20 +540,14 @@ namespace Monopoly.App
 
         // --- Фишки ---
 
-        private Ellipse Token(int playerId)
+        // Юнит на поле: кружок или эмодзи цвета игрока — с белой обводкой и тенью, размер один.
+        private FrameworkElement Token(int playerId)
         {
             if (!tokens.TryGetValue(playerId, out var token))
             {
-                double d = TokenSize;
-                token = new Ellipse
-                {
-                    Width = d,
-                    Height = d,
-                    Fill = PlayerColor(playerId),
-                    Stroke = Brushes.White,
-                    StrokeThickness = 3,
-                    Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 2, Opacity = 0.6 }
-                };
+                int unit = PlayerUnit(playerId);
+                token = UnitVisual.Create(unit, PlayerColor(playerId), TokenSize, 3);
+                token.Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 2, Opacity = 0.6 };
                 tokens[playerId] = token;
                 tokenCanvas.Children.Add(token);
                 var start = CellRect(0);
@@ -619,7 +625,8 @@ namespace Monopoly.App
                 {
                     var token = Token(player.Id);
                     bool current = player.Id == Snapshot.CurrentPlayerId;
-                    token.StrokeThickness = current ? 5 : 3;
+                    if (token is Shape shape)
+                        UnitVisual.Highlight(shape, current, TokenSize);
                     // Фишка того, кто ходит, — поверх остальных, если они заходят друг на друга.
                     Panel.SetZIndex(token, current ? 1 : 0);
                     PlaceToken(player.Id, group.Key, slot++, count, animationMs);
@@ -687,7 +694,9 @@ namespace Monopoly.App
                 grid.ColumnDefinitions.Add(new ColumnDefinition());
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-                var dot = new Ellipse { Width = 30, Height = 30, Fill = PlayerColor(player.Id), Stroke = Brushes.White, StrokeThickness = 2, Margin = new Thickness(0, 0, 14, 0) };
+                var dot = UnitVisual.Create(PlayerUnit(player.Id), PlayerColor(player.Id), 30, 2);
+                dot.Margin = new Thickness(0, 0, 14, 0);
+                dot.VerticalAlignment = VerticalAlignment.Center;
                 grid.Children.Add(dot);
 
                 var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };

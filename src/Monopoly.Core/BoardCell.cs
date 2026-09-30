@@ -24,6 +24,7 @@ namespace Monopoly.Core
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Type = type;
             Price = price;
+            BranchCost = GameRules.BranchCost(type);
         }
 
         public bool IsPurchasable => Type is CellType.Supermarket
@@ -39,8 +40,8 @@ namespace Monopoly.Core
         // Филиалы строятся только в группах по три; у АЗС и логистики своя аренда.
         public bool IsBuildable => IsPurchasable && Type is not (CellType.GasStation or CellType.Logistics);
 
-        // Цена филиала и головного офиса — своя у группы (§5), продажа банку — за BranchSalePercent от неё.
-        public int BranchCost => GameRules.BranchCost(Type);
+        // Цена филиала и головного офиса — своя у группы (§5), растёт с инфляцией (§17); продажа банку — за BranchSalePercent от неё.
+        public int BranchCost { get; internal set; }
         public int BranchSaleValue => GameRules.RoundMoney(BranchCost * GameRules.BranchSalePercent / 100);
 
         // Залог — половина цены, выкуп — залог + 10% (§10). Округлены до сотен: цену может задать администратор (§14).

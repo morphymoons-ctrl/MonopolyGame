@@ -14,15 +14,17 @@ namespace Monopoly.Net
     // а у свойства типа GameAction тип действия сохраняется.
     public sealed record ActionRequest(GameAction Action);
 
-    public sealed record LobbySeat(int SeatId, string Name, int ColorIndex, bool IsReady, bool IsHost, bool IsBot);
+    // Unit — юнит игрока: 0 — кружок, иначе номер эмодзи в Lobby.Units.
+    public sealed record LobbySeat(int SeatId, string Name, int ColorIndex, bool IsReady, bool IsHost, bool IsBot, int Unit = 0);
 
-    // StartBlockedReason — почему хост пока не может начать; null — можно начинать. Theme — выбранная хостом доска (§15).
+    // StartBlockedReason — почему хост пока не может начать; null — можно начинать. Theme — выбранная хостом доска (§15),
+    // Events — частота событий (§17).
     public sealed record LobbyState(IReadOnlyList<LobbySeat> Seats, int MaxPlayers, string? StartBlockedReason,
-        BoardTheme Theme = BoardTheme.Business);
+        BoardTheme Theme = BoardTheme.Business, EventFrequency Events = EventFrequency.Normal);
 
     // Отправляется каждому игроку при старте и при возвращении в партию: кто он, какого цвета фишки у всех и какая доска.
     public sealed record GameStartInfo(int MyPlayerId, IReadOnlyDictionary<int, int> ColorByPlayerId,
-        BoardTheme Theme = BoardTheme.Business);
+        BoardTheme Theme = BoardTheme.Business, IReadOnlyDictionary<int, int>? UnitByPlayerId = null);
 
     public enum SeatConnection { Online, Offline, Bot }
 

@@ -25,10 +25,25 @@
                     <TextBlock Text="Колір вашої фішки" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
                     <WrapPanel Name="ColorsPanel"/>
 
+                    <!-- Юнит (кружок или эмодзи цвета игрока): выпадающая карточка, чтобы не засорять лобби. -->
+                    <TextBlock Text="Обрати юніта" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
+                    <Button Name="UnitButton" HorizontalAlignment="Left" MinWidth="240" Padding="14,6" Click="UnitButton_Click"/>
+                    <Popup Name="UnitPopup" PlacementTarget="{Binding ElementName=UnitButton}" Placement="Bottom" StaysOpen="False"
+                           AllowsTransparency="True" VerticalOffset="6">
+                        <Border Style="{StaticResource Card}" Padding="12" Width="392">
+                            <WrapPanel Name="UnitsPanel"/>
+                        </Border>
+                    </Popup>
+
                     <!-- Доска (RULES.md, §15): хост выбирает, остальные видят выбор. -->
                     <TextBlock Text="Дошка" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
                     <WrapPanel Name="ThemesPanel"/>
                     <TextBlock Name="ThemeText" FontWeight="SemiBold" FontSize="18" Visibility="Collapsed"/>
+
+                    <!-- События партии (RULES.md, §17): частоту выбирает хост. -->
+                    <TextBlock Text="Події в грі" Style="{StaticResource Muted}" Margin="0,18,0,8"/>
+                    <WrapPanel Name="EventsPanel"/>
+                    <TextBlock Name="EventsText" FontWeight="SemiBold" FontSize="18" Visibility="Collapsed"/>
 
                     <CheckBox Name="ReadyBox" Content="Я готовий до гри" FontSize="19" Margin="0,20,0,0" VerticalContentAlignment="Center"
                               Checked="Ready_Changed" Unchecked="Ready_Changed"/>

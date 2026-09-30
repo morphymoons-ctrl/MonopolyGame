@@ -114,6 +114,7 @@ namespace Monopoly.Core
         {
             // Карточка при этом не тратится: посадил администратор — пропуск хода будет.
             player.IsInJail = inJail;
+            player.JailSkips = inJail ? 1 : 0;
             if (!inJail)
                 return;
 

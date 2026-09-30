@@ -3,7 +3,7 @@ using Monopoly.Core;
 
 namespace Monopoly.Net
 {
-    public sealed record SavedSeat(string Name, int ColorIndex, bool IsHost, bool IsBot);
+    public sealed record SavedSeat(string Name, int ColorIndex, bool IsHost, bool IsBot, int Unit = 0);
 
     // Сохранённая партия: зерно и все действия — по ним Game.Replay восстанавливает её точно такой же.
     public sealed record SaveFile(
@@ -17,7 +17,9 @@ namespace Monopoly.Net
         // Сколько шла партия до сохранения — для часов длительности партии.
         int PlayedSeconds = 0,
         // Доска партии (§15); у сохранений без неё — основная.
-        BoardTheme Theme = BoardTheme.Business)
+        BoardTheme Theme = BoardTheme.Business,
+        // Частота событий (§17): от неё зависит генератор, без неё партия не повторится. У старых сохранений — без событий.
+        EventFrequency Events = EventFrequency.Off)
     {
         public string? HostName => Seats.FirstOrDefault(s => s.IsHost)?.Name;
     }

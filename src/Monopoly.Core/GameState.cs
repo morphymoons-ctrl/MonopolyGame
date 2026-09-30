@@ -115,6 +115,24 @@ namespace Monopoly.Core
         // Группы, где в этом ходу уже строили: за ход — одна постройка на группу (§5). Сбрасывается при передаче хода.
         internal HashSet<CellType> BuiltThisTurn { get; } = new();
 
+        // --- События (§17) ---
+
+        // Круг: новый — когда ход доходит до первого в порядке ходов. Партия начинается с 1-го.
+        public int Round { get; internal set; } = 1;
+        // В начале какого круга — следующее событие.
+        internal int NextEventRound { get; set; } = WorldEvents.FirstRound;
+        // Идущие события на несколько кругов.
+        internal List<ActiveEvent> Events { get; } = new();
+        public IReadOnlyList<ActiveEvent> ActiveEvents => Events;
+        // Индекс цен в процентах: 100 — без инфляции, 110 — после одной, 121 — после двух.
+        public int PriceIndex { get; internal set; } = 100;
+        // «Велика приватизація»: компании, которые ещё ждут своего аукциона.
+        internal Queue<int> PrivatizationQueue { get; } = new();
+
+        public RentContext RentContext => new(PriceIndex, Events.ToList());
+        // Бонус «Старта» с учётом инфляции.
+        public int StartBonus => WorldEvents.Indexed(GameRules.StartBonus, PriceIndex);
+
         public Player? FindPlayer(int id) => Players.FirstOrDefault(p => p.Id == id);
 
         public IEnumerable<BoardCell> CellsOf(int playerId) => Board.Where(c => c.OwnerId == playerId);
@@ -124,7 +142,7 @@ namespace Monopoly.Core
         public GameSnapshot ToSnapshot() => new(
             Players.Select(p => new PlayerSnapshot(p.Id, p.Name, p.Balance, p.Position, p.IsInJail, p.IsResting,
                 p.JailCards, p.IsBankrupt)).ToList(),
-            Board.Select(c => new CellSnapshot(c.OwnerId, c.Level, c.IsMortgaged, c.Price, c.MortgageTurnsLeft)).ToList(),
+            Board.Select(c => new CellSnapshot(c.OwnerId, c.Level, c.IsMortgaged, c.Price, c.MortgageTurnsLeft, c.BranchCost)).ToList(),
             CurrentPlayer.Id,
             Phase,
             LastRoll,
@@ -136,6 +154,9 @@ namespace Monopoly.Core
             CasinoAvailable,
             WinnerId,
             Theme,
-            Stats.ToSnapshot(Players.Select(p => p.Id)));
+            Stats.ToSnapshot(Players.Select(p => p.Id)),
+            Round,
+            PriceIndex,
+            Events.ToList());
     }
 }

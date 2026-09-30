@@ -9,6 +9,8 @@ namespace Monopoly.Core
         public int Position { get; internal set; } = 0;
         // В пєтушатні — пропускает следующий ход (§6).
         public bool IsInJail { get; internal set; } = false;
+        // Сколько ходов ещё пропустить в пєтушатні: обычно 1, во время «Облави» — 2 (§17).
+        public int JailSkips { get; internal set; } = 0;
         // Попал на «Зачілься» — пропускает следующий ход (§7).
         public bool IsResting { get; internal set; } = false;
         // Карточки «Выйти из тюрьмы бесплатно».
