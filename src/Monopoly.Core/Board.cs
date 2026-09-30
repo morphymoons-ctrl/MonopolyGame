@@ -17,6 +17,8 @@ namespace Monopoly.Core
         Oligarchs,
         // «Київ».
         Kyiv,
+        // «Класика»: классическая «Монополия» с мировыми брендами и суммами в классических долларах.
+        Classic,
     }
 
     public static class Board
@@ -35,6 +37,7 @@ namespace Monopoly.Core
             BoardTheme.Games => Games(),
             BoardTheme.Oligarchs => Oligarchs(),
             BoardTheme.Kyiv => Kyiv(),
+            BoardTheme.Classic => Classic(),
             _ => Business(),
         };
 
@@ -294,6 +297,43 @@ namespace Monopoly.Core
             new BoardCell("БЦ „Леонардо“", CellType.NetworkShop, 190_000),
             new BoardCell("БЦ „Парус“", CellType.NetworkShop, 210_000),
             new BoardCell("101 Tower", CellType.NetworkShop, 260_000),
+        };
+
+        // «Класика»: классическая «Монополия» — мировые бренды (§15).
+        private static List<BoardCell> Classic() => new()
+        {
+            new BoardCell("Старт", CellType.Start),
+            new BoardCell("Sprite", CellType.Supermarket, 80_000),
+            new BoardCell("Pepsi", CellType.Supermarket, 120_000),
+            new BoardCell("Coca-Cola", CellType.Supermarket, 160_000),
+            new BoardCell("Shell", CellType.GasStation, 160_000),
+            new BoardCell("Ford", CellType.Factory, 200_000),
+            new BoardCell("Toyota", CellType.Factory, 220_000),
+            new BoardCell("Mercedes-Benz", CellType.Factory, 240_000),
+            new BoardCell("В'язниця", CellType.Jail),
+            new BoardCell("KFC", CellType.TV, 100_000),
+            new BoardCell("Burger King", CellType.TV, 120_000),
+            new BoardCell("McDonald's", CellType.TV, 140_000),
+            new BoardCell("BP", CellType.GasStation, 160_000),
+            new BoardCell("Puma", CellType.Food, 200_000),
+            new BoardCell("Adidas", CellType.Food, 220_000),
+            new BoardCell("Nike", CellType.Food, 240_000),
+            new BoardCell("Казино", CellType.Casino),
+            new BoardCell("Nescafé", CellType.Nightlife, 100_000),
+            new BoardCell("Lavazza", CellType.Nightlife, 120_000),
+            new BoardCell("Starbucks", CellType.Nightlife, 140_000),
+            new BoardCell("Безкоштовна парковка", CellType.Rest),
+            new BoardCell("Chevron", CellType.GasStation, 160_000),
+            new BoardCell("FedEx", CellType.Logistics, 200_000),
+            new BoardCell("DHL", CellType.Logistics, 220_000),
+            new BoardCell("Шанс", CellType.Chance),
+            new BoardCell("PayPal", CellType.Bank, 100_000),
+            new BoardCell("Mastercard", CellType.Bank, 120_000),
+            new BoardCell("Visa", CellType.Bank, 140_000),
+            new BoardCell("ExxonMobil", CellType.GasStation, 160_000),
+            new BoardCell("Microsoft", CellType.NetworkShop, 200_000),
+            new BoardCell("Google", CellType.NetworkShop, 220_000),
+            new BoardCell("Apple", CellType.NetworkShop, 240_000),
         };
     }
 }

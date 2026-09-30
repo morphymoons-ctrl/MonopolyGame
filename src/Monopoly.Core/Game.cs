@@ -101,6 +101,9 @@ namespace Monopoly.Core
             var player = State.FindPlayer(playerId);
             if (player is not null && ValidateCommon(player) is null && ValidateTradeTiming(player) is null)
                 available.Add(new ProposeTrade(playerId, -1, TradeTerms.Empty, TradeTerms.Empty));
+            // Так же «пустое» встречное предложение — знак, что можно изменить условия (§11).
+            if (player is not null && CanCounter(player))
+                available.Add(new CounterTrade(playerId, TradeTerms.Empty, TradeTerms.Empty));
             return available;
         }
 
@@ -161,6 +164,9 @@ namespace Monopoly.Core
                 case RejectTrade:
                     events.Add(new TradeRejected(State.Trade!.FromId, State.Trade.ToId));
                     State.Trade = null;
+                    break;
+                case CounterTrade counter:
+                    Counter(player, counter, events);
                     break;
                 case CancelTrade:
                     events.Add(new TradeCancelled(State.Trade!.FromId, State.Trade.ToId));
@@ -228,6 +234,7 @@ namespace Monopoly.Core
                 AcceptTrade => ValidateAnswer(player) ?? ValidateOffer(State.Trade!),
                 RejectTrade => ValidateAnswer(player),
                 CancelTrade => ValidateCancel(player),
+                CounterTrade counter => ValidateCounter(player, counter),
                 DeclareBankruptcy => State.Phase == TurnPhase.Debt && State.Debts[0].DebtorId == player.Id
                     ? null
                     : "Оголосити банкрутство можна, лише коли нема чим сплатити борг.",

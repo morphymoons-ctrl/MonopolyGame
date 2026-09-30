@@ -76,6 +76,15 @@ namespace Monopoly.App
             null, "hotel-ukraina", "hilton", "fairmont", "zhuliany", "leonardo", "parus", "101-tower",
         };
 
+        // «Класика».
+        private static readonly string?[] ClassicFiles =
+        {
+            null, "sprite", "pepsi", "coca-cola", "shell", "ford", "toyota", "mercedes-benz",
+            null, "kfc", "burger-king", "mcdonalds", "bp", "puma", "adidas", "nike",
+            null, "nescafe", "lavazza", "starbucks", null, "chevron", "fedex", "dhl",
+            null, "paypal", "mastercard", "visa", "exxonmobil", "microsoft", "google", "apple",
+        };
+
         private static readonly Dictionary<(BoardTheme, int), ImageSource?> Cache = new();
 
         // Доски, где по картинке (фото места, эмблема, монета) клетку сразу не узнать: под картинкой пишется название.
@@ -95,6 +104,7 @@ namespace Monopoly.App
                 BoardTheme.Games => ("games", GamesFiles),
                 BoardTheme.Oligarchs => ("oligarchs", OligarchsFiles),
                 BoardTheme.Kyiv => ("kyiv", KyivFiles),
+                BoardTheme.Classic => ("classic", ClassicFiles),
                 _ => ("business", BusinessFiles),
             };
             var logo = cellIndex < files.Length && files[cellIndex] is { } file ? Load(folder, file) : null;

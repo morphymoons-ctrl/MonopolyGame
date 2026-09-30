@@ -21,13 +21,17 @@ namespace Monopoly.App
         private readonly TextBlock errorText = new() { Foreground = PlayerPalette.Make("#FF8A8D"), FontSize = 18, TextWrapping = TextWrapping.Wrap };
         private int? targetId;
 
-        // Закрыта: предложение или null — отмена.
-        public event Action<ProposeTrade?>? Finished;
+        // Встречное предложение (§11): на какое предложение отвечаем; null — обычное предложение обмена.
+        private readonly TradeOffer? counterTo;
 
-        public TradePanel(GameSnapshot snapshot, int myId, Func<int, Brush> colorOf)
+        // Закрыта: предложение (ProposeTrade или CounterTrade) или null — отмена.
+        public event Action<GameAction?>? Finished;
+
+        public TradePanel(GameSnapshot snapshot, int myId, Func<int, Brush> colorOf, TradeOffer? counterTo = null)
         {
             this.snapshot = snapshot;
             this.myId = myId;
+            this.counterTo = counterTo;
             Style = (Style)FindResource("Card");
             Effect = (System.Windows.Media.Effects.Effect)FindResource("SoftShadow");
             Width = 1040;
@@ -57,11 +61,12 @@ namespace Monopoly.App
             close.Click += (_, _) => Finished?.Invoke(null);
             DockPanel.SetDock(close, Dock.Right);
             header.Children.Add(close);
-            header.Children.Add(new TextBlock { Text = "Запропонувати обмін", FontSize = 34, FontWeight = FontWeights.Bold });
+            header.Children.Add(new TextBlock { Text = counterTo is null ? "Запропонувати обмін" : "Змінити умови", FontSize = 34, FontWeight = FontWeights.Bold });
             root.Children.Add(header);
 
             root.Children.Add(new TextBlock { Text = "З ким мінятися", Foreground = (Brush)FindResource("MutedTextBrush") });
-            foreach (var player in snapshot.Players.Where(p => p.Id != myId && !p.IsBankrupt))
+            // Встречное предложение — только тому, кто предлагал.
+            foreach (var player in snapshot.Players.Where(p => p.Id != myId && !p.IsBankrupt && (counterTo is null || p.Id == counterTo.FromId)))
             {
                 var content = new StackPanel { Orientation = Orientation.Horizontal };
                 content.Children.Add(new Ellipse { Width = 16, Height = 16, Fill = colorOf(player.Id), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
@@ -102,6 +107,12 @@ namespace Monopoly.App
             mine.Fill(snapshot, myId);
             if (targets.Children.Count > 0)
                 ((RadioButton)targets.Children[0]).IsChecked = true;
+            // Встречное — с условиями пришедшего предложения, с нашей стороны: что у нас просили, теперь мы отдаём.
+            if (counterTo is not null)
+            {
+                mine.Set(counterTo.Take);
+                theirs.Set(counterTo.Give);
+            }
             Loaded += (_, _) => Focus();
         }
 
@@ -126,7 +137,7 @@ namespace Monopoly.App
                 errorText.Text = error ?? "";
                 return;
             }
-            Finished?.Invoke(new ProposeTrade(myId, target, give, take));
+            Finished?.Invoke(counterTo is null ? new ProposeTrade(myId, target, give, take) : new CounterTrade(myId, give, take));
         }
 
         // Одна сторона обмена: компании галочками, деньги и карточки числами.
@@ -192,13 +203,22 @@ namespace Monopoly.App
                 jailCards.Visibility = hasCards ? Visibility.Visible : Visibility.Collapsed;
             }
 
+            // Заполнить условиями: отметить компании, вписать деньги и карточки.
+            public void Set(TradeTerms terms)
+            {
+                foreach (var box in cells.Children.OfType<CheckBox>())
+                    box.IsChecked = terms.Cells.Contains((int)box.Tag);
+                money.Text = GameRules.MoneyInput(terms.Money, EventText.Theme);
+                jailCards.Text = terms.JailCards.ToString();
+            }
+
             public TradeTerms? Terms(out string? error)
             {
                 error = null;
                 // Пробелы между тысячами допускаются: «50 000»; на досках в миллионах — дробь «1,5» (§15). Сумма округляется (§11).
                 if (money.Text.Contains('-') || GameRules.ParseMoney(money.Text, EventText.Theme) is not int moneyValue)
                 {
-                    error = GameRules.MoneyScale(EventText.Theme) > 1 ? "Гроші — число мільйонів від 0, наприклад 1,5." : "Гроші — ціле число від 0.";
+                    error = GameRules.FractionalInput(EventText.Theme) ? "Гроші — число мільйонів від 0, наприклад 1,5." : "Гроші — ціле число від 0.";
                     return null;
                 }
                 if (!int.TryParse(Digits(jailCards.Text), out int cardValue) || cardValue < 0)

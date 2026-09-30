@@ -41,6 +41,17 @@ namespace Monopoly.Tests
             Assert.Equal("грн", GameRules.Currency(BoardTheme.Kyiv));
         }
 
+        // «Класика» (§15): доллары в тех же числах, что и остальные доски.
+        [Fact]
+        public void Classic_InDollars()
+        {
+            Assert.Equal("$1 500 000", Plain(GameRules.Money(GameRules.StartingBalance, BoardTheme.Classic)));
+            Assert.Equal("$80 000", Plain(GameRules.Money(80_000, BoardTheme.Classic)));
+            Assert.Equal("$9,6к", GameRules.ShortMoney(9_600, BoardTheme.Classic));
+            Assert.Equal("$", GameRules.Currency(BoardTheme.Classic));
+            Assert.Equal(150_000, GameRules.ParseMoney("150 000", BoardTheme.Classic));
+        }
+
         [Theory]
         [InlineData("1 500 000", BoardTheme.Business, 1_500_000)]
         [InlineData("15 250 грн", BoardTheme.Business, 15_300)]

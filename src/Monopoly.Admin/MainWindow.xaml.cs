@@ -306,7 +306,7 @@ namespace Monopoly.Admin
         private int? ParseMoney(string text) => GameRules.ParseMoney(text, theme);
 
         // Число без знака валюты — для полей ввода, в тех же единицах.
-        private string Plain(int amount) => GameRules.MoneyScale(theme) > 1
+        private string Plain(int amount) => GameRules.FractionalInput(theme)
             ? GameRules.MoneyInput(amount, theme)
             : amount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("uk-UA"));
 

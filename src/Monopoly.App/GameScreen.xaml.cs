@@ -281,7 +281,7 @@ namespace Monopoly.App
                     string finderText = auction.FinderId is int finder ? $" {Name(finder)} отримає 30% від продажу, якщо виграє інший." : "";
                     return ($"Аукціон: «{lot.Name}»", $"Ціна компанії {GameManager.Format(lot.Price)}. {bid}{passedText}{finderText}", GroupPalette.Get(lot.Type));
                 case TurnPhase.TradeOffer when s.Trade!.ToId == MyId:
-                    return ("Вам пропонують обмін", $"{Name(s.Trade.FromId)} {EventText.DescribeOffer(s.Trade, s)}", blue);
+                    return (s.Trade.Counters > 0 ? "Вам пропонують змінені умови" : "Вам пропонують обмін", $"{Name(s.Trade.FromId)} {EventText.DescribeOffer(s.Trade, s)}", blue);
                 case TurnPhase.TradeOffer when s.Trade!.FromId == MyId:
                     return ($"Чекаємо відповіді: {Name(s.Trade.ToId)}", $"Ви {EventText.DescribeOffer(s.Trade, s)}", blue);
                 case TurnPhase.TradeOffer:
@@ -342,7 +342,7 @@ namespace Monopoly.App
 
             foreach (var action in available)
             {
-                if (action is PlaceBid or ProposeTrade or BuildBranch or SellBranch or MortgageCompany or RedeemCompany)
+                if (action is PlaceBid or ProposeTrade or CounterTrade or BuildBranch or SellBranch or MortgageCompany or RedeemCompany)
                 {
                     continue;
                 }
@@ -354,6 +354,13 @@ namespace Monopoly.App
                     _ => "BoardButton",
                 };
                 AddButton(ActionsPanel, EventText.ActionLabel(action, s), action, style);
+                // Сразу после «Прийняти» — «Змінити умови»: окно обмена с условиями предложения (§11).
+                if (action is AcceptTrade && available.Any(a => a is CounterTrade) && s.Trade is { } offer)
+                {
+                    var counter = new Button { Content = "Змінити умови", FontSize = 19, Margin = new Thickness(0, 0, 10, 10), Style = (Style)FindResource("BoardButton") };
+                    counter.Click += (_, _) => OpenTrade(offer);
+                    ActionsPanel.Children.Add(counter);
+                }
             }
 
             // После победы — итоги партии (§16).
@@ -533,13 +540,16 @@ namespace Monopoly.App
 
         // --- Нижние кнопки ---
 
-        private void Trade_Click(object sender, RoutedEventArgs e)
+        private void Trade_Click(object sender, RoutedEventArgs e) => OpenTrade(null);
+
+        // Окно обмена: своё предложение или, если counterTo задан, встречное — с условиями пришедшего предложения (§11).
+        private void OpenTrade(TradeOffer? counterTo)
         {
             if (Snapshot is null)
             {
                 return;
             }
-            var panel = new TradePanel(Snapshot, MyId, gameManager.PlayerColor);
+            var panel = new TradePanel(Snapshot, MyId, gameManager.PlayerColor, counterTo);
             panel.Finished += async proposal =>
             {
                 CloseTrade();

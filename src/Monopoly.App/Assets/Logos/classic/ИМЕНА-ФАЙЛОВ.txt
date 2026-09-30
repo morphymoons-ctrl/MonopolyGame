@@ -1,0 +1,32 @@
+Логотипы доски «Класика».
+Формат: квадрат 512×512. Логотип — PNG, лучше с прозрачным фоном (поля игра обрежет сама). Фото — JPG: скруглённые углы игра дорисует сама.
+Нет файла — на клетке останется название. Добавлять можно постепенно.
+
+Клетка                     Имя файла
+Sprite                     sprite.png
+Pepsi                      pepsi.png
+Coca-Cola                  coca-cola.png
+Shell                      shell.png
+Ford                       ford.png
+Toyota                     toyota.png
+Mercedes-Benz              mercedes-benz.png
+KFC                        kfc.png
+Burger King                burger-king.png
+McDonald's                 mcdonalds.png
+BP                         bp.png
+Puma                       puma.png
+Adidas                     adidas.png
+Nike                       nike.png
+Nescafé                    nescafe.png
+Lavazza                    lavazza.png
+Starbucks                  starbucks.png
+Chevron                    chevron.png
+FedEx                      fedex.png
+DHL                        dhl.png
+PayPal                     paypal.png
+Mastercard                 mastercard.png
+Visa                       visa.png
+ExxonMobil                 exxonmobil.png
+Microsoft                  microsoft.png
+Google                     google.png
+Apple                      apple.png

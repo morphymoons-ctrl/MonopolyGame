@@ -18,6 +18,9 @@ namespace Monopoly.Core
 
         public const int HeadOfficeLevel = 5;
 
+        // За один обмен — не больше стольких встречных предложений (§11).
+        public const int MaxTradeCounters = 3;
+
         public const int AuctionStep = 10_000;
         // Аукцион (§4): первая ставка — от 90% цены; находчику, которому не хватило денег, — 30% итоговой ставки.
         public const int AuctionStartPercent = 90, FinderSharePercent = 30;
@@ -66,36 +69,57 @@ namespace Monopoly.Core
         // Движок считает в тех же числах, что и на остальных досках, поэтому экономика одна.
         public static int MoneyScale(BoardTheme theme) => theme is BoardTheme.Military or BoardTheme.Oligarchs ? 1000 : 1;
 
-        // Сумма для текста игроку: «1 500 000 грн», на доске «Криптовалюти» — «$1 500 000», на досках в миллионах — «1 500 млн грн» (§15).
-        // Между тысячами — неразрывный пробел, число не разрывается переносом.
-        public static string Money(int amount, BoardTheme theme = BoardTheme.Business)
+        // Как доска показывает деньги (§15). Движок везде считает в одних числах — меняется только запись.
+        public enum MoneyStyle
         {
-            if (MoneyScale(theme) > 1)
-                return $"{Millions(amount, theme).ToString("#,0.#", Ukrainian)} млн грн";
-            string number = amount.ToString("N0", Ukrainian);
-            return theme == BoardTheme.Crypto ? $"${number}" : $"{number} грн";
+            Hryvnia,  // «1 500 000 грн»
+            Dollars,  // «Криптовалюти» и «Класика»: «$1 500 000»
+            Millions, // военная доска и «Битва олігархів»: ×1000, в миллионах — «1 500 млн грн»
         }
+
+        public static MoneyStyle Style(BoardTheme theme) => theme switch
+        {
+            BoardTheme.Crypto or BoardTheme.Classic => MoneyStyle.Dollars,
+            BoardTheme.Military or BoardTheme.Oligarchs => MoneyStyle.Millions,
+            _ => MoneyStyle.Hryvnia,
+        };
+
+        // Вводят ли суммы с дробью: только миллионы («1,5»).
+        public static bool FractionalInput(BoardTheme theme) => Style(theme) == MoneyStyle.Millions;
+
+        // Сумма для текста игроку: «1 500 000 грн», «$1 500 000» или «1 500 млн грн» (§15).
+        // Между тысячами — неразрывный пробел, число не разрывается переносом.
+        public static string Money(int amount, BoardTheme theme = BoardTheme.Business) => Style(theme) switch
+        {
+            MoneyStyle.Millions => $"{Millions(amount, theme).ToString("#,0.#", Ukrainian)} млн грн",
+            MoneyStyle.Dollars => $"${amount.ToString("N0", Ukrainian)}",
+            _ => $"{amount.ToString("N0", Ukrainian)} грн",
+        };
 
         private static double Millions(int amount, BoardTheme theme) => amount * (long)MoneyScale(theme) / 1_000_000.0;
 
         // Единица для подписей и полей ввода: «грн», «$» или «млн грн».
-        public static string Currency(BoardTheme theme) =>
-            MoneyScale(theme) > 1 ? "млн грн" : theme == BoardTheme.Crypto ? "$" : "грн";
+        public static string Currency(BoardTheme theme) => Style(theme) switch
+        {
+            MoneyStyle.Millions => "млн грн",
+            MoneyStyle.Dollars => "$",
+            _ => "грн",
+        };
 
-        // Коротко, для аренды на клетке: «16,8к», «252к», «1,4м», на досках в миллионах — «16,8м», «1,4млрд»
-        // (на крипто-доске — «$252к») — чтобы не путать с ценой покупки. Знак после запятой — не больше одного.
+        // Коротко, для аренды на клетке: «16,8к», «252к», «1,4м», на досках в миллионах — «16,8м», «1,4млрд»,
+        // в долларах — «$252к» — чтобы не путать с ценой покупки. Знак после запятой — не больше одного.
         public static string ShortMoney(int amount, BoardTheme theme = BoardTheme.Business)
         {
             long value = amount * (long)MoneyScale(theme);
             string text = value >= 1_000_000_000 ? $"{(value / 1_000_000_000.0).ToString("0.#", Ukrainian)}млрд"
                 : value >= 1_000_000 ? $"{(value / 1_000_000.0).ToString("0.#", Ukrainian)}м"
                 : $"{(value / 1_000.0).ToString("0.#", Ukrainian)}к";
-            return theme == BoardTheme.Crypto ? $"${text}" : text;
+            return Style(theme) == MoneyStyle.Dollars ? $"${text}" : text;
         }
 
         // Сумма для поля ввода — в единицах Currency: «150000» или, на досках в миллионах, «150» и «1,5».
         public static string MoneyInput(int amount, BoardTheme theme) =>
-            MoneyScale(theme) > 1 ? Millions(amount, theme).ToString("0.#", Ukrainian) : amount.ToString(CultureInfo.InvariantCulture);
+            Style(theme) == MoneyStyle.Millions ? Millions(amount, theme).ToString("0.#", Ukrainian) : amount.ToString(CultureInfo.InvariantCulture);
 
         // Сумма из поля ввода (в единицах Currency): пробелы, «грн» и «$» не мешают, у миллионов можно дробь — «1,5» или «1.5».
         // Результат округлён до сотен (RoundMoney). null — не число или слишком много.
@@ -104,7 +128,7 @@ namespace Monopoly.Core
             var number = new string(text.Where(ch => char.IsDigit(ch) || ch is ',' or '.').ToArray()).Replace(',', '.');
             if (!decimal.TryParse(number, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal value))
                 return null;
-            decimal amount = MoneyScale(theme) > 1 ? value * 1_000_000 / MoneyScale(theme) : value;
+            decimal amount = Style(theme) == MoneyStyle.Millions ? value * 1_000_000 / MoneyScale(theme) : value;
             return amount <= int.MaxValue ? RoundMoney((int)Math.Round(amount)) : null;
         }
 

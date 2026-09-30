@@ -70,7 +70,7 @@ namespace Monopoly.Tests
                 new WorldEventEnded(WorldEventKind.Crisis),
                 new RentWaived(1, 4, WorldEventKind.Quarantine),
             };
-            var withLists = new[] { nameof(GameStarted), nameof(TradeProposed), nameof(TradeAccepted) };
+            var withLists = new[] { nameof(GameStarted), nameof(TradeProposed), nameof(TradeAccepted), nameof(TradeCountered) };
             var eventTypes = typeof(GameEvent).Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(GameEvent)));
             Assert.Equal(
                 eventTypes.Select(t => t.Name).Except(withLists).Order(),
@@ -89,6 +89,9 @@ namespace Monopoly.Tests
             Assert.Equal(1, proposed.Offer.Give.JailCards);
             Assert.Empty(proposed.Offer.Take.Cells);
             Assert.IsType<TradeAccepted>(RoundTrip<GameEvent>(new TradeAccepted(offer)));
+            var countered = Assert.IsType<TradeCountered>(RoundTrip<GameEvent>(new TradeCountered(offer with { Counters = 2 })));
+            Assert.Equal(new[] { 1, 2 }, countered.Offer.Give.Cells);
+            Assert.Equal(2, countered.Offer.Counters);
         }
 
         [Fact]

@@ -148,6 +148,20 @@ namespace Monopoly.Tests
         }
 
         [Fact]
+        public void ClassicBoard_HasItsOwnNamesAndTerms()
+        {
+            var board = Board.Create(BoardTheme.Classic);
+            Assert.Equal("Старт", board[0].Name);
+            Assert.Equal("В'язниця", board[Jail].Name);
+            Assert.Equal("Shell", board[Wog].Name);
+            Assert.Equal("Apple", board[31].Name);
+
+            var game = new Game(new[] { "Аня", "Богдан" }, new ScriptedRandom(), Fixed with { Theme = BoardTheme.Classic });
+            game.Give(0, Atb, Varus);
+            Assert.Equal("Будинки будуються, лише коли у вас уся група.", game.Error(new BuildBranch(0, Atb)));
+        }
+
+        [Fact]
         public void Game_UsesChosenTheme_AndReplayKeepsIt()
         {
             var game = Game.Start(new[] { "Аня", "Богдан" }, seed: 7, BoardTheme.Military);

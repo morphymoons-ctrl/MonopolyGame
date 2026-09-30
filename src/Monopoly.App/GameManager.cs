@@ -110,6 +110,7 @@ namespace Monopoly.App
                         sounds.Turn();
                         break;
                     case TradeProposed p when p.Offer.ToId == MyPlayerId:
+                    case TradeCountered c when c.Offer.ToId == MyPlayerId:
                         sounds.Trade();
                         break;
                     case WorldEventStarted w:

@@ -48,6 +48,10 @@ namespace Monopoly.Core
 
     public sealed record CancelTrade(int PlayerId) : GameAction(PlayerId);
 
+    // Встречное предложение (§11): тот, кому предложили, отдаёт Give и просит Take у предложившего.
+    // В списке доступных действий CounterTrade с пустыми условиями значит «сейчас можно изменить условия».
+    public sealed record CounterTrade(int PlayerId, TradeTerms Give, TradeTerms Take) : GameAction(PlayerId);
+
     // --- Долги ---
 
     public sealed record DeclareBankruptcy(int PlayerId) : GameAction(PlayerId);

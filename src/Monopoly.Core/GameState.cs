@@ -36,7 +36,8 @@ namespace Monopoly.Core
     }
 
     // Предложение обмена: FromId отдаёт Give и получает Take от ToId.
-    public sealed record TradeOffer(int FromId, int ToId, TradeTerms Give, TradeTerms Take);
+    // Counters — сколько раз в этом обмене уже меняли условия встречным предложением (§11).
+    public sealed record TradeOffer(int FromId, int ToId, TradeTerms Give, TradeTerms Take, int Counters = 0);
 
     public sealed class AuctionState
     {

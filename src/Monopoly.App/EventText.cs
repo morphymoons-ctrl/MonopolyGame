@@ -159,6 +159,7 @@ namespace Monopoly.App
                 MortgageExpired x => $"{Name(x.PlayerId)} не викупив «{Cell(x.CellIndex)}» за {GameRules.MortgageTurns} ходів — компанія повертається банку, її знову можна купити.",
 
                 TradeProposed t => $"{Name(t.Offer.FromId)} пропонує обмін гравцю {Name(t.Offer.ToId)}: {DescribeOffer(t.Offer, snapshot)}",
+                TradeCountered t => $"{Name(t.Offer.FromId)} змінює умови й пропонує гравцю {Name(t.Offer.ToId)}: {DescribeOffer(t.Offer, snapshot)}",
                 TradeAccepted t => $"{Name(t.Offer.ToId)} погоджується на обмін.",
                 TradeRejected t => $"{Name(t.ToId)} відмовляється від обміну.",
                 TradeCancelled t => $"{Name(t.FromId)} відкликає пропозицію обміну.",
@@ -196,7 +197,31 @@ namespace Monopoly.App
             BoardTheme.Games => GamesCardText(card),
             BoardTheme.Oligarchs => OligarchsCardText(card),
             BoardTheme.Kyiv => KyivCardText(card),
+            BoardTheme.Classic => ClassicCardText(card),
             _ => BusinessCardText(card),
+        };
+
+        // Карточки «Шанса» доски «Класика»: те же действия, тексты — как в классической «Монополії» (§15).
+        private static string ClassicCardText(ChanceCard card) => card switch
+        {
+            ChanceCard.TaxRefund => $"Повернення податку на прибуток: +{CardAmount(card)}.",
+            ChanceCard.ProjectBonus => $"Банківська помилка на вашу користь: +{CardAmount(card)}.",
+            ChanceCard.DancerRefund => $"Друге місце на конкурсі краси: +{CardAmount(card)}.",
+            ChanceCard.Cashback => $"Продаж акцій: +{CardAmount(card)}.",
+            ChanceCard.Birthday => $"У вас день народження — кожен гравець дарує вам {Money(ChanceCards.BirthdayGift)}.",
+            ChanceCard.ParkingFine => $"Штраф за перевищення швидкості: −{CardAmount(card)}.",
+            ChanceCard.Utilities => $"Рахунок від лікаря: −{CardAmount(card)}.",
+            ChanceCard.Streaming => $"Плата за навчання: −{CardAmount(card)}.",
+            ChanceCard.MassageFinish => $"Рахунок з лікарні: −{CardAmount(card)}.",
+            ChanceCard.Charity => $"Вас обрали головою правління — заплатіть кожному гравцю {Money(ChanceCards.CharityGift)}.",
+            ChanceCard.TaxAudit => $"Ремонт вулиць: {Money(ChanceCards.AuditPerBranch)} за кожен будинок і {Money(ChanceCards.AuditPerHeadOffice)} — за кожен готель.",
+            ChanceCard.GoToStart => $"Вирушайте на «{Cells[0].Name}».",
+            ChanceCard.NovaPoshta => $"Вирушайте до «{Cells[22].Name}».",
+            ChanceCard.Taxi => "Вирушайте до найближчої заправки. Якщо вона чужа — подвійна оренда.",
+            ChanceCard.Train => "Поверніться на 3 клітинки назад.",
+            ChanceCard.GoToJail => $"Вирушайте прямо до в'язниці — повз «{Cells[0].Name}», без грошей.",
+            ChanceCard.GetOutOfJail => "Звільнення з в'язниці. Спрацює саме, коли потрапите до в'язниці, — хід не пропустите. Картку можна віддати в обміні.",
+            _ => card.ToString(),
         };
 
         // Карточки «Київ Цифровий» доски «Київ»: те же действия, тексты — киевский быт (§15).
@@ -381,6 +406,7 @@ namespace Monopoly.App
             PassAuction => "Пас",
             AcceptTrade => "Прийняти обмін",
             RejectTrade => "Відмовитися",
+            CounterTrade => "Змінити умови",
             CancelTrade => "Відкликати обмін",
             DeclareBankruptcy => "Оголосити банкрутство",
             _ => action.GetType().Name,
@@ -394,7 +420,22 @@ namespace Monopoly.App
             BoardTheme.Games => GamesGroupName(type),
             BoardTheme.Oligarchs => OligarchsGroupName(type),
             BoardTheme.Kyiv => KyivGroupName(type),
+            BoardTheme.Classic => ClassicGroupName(type),
             _ => BusinessGroupName(type),
+        };
+
+        private static string ClassicGroupName(CellType type) => type switch
+        {
+            CellType.Supermarket => "Напої",
+            CellType.GasStation => "Заправки",
+            CellType.Factory => "Автомобілі",
+            CellType.TV => "Фастфуд",
+            CellType.Food => "Спортивний одяг",
+            CellType.Nightlife => "Кава",
+            CellType.Logistics => "Доставка",
+            CellType.Bank => "Платежі",
+            CellType.NetworkShop => "Техногіганти",
+            _ => "",
         };
 
         private static string KyivGroupName(CellType type) => type switch

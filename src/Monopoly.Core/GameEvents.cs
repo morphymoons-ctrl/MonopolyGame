@@ -134,6 +134,9 @@ namespace Monopoly.Core
 
     public sealed record TradeProposed(TradeOffer Offer) : GameEvent;
 
+    // Встречное предложение: Offer — новые условия, от того, кому предлагали, тому, кто предлагал (§11).
+    public sealed record TradeCountered(TradeOffer Offer) : GameEvent;
+
     public sealed record TradeAccepted(TradeOffer Offer) : GameEvent;
 
     public sealed record TradeRejected(int FromId, int ToId) : GameEvent;

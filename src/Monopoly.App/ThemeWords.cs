@@ -51,6 +51,11 @@ namespace Monopoly.App
             "відпочиває на Трухановому острові й пропускає хід", "їде на Трухановий острів і пропустить наступний хід", "на Трухановому",
             "грає з наперсточниками");
 
+        public static readonly ThemeWords Classic = new(
+            "у в'язниці", "до в'язниці", "у в'язницю", "з в'язниці", "Звільнення з в'язниці",
+            "на безкоштовній парковці й пропускає хід", "стає на безкоштовну парковку й пропустить наступний хід", "на парковці",
+            "у казино");
+
         public static ThemeWords For(BoardTheme theme) => theme switch
         {
             BoardTheme.Military => Military,
@@ -59,6 +64,7 @@ namespace Monopoly.App
             BoardTheme.Games => Games,
             BoardTheme.Oligarchs => Oligarchs,
             BoardTheme.Kyiv => Kyiv,
+            BoardTheme.Classic => Classic,
             _ => Business,
         };
 
@@ -70,6 +76,7 @@ namespace Monopoly.App
             BoardTheme.Games => "Відеоігри",
             BoardTheme.Oligarchs => "Битва олігархів",
             BoardTheme.Kyiv => "Київ",
+            BoardTheme.Classic => "Класика",
             _ => "Українські бізнеси",
         };
     }
